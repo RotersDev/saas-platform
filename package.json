@@ -1,0 +1,33 @@
+{
+  "name": "saas-digital-products-platform",
+  "version": "1.0.0",
+  "description": "Plataforma SaaS Multi-tenant para Produtos Digitais",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "migrate": "cd backend && npm run migrate",
+    "migrate:up": "cd backend && npm run migrate:up",
+    "migrate:down": "cd backend && npm run migrate:down"
+  },
+  "keywords": [
+    "saas",
+    "multi-tenant",
+    "digital-products",
+    "ecommerce"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "google-auth-library": "^10.5.0",
+    "react-query": "^3.39.3"
+  }
+}

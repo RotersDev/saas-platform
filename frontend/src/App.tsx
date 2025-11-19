@@ -1,0 +1,199 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { Toaster } from 'react-hot-toast';
+import { useAuthStore } from './store/authStore';
+
+// Admin Master
+import AdminLayout from './admin/layouts/AdminLayout';
+import AdminDashboard from './admin/pages/Dashboard';
+import AdminStores from './admin/pages/Stores';
+import AdminPlans from './admin/pages/Plans';
+
+// Store Owner
+import StoreLayout from './store/layouts/StoreLayout';
+import StoreDashboard from './store/pages/Dashboard';
+import StoreProducts from './store/pages/Products';
+import StoreOrders from './store/pages/Orders';
+import StoreOrderDetails from './store/pages/OrderDetails';
+import StoreCustomers from './store/pages/Customers';
+import StoreCoupons from './store/pages/Coupons';
+import StoreTheme from './store/pages/Theme';
+import StoreCategories from './store/pages/Categories';
+import StoreProductForm from './store/pages/ProductForm';
+import StoreSettings from './store/pages/Settings';
+import StoreDomains from './store/pages/Domains';
+import StorePaymentMethods from './store/pages/PaymentMethods';
+
+// Shop (Public)
+import ShopLayout from './shop/layouts/ShopLayout';
+import ShopHome from './shop/pages/Home';
+import ShopProduct from './shop/pages/Product';
+import ShopCheckout from './shop/pages/Checkout';
+import ShopPayment from './shop/pages/Payment';
+import ShopOrderStatus from './shop/pages/OrderStatus';
+import ShopCategories from './shop/pages/Categories';
+import CustomerLogin from './shop/pages/CustomerLogin';
+import MyOrders from './shop/pages/MyOrders';
+import MyOrderDetails from './shop/pages/MyOrderDetails';
+
+// Landing
+import Landing from './pages/Landing';
+import CreateStore from './pages/CreateStore';
+
+// Auth
+import Login from './auth/pages/Login';
+import ForgotPassword from './auth/pages/ForgotPassword';
+import ResetPassword from './auth/pages/ResetPassword';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      cacheTime: 10 * 60 * 1000, // 10 minutos
+      retry: 1,
+    },
+  },
+});
+
+function ProtectedRoute({ children, requiredRole }: { children: JSX.Element; requiredRole?: string }) {
+  const { user, isAuthenticated } = useAuthStore();
+
+  // Debug: verificar estado de autenticação
+  console.log('ProtectedRoute check:', {
+    isAuthenticated,
+    userRole: user?.role,
+    requiredRole,
+    userEmail: user?.email
+  });
+
+  // Se não estiver autenticado, redirecionar para login
+  if (!isAuthenticated || !user) {
+    console.log('Not authenticated, redirecting to login');
+    return <Navigate to="/login" replace />;
+  }
+
+  // Se requer role específica
+  if (requiredRole) {
+    // Se o usuário tem a role necessária, permitir acesso
+    if (user.role === requiredRole) {
+      console.log('Access granted - role matches');
+      return children;
+    }
+
+    // Se não tem a role necessária, redirecionar baseado na role dele
+    console.log('Role mismatch:', { userRole: user.role, requiredRole });
+    if (user.role === 'master_admin') {
+      console.log('Redirecting master_admin to /admin');
+      return <Navigate to="/admin" replace />;
+    }
+    if (user.role === 'store_admin' || user.role === 'store_user') {
+      console.log('Redirecting store user to /store');
+      return <Navigate to="/store" replace />;
+    }
+    // Se não tem nenhuma role conhecida, redirecionar para login
+    console.log('Unknown role, redirecting to login');
+    return <Navigate to="/login" replace />;
+  }
+
+  // Se não requer role específica, permitir acesso
+  console.log('Access granted - no role required');
+  return children;
+}
+
+function App() {
+  const googleClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '';
+
+  return (
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+        <Routes>
+          {/* Auth - deve vir primeiro */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route
+            path="/create-store"
+            element={
+              <ProtectedRoute>
+                <CreateStore />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Shop (Public) - rotas limpas usando subdomain como path */}
+          <Route path="/:storeSubdomain" element={<ShopLayout />}>
+            <Route index element={<ShopHome />} />
+            <Route path="product/:slug" element={<ShopProduct />} />
+            <Route path="checkout" element={<ShopCheckout />} />
+            <Route path="payment/:orderId" element={<ShopPayment />} />
+            <Route path="order/:orderId" element={<ShopOrderStatus />} />
+            <Route path="categories" element={<ShopCategories />} />
+            <Route path="login" element={<CustomerLogin />} />
+            <Route path="my-orders" element={<MyOrders />} />
+            <Route path="my-orders/:orderId" element={<MyOrderDetails />} />
+          </Route>
+
+          {/* Fallback para rotas antigas com /shop */}
+          <Route path="/shop/*" element={<ShopLayout />}>
+            <Route index element={<ShopHome />} />
+            <Route path="product/:slug" element={<ShopProduct />} />
+            <Route path="checkout" element={<ShopCheckout />} />
+            <Route path="categories" element={<ShopCategories />} />
+          </Route>
+
+          {/* Admin Master */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute requiredRole="master_admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="stores" element={<AdminStores />} />
+            <Route path="plans" element={<AdminPlans />} />
+          </Route>
+
+          {/* Store Owner */}
+          <Route
+            path="/store/*"
+            element={
+              <ProtectedRoute>
+                <StoreLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<StoreDashboard />} />
+            <Route path="products" element={<StoreProducts />} />
+            <Route path="products/new" element={<StoreProductForm />} />
+            <Route path="products/edit/:id" element={<StoreProductForm />} />
+            <Route path="categories" element={<StoreCategories />} />
+            <Route path="orders" element={<StoreOrders />} />
+            <Route path="orders/:id" element={<StoreOrderDetails />} />
+            <Route path="customers" element={<StoreCustomers />} />
+            <Route path="coupons" element={<StoreCoupons />} />
+            <Route path="theme" element={<StoreTheme />} />
+            <Route path="settings" element={<StoreSettings />} />
+            <Route path="settings/domains" element={<StoreDomains />} />
+            <Route path="payment-methods" element={<StorePaymentMethods />} />
+          </Route>
+
+          {/* Landing Page - por último */}
+          <Route path="/" element={<Landing />} />
+        </Routes>
+        </BrowserRouter>
+        <Toaster position="top-right" />
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
+  );
+}
+
+export default App;
+
+
