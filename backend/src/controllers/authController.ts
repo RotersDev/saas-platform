@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 import crypto from 'crypto';
 import { User } from '../models';
 import { AuthRequest } from '../middleware/auth';
@@ -41,7 +42,7 @@ export class AuthController {
         payload.store_id = user.store_id;
       }
       const secret = process.env.JWT_SECRET || 'secret';
-      const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+      const expiresIn: StringValue | number = (process.env.JWT_EXPIRES_IN || '7d') as StringValue;
       const options: SignOptions = { expiresIn };
       const token = jwt.sign(payload, secret, options);
 
@@ -96,7 +97,7 @@ export class AuthController {
         payload.store_id = user.store_id;
       }
       const secret = process.env.JWT_SECRET || 'secret';
-      const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+      const expiresIn: StringValue | number = (process.env.JWT_EXPIRES_IN || '7d') as StringValue;
       const options: SignOptions = { expiresIn };
       const token = jwt.sign(payload, secret, options);
 
@@ -137,7 +138,7 @@ export class AuthController {
         payload.store_id = user.store_id;
       }
       const secret = process.env.JWT_SECRET || 'secret';
-      const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+      const expiresIn: StringValue | number = (process.env.JWT_EXPIRES_IN || '7d') as StringValue;
       const options: SignOptions = { expiresIn };
       const token = jwt.sign(payload, secret, options);
 
