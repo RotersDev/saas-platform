@@ -1,5 +1,4 @@
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Heart } from 'lucide-react';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import { getShopUrl, getCheckoutUrl, getCategoriesUrl } from '../../utils/urlUtils';
 

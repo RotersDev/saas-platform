@@ -3,7 +3,7 @@ import { useQuery } from 'react-query';
 import api from '../../config/axios';
 import StoreBlocked from './StoreBlocked';
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Trash2, ArrowLeft, CreditCard, User } from 'lucide-react';
+import { ShoppingCart, Trash2, CreditCard, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Footer from '../components/Footer';

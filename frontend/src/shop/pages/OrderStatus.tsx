@@ -1,7 +1,7 @@
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import api from '../../config/axios';
-import { CheckCircle2, XCircle, Clock, Package, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { getShopUrl } from '../../utils/urlUtils';

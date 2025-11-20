@@ -1,5 +1,5 @@
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, ChevronDown, Package, LogOut, Menu } from 'lucide-react';
+import { ShoppingCart, User, ChevronDown, Package, LogOut } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import { getShopUrl, getCheckoutUrl } from '../../utils/urlUtils';

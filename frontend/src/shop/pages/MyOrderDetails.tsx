@@ -3,12 +3,11 @@ import { useQuery } from 'react-query';
 import api from '../../config/axios';
 import { useState, useEffect } from 'react';
 import {
-  ArrowLeft, LogOut, CheckCircle2, Clock, XCircle, Package,
-  FileText, Calendar, CreditCard, ShoppingBag, DollarSign,
-  Copy, Check, Truck, Shield, User, Mail, Phone
+  ArrowLeft, CheckCircle2, Clock, XCircle, Package,
+  Calendar, ShoppingBag, DollarSign, CreditCard,
+  Copy, Check, Shield, User, Mail
 } from 'lucide-react';
 import Footer from '../components/Footer';
-import { getShopUrl } from '../../utils/urlUtils';
 import toast from 'react-hot-toast';
 
 export default function MyOrderDetails() {
@@ -50,11 +49,6 @@ export default function MyOrderDetails() {
     }
   );
 
-  const handleLogout = () => {
-    localStorage.removeItem(`customer_token_${storeSubdomain}`);
-    localStorage.removeItem(`customer_${storeSubdomain}`);
-    navigate(`/${storeSubdomain}/login`);
-  };
 
   const copyToClipboard = (text: string, keyId: string) => {
     navigator.clipboard.writeText(text);
@@ -367,7 +361,7 @@ export default function MyOrderDetails() {
         </div>
       </main>
 
-      <Footer storeInfo={null} theme={null} />
+      <Footer />
     </div>
   );
 }

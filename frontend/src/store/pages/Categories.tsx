@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { Plus, Edit, Trash2, Eye, EyeOff, Image as ImageIcon, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Image as ImageIcon, X } from 'lucide-react';
 
 export default function StoreCategories() {
   const [showModal, setShowModal] = useState(false);

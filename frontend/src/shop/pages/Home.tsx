@@ -1,13 +1,13 @@
 import { useQuery } from 'react-query';
 import api from '../../config/axios';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Plus, Package } from 'lucide-react';
+import { Plus, Package } from 'lucide-react';
 import StoreBlocked from './StoreBlocked';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import Footer from '../components/Footer';
-import { getShopUrl, getProductUrl, getCheckoutUrl, getCategoryUrl } from '../../utils/urlUtils';
+import { getShopUrl, getProductUrl, getCategoryUrl } from '../../utils/urlUtils';
 
 export default function ShopHome() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();

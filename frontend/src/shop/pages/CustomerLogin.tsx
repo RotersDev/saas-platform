@@ -1,11 +1,10 @@
-import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import Footer from '../components/Footer';
-import { getShopUrl } from '../../utils/urlUtils';
 import { useQuery } from 'react-query';
 
 export default function CustomerLogin() {

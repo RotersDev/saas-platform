@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Ban, CheckCircle2, RefreshCw, DollarSign, User, Mail, Phone, CreditCard, Globe, Monitor, Smartphone, Shield } from 'lucide-react';
+import { ArrowLeft, Ban, RefreshCw, DollarSign, User, Mail, Phone, Globe, Monitor, Smartphone, Shield } from 'lucide-react';
 import { useState } from 'react';
 
 export default function OrderDetails() {
@@ -66,7 +66,7 @@ export default function OrderDetails() {
         if (data.paid) {
           toast.success('Pagamento confirmado!');
         } else {
-          toast.info('Pagamento ainda pendente');
+          toast('Pagamento ainda pendente', { icon: 'ℹ️' });
         }
       },
       onError: (error: any) => {

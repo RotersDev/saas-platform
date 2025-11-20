@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { Plus, Edit, DollarSign, UserCheck } from 'lucide-react';
+import { Plus, DollarSign, UserCheck } from 'lucide-react';
 
 export default function StoreAffiliates() {
   const [showModal, setShowModal] = useState(false);

@@ -3,7 +3,7 @@ import { useQuery } from 'react-query';
 import api from '../../config/axios';
 import StoreBlocked from './StoreBlocked';
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, ArrowLeft, Check, Zap, Shield, CreditCard, TrendingUp, AlertTriangle, Flame } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Check, Zap, Shield, CreditCard, TrendingUp, AlertTriangle, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { normalizeImageUrl, normalizeImageUrls } from '../../utils/imageUtils';

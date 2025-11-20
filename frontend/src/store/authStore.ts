@@ -20,7 +20,7 @@ interface AuthState {
   setToken: (token: string) => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => {
+export const useAuthStore = create<AuthState>((set) => {
   // Função para inicializar do localStorage
   const initFromStorage = () => {
     try {

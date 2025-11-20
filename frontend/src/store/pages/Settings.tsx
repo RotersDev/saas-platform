@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { Code, FileCode, Save, Bell, Mail, MessageSquare, Smartphone, AlertCircle, CheckCircle2, Loader2, Globe, ChevronDown, ChevronUp, Settings as SettingsIcon } from 'lucide-react';
@@ -10,7 +10,6 @@ type TabType = 'general' | 'advanced' | 'notifications' | 'domains';
 
 export default function StoreSettings() {
   const location = useLocation();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [customCss, setCustomCss] = useState('');
   const [customJs, setCustomJs] = useState('');

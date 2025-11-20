@@ -5,14 +5,13 @@ import StoreBlocked from './StoreBlocked';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import Footer from '../components/Footer';
 import { Package, ArrowLeft } from 'lucide-react';
-import { getShopUrl, getCheckoutUrl, getCategoryUrl } from '../../utils/urlUtils';
+import { getShopUrl, getCategoryUrl } from '../../utils/urlUtils';
 
 export default function ShopCategories() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();
   const [searchParams] = useSearchParams();
   // Priorizar subdomain do path, depois query param (fallback)
   const storeSubdomain = storeSubdomainParam || searchParams.get('store');
-  const categorySlug = searchParams.get('category');
 
   const { data: storeInfo, isLoading: storeLoading } = useQuery(
     ['shopStore', storeSubdomain],

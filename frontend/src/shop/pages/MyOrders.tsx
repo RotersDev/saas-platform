@@ -3,12 +3,12 @@ import { useQuery } from 'react-query';
 import api from '../../config/axios';
 import { useState, useEffect } from 'react';
 import {
-  Package, ArrowLeft, LogOut, CheckCircle2, Clock, XCircle,
-  ShoppingBag, DollarSign, Calendar, FileText, CreditCard, Truck,
-  TrendingUp, Eye, ChevronRight
+  Package, ArrowLeft, CheckCircle2, Clock, XCircle,
+  ShoppingBag, DollarSign, Calendar, FileText, CreditCard,
+  TrendingUp, ChevronRight
 } from 'lucide-react';
-import Footer from '../components/Footer';
 import { getShopUrl } from '../../utils/urlUtils';
+import Footer from '../components/Footer';
 
 export default function MyOrders() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();
@@ -49,11 +49,6 @@ export default function MyOrders() {
     }
   );
 
-  const handleLogout = () => {
-    localStorage.removeItem(`customer_token_${storeSubdomain}`);
-    localStorage.removeItem(`customer_${storeSubdomain}`);
-    navigate(`/${storeSubdomain}/login`);
-  };
 
   const getStatusBadge = (status: string) => {
     const badges = {
@@ -284,7 +279,7 @@ export default function MyOrders() {
         )}
       </main>
 
-      <Footer storeInfo={null} theme={null} />
+      <Footer />
     </div>
   );
 }

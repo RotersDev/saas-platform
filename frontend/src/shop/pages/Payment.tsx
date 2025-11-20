@@ -2,7 +2,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from 'react-query';
 import api from '../../config/axios';
 import { useState, useEffect } from 'react';
-import { QrCode, Copy, CheckCircle2, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { QrCode, Copy, CheckCircle2, Loader2, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Footer from '../components/Footer';

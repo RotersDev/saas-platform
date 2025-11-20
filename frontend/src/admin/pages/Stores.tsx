@@ -1,12 +1,12 @@
 import { useQuery } from 'react-query';
 import api from '../../config/axios';
-import { Plus, Edit, Trash2, Ban, CheckCircle, Eye, AlertCircle } from 'lucide-react';
+import { Plus, Ban, CheckCircle, Eye, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import StoreDetails from './StoreDetails';
 
 export default function AdminStores() {
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
   const { data, isLoading, refetch, error } = useQuery(
     ['adminStores', page],

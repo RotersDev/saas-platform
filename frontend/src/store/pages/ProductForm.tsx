@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useQueryClient } from 'react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, X, Plus, Trash2, Info, Box, FileText, Cloud, Layers, Edit2 } from 'lucide-react';
+import { ArrowLeft, Save, X, Plus, Trash2, Info, Box, FileText, Cloud, Layers } from 'lucide-react';
 
 type TabType = 'BASIC_INFO' | 'INVENTORY' | 'ADVANCED';
 
