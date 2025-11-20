@@ -3,7 +3,7 @@ import axios from 'axios';
 // Configurar baseURL do axios
 // Em desenvolvimento, usar proxy do Vite (baseURL vazio)
 // Em produção, usar variável de ambiente ou URL completa
-const baseURL = (import.meta as any).env?.VITE_API_URL || '';
+const baseURL = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
   baseURL,

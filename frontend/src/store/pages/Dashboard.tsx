@@ -117,7 +117,7 @@ export default function StoreDashboard() {
       return `http://localhost:${port}/${store.subdomain}`;
     }
 
-    const baseDomain = (import.meta as any).env?.VITE_BASE_DOMAIN || 'nerix.site';
+    const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.site';
 
     // Se tiver domínio primário verificado, usar ele
     if (store.primary_domain) {

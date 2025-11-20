@@ -158,7 +158,7 @@ export default function DomainsSettings() {
     addDomainMutation.mutate(domainData);
   };
 
-  const baseDomain = (import.meta as any).env?.VITE_BASE_DOMAIN || 'nerix.site';
+  const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.site';
 
   if (storeLoading || domainsLoading) {
     return (
