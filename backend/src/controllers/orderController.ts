@@ -217,7 +217,7 @@ export class OrderController {
         return;
       }
 
-      const payment = order.payment;
+      const payment = (order as any).payment;
       if (!payment) {
         res.status(400).json({ error: 'Pagamento não encontrado' });
         return;
@@ -322,7 +322,7 @@ export class OrderController {
         return;
       }
 
-      const payment = order.payment;
+      const payment = (order as any).payment;
       if (!payment) {
         res.status(400).json({ error: 'Pagamento não encontrado' });
         return;
@@ -347,7 +347,8 @@ export class OrderController {
 
   static async webhook(req: Request, res: Response): Promise<void> {
     try {
-      const { type, data } = req.body;
+      const body = req.body as { type?: string; data?: any };
+      const { type, data } = body;
 
       if (type === 'payment') {
         const payment = await MercadoPagoService.getPayment(data.id);
@@ -359,19 +360,20 @@ export class OrderController {
         if (dbPayment && payment.status) {
           await dbPayment.update({ status: payment.status as any });
 
-          if (payment.status === 'approved' && dbPayment.order) {
-            await dbPayment.order.update({
+          const dbPaymentOrder = (dbPayment as any).order;
+          if (payment.status === 'approved' && dbPaymentOrder) {
+            await dbPaymentOrder.update({
               payment_status: 'paid',
               status: 'paid',
             });
 
             // Entregar automaticamente se for entrega instantânea
-            await OrderService.deliverOrder(dbPayment.order.id);
+            await OrderService.deliverOrder(dbPaymentOrder.id);
 
             // Enviar notificações de pedido aprovado
             try {
               const { WebhookService } = await import('../services/webhookService');
-              const orderWithItems = await dbPayment.order.reload({
+              const orderWithItems = await dbPaymentOrder.reload({
                 include: [{ association: 'items' }],
               });
               if (orderWithItems) {

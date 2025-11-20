@@ -77,18 +77,21 @@ export class StoreController {
       const store = await Store.create({
         name,
         subdomain,
-        email: user.email,
+        email: user?.email || '',
         plan_id: basicPlan.id,
         status: 'trial',
         trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias
         logo_url: logoUrl,
+        is_white_label: false,
         settings: {
           description: description || '',
         },
       });
 
       // Associar usuário à loja
-      await user.update({ store_id: store.id });
+      if (user) {
+        await user.update({ store_id: store.id });
+      }
 
       // Criar tema padrão
       await Theme.create({
@@ -102,7 +105,9 @@ export class StoreController {
       // Enviar email de boas-vindas
       try {
         const emailService = (await import('../services/emailService')).default;
-        await emailService.sendStoreWelcome(store.name, user.email, store.subdomain);
+        if (user) {
+          await emailService.sendStoreWelcome(store.name, user.email, store.subdomain);
+        }
       } catch (emailError) {
         // Não falhar se email falhar
         console.error('Erro ao enviar email de boas-vindas:', emailError);

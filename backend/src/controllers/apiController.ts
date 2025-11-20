@@ -225,7 +225,7 @@ export class ApiController {
         return;
       }
 
-      const payment = order.payment;
+      const payment = (order as any).payment;
       if (!payment) {
         res.json({ paid: false, message: 'Pagamento não encontrado' });
         return;

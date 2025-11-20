@@ -8,7 +8,7 @@ async function updateUserRole() {
 
     // Atualizar role do usuário jprotersiza@gmail.com para master_admin
     const [updated] = await User.update(
-      { role: 'master_admin', store_id: null },
+      { role: 'master_admin', store_id: undefined },
       { where: { email: 'jprotersiza@gmail.com' } }
     );
 

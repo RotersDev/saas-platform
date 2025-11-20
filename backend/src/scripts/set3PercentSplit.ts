@@ -38,7 +38,7 @@ async function set3PercentSplit() {
     console.log('✅ Account ID salvo!\n');
 
     // Configurar split de 3% para todas as lojas
-    const result = await sequelize.query(`
+    await sequelize.query(`
       UPDATE split_configs
       SET
         split_1_percentage = :percentage,

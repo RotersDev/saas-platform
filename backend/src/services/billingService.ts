@@ -1,8 +1,6 @@
-import { Store, Invoice, Plan, Order } from '../models';
+import { Store, Invoice } from '../models';
 import { Op } from 'sequelize';
-import { MercadoPagoService } from './mercadoPagoService';
 import logger from '../config/logger';
-import { WebhookService } from './webhookService';
 
 export class BillingService {
   static async generateMonthlyInvoices(): Promise<void> {
@@ -54,12 +52,13 @@ export class BillingService {
           logger.info(`Fatura criada para loja ${store.id}`, { invoiceId: invoice.id });
 
           // Disparar webhook
-          await WebhookService.triggerWebhook(store.id, 'invoice.created', {
-            invoice_id: invoice.id,
-            store_id: store.id,
-            amount: invoice.amount,
-            due_date: invoice.due_date,
-          });
+          // Webhook para invoice.created removido - usar notificações do Discord
+          // await WebhookService.triggerWebhook(store.id, 'invoice.created', {
+          //   invoice_id: invoice.id,
+          //   store_id: store.id,
+          //   amount: invoice.amount,
+          //   due_date: invoice.due_date,
+          // });
         } catch (error: any) {
           logger.error(`Erro ao gerar fatura para loja ${store.id}`, { error: error.message });
         }
@@ -99,11 +98,11 @@ export class BillingService {
             daysOverdue,
           });
 
-          await WebhookService.triggerWebhook(store.id, 'store.suspended', {
-            store_id: store.id,
-            invoice_id: invoice.id,
-            reason: 'invoice_overdue',
-          });
+          // await WebhookService.triggerWebhook(store.id, 'store.suspended', {
+          //   store_id: store.id,
+          //   invoice_id: invoice.id,
+          //   reason: 'invoice_overdue',
+          // });
         }
       }
     } catch (error: any) {
@@ -138,17 +137,17 @@ export class BillingService {
           invoiceId: invoice.id,
         });
 
-        await WebhookService.triggerWebhook(store.id, 'store.activated', {
-          store_id: store.id,
-          invoice_id: invoice.id,
-        });
+        // await WebhookService.triggerWebhook(store.id, 'store.activated', {
+        //   store_id: store.id,
+        //   invoice_id: invoice.id,
+        // });
       }
 
-      await WebhookService.triggerWebhook(store.id, 'invoice.paid', {
-        invoice_id: invoice.id,
-        store_id: store.id,
-        payment_id: paymentId,
-      });
+      // await WebhookService.triggerWebhook(store.id, 'invoice.paid', {
+      //   invoice_id: invoice.id,
+      //   store_id: store.id,
+      //   payment_id: paymentId,
+      // });
     } catch (error: any) {
       logger.error('Erro ao processar pagamento de fatura', {
         error: error.message,

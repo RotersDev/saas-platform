@@ -48,8 +48,9 @@ export class WebhookController {
       });
 
       // Se pagamento foi aprovado, atualizar pedido e entregar
-      if (paymentStatus === 'approved' && payment.order) {
-        await payment.order.update({
+      const paymentOrder = (payment as any).order;
+      if (paymentStatus === 'approved' && paymentOrder) {
+        await paymentOrder.update({
           payment_status: 'paid',
           status: 'paid',
         });
@@ -57,12 +58,12 @@ export class WebhookController {
         // Entregar pedido automaticamente
         try {
           const { OrderService } = await import('../services/orderService');
-          await OrderService.deliverOrder(payment.order.id);
+          await OrderService.deliverOrder(paymentOrder.id);
 
           // Enviar email de aprovação
           try {
             const { Store, OrderItem } = await import('../models');
-            const orderWithData = await Order.findByPk(payment.order.id, {
+            const orderWithData = await Order.findByPk(paymentOrder.id, {
               include: [
                 { model: Store, as: 'store' },
                 { model: OrderItem, as: 'items' },
@@ -71,7 +72,7 @@ export class WebhookController {
 
             if (orderWithData) {
               const emailService = (await import('../services/emailService')).default;
-              const productKeys = orderWithData.items
+              const productKeys = (orderWithData as any).items
                 ?.map((item: any) => item.product_key)
                 .filter((key: string) => key)
                 .flatMap((key: string) => key.split('\n'))
@@ -79,7 +80,7 @@ export class WebhookController {
 
               await emailService.sendOrderApproved(
                 orderWithData.toJSON(),
-                orderWithData.store?.name || 'Loja',
+                (orderWithData as any).store?.name || 'Loja',
                 orderWithData.customer_email,
                 productKeys
               );
@@ -88,7 +89,7 @@ export class WebhookController {
             logger.error('Erro ao enviar email de pedido aprovado:', emailError);
           }
         } catch (error) {
-          logger.error('Erro ao entregar pedido após pagamento', { error, orderId: payment.order.id });
+          logger.error('Erro ao entregar pedido após pagamento', { error, orderId: paymentOrder.id });
         }
       }
 

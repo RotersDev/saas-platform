@@ -64,7 +64,7 @@ async function configurePlatformSplit() {
 
       if (scope === '1') {
         // Configurar para todas as lojas
-        const result = await sequelize.query(`
+        await sequelize.query(`
           UPDATE split_configs
           SET
             split_1_percentage = :percentage,

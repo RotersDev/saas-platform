@@ -236,7 +236,7 @@ export class AdminController {
   }
 
   // Plans
-  static async listPlans(req: AuthRequest, res: Response): Promise<void> {
+  static async listPlans(_req: AuthRequest, res: Response): Promise<void> {
     try {
       const plans = await Plan.findAll({
         order: [['price', 'ASC']],
@@ -293,7 +293,7 @@ export class AdminController {
   }
 
   // Stats
-  static async getStats(req: AuthRequest, res: Response): Promise<void> {
+  static async getStats(_req: AuthRequest, res: Response): Promise<void> {
     try {
       const totalStores = await Store.count();
       const activeStores = await Store.count({ where: { status: 'active' } });

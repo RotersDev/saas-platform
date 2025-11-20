@@ -12,7 +12,7 @@ import { startBillingCron } from './cron/billingCron';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Middlewares de segurança
 app.use(helmet());
@@ -23,7 +23,7 @@ app.use(cors({
 }));
 
 // Headers para permitir acesso a imagens
-app.use('/uploads', (req, res, next) => {
+app.use('/uploads', (_req, res, next) => {
   res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:5173');
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
@@ -47,12 +47,12 @@ app.use('/api/', limiter);
 app.use('/api', routes);
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error('Erro não tratado', { error: err, stack: err.stack });
   res.status(err.status || 500).json({
     error: process.env.NODE_ENV === 'production' ? 'Erro interno do servidor' : err.message,

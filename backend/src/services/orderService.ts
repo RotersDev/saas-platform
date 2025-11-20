@@ -3,8 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { MercadoPagoService } from './mercadoPagoService';
 import { PushinPayService } from './pushinPayService';
 import { SplitConfig } from '../models';
-import sequelize from '../config/database';
-import { QueryTypes } from 'sequelize';
 import logger from '../config/logger';
 
 export class OrderService {
@@ -194,7 +192,7 @@ export class OrderService {
             const emailService = (await import('./emailService')).default;
             await emailService.sendOrderCreated(
               orderWithItems.toJSON(),
-              orderWithItems.store?.name || 'Loja',
+              (orderWithItems as any).store?.name || 'Loja',
               data.customer_email
             );
           } catch (emailError) {
@@ -459,7 +457,7 @@ export class OrderService {
 
         if (orderWithData) {
           const emailService = (await import('./emailService')).default;
-          const productKeys = orderWithData.items
+          const productKeys = (orderWithData as any).items
             ?.map((item: any) => item.product_key)
             .filter((key: string) => key)
             .flatMap((key: string) => key.split('\n'))
@@ -467,7 +465,7 @@ export class OrderService {
 
           await emailService.sendOrderApproved(
             orderWithData.toJSON(),
-            orderWithData.store?.name || 'Loja',
+            (orderWithData as any).store?.name || 'Loja',
             orderWithData.customer_email,
             productKeys
           );

@@ -62,7 +62,7 @@ export const resolveTenant = async (
 // Resolver tenant para rotas públicas (sem autenticação)
 export const resolveTenantPublic = async (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {

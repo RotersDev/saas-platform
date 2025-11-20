@@ -1,11 +1,11 @@
-import { Plan, User, Store } from '../models';
+import { Plan, User } from '../models';
 import bcrypt from 'bcryptjs';
 import sequelize from '../config/database';
 
 export async function seedInitialData() {
   try {
     // Criar planos
-    const basicPlan = await Plan.findOrCreate({
+    await Plan.findOrCreate({
       where: { slug: 'basico' },
       defaults: {
         name: 'Plano Básico',
@@ -26,7 +26,7 @@ export async function seedInitialData() {
       },
     });
 
-    const premiumPlan = await Plan.findOrCreate({
+    await Plan.findOrCreate({
       where: { slug: 'premium' },
       defaults: {
         name: 'Plano Premium',
@@ -57,7 +57,7 @@ export async function seedInitialData() {
         password: masterAdminPassword,
         role: 'master_admin',
         is_active: true,
-        store_id: null,
+        store_id: undefined,
       },
     });
 

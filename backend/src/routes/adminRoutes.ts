@@ -10,7 +10,7 @@ adminRoutes.use(requireMasterAdmin);
 
 // Lojas
 adminRoutes.get('/stores', AdminController.listStores);
-adminRoutes.post('/stores', upload.single('banner'), (req, res, next) => {
+adminRoutes.post('/stores', upload.single('banner'), (_req, _res, next) => {
   // Multer adiciona o arquivo em req.file
   next();
 }, AdminController.createStore);

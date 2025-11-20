@@ -6,7 +6,7 @@ import { resolveTenant, requireActiveStore } from '../middleware/tenant';
 export const orderRoutes = Router();
 
 // Webhook público do Mercado Pago
-orderRoutes.post('/webhook', OrderController.webhook);
+orderRoutes.post('/webhook', OrderController.webhook as any);
 
 // Rotas protegidas
 orderRoutes.use(authenticate);

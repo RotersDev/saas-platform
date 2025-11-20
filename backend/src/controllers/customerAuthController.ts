@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { Customer, Store } from '../models';
+import { Customer } from '../models';
 import { OAuth2Client } from 'google-auth-library';
 import emailService from '../services/emailService';
 
@@ -70,7 +70,7 @@ export class CustomerAuthController {
       }
 
       // Criar novo cliente
-      const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+      const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
       const customer = await Customer.create({
         store_id: req.store.id,
         email: email.toLowerCase(),
@@ -283,8 +283,8 @@ export class CustomerAuthController {
           store_id: req.store.id,
           email: googleEmail,
           name: googleName,
-          phone: null,
-          password: null, // Sem senha, login apenas com Google
+          phone: undefined,
+          password: undefined, // Sem senha, login apenas com Google
           is_blocked: false,
           total_orders: 0,
           total_spent: 0,
@@ -408,8 +408,8 @@ export class CustomerAuthController {
       const hashedPassword = await bcrypt.hash(password, 10);
       await customer.update({
         password: hashedPassword,
-        reset_token: null,
-        reset_token_expires_at: null,
+        reset_token: undefined,
+        reset_token_expires_at: undefined,
       });
 
       res.json({ message: 'Senha redefinida com sucesso' });

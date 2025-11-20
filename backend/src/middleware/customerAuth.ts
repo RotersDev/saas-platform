@@ -2,7 +2,6 @@ import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Customer } from '../models';
 import { CustomerAuthRequest } from '../controllers/customerAuthController';
-import { resolveTenantPublic } from './tenant';
 
 /**
  * Middleware para autenticar clientes (não lojistas)

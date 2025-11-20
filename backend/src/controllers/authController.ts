@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import crypto from 'crypto';
 import { User } from '../models';
 import { AuthRequest } from '../middleware/auth';
@@ -33,11 +33,17 @@ export class AuthController {
       // Atualizar último login
       await user.update({ last_login: new Date() });
 
-      const token = jwt.sign(
-        { id: user.id, role: user.role, store_id: user.store_id },
-        process.env.JWT_SECRET || 'secret',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-      );
+      const payload: { id: number; role: string; store_id?: number } = {
+        id: user.id,
+        role: user.role,
+      };
+      if (user.store_id) {
+        payload.store_id = user.store_id;
+      }
+      const secret = process.env.JWT_SECRET || 'secret';
+      const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+      const options: SignOptions = { expiresIn };
+      const token = jwt.sign(payload, secret, options);
 
       res.json({
         token,
@@ -77,16 +83,22 @@ export class AuthController {
         email,
         password: hashedPassword,
         role: 'store_admin',
-        store_id: null, // Será preenchido quando criar a loja
+        store_id: undefined, // Será preenchido quando criar a loja
         is_active: true,
       });
 
       // Gerar token
-      const token = jwt.sign(
-        { id: user.id, role: user.role, store_id: user.store_id },
-        process.env.JWT_SECRET || 'secret',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-      );
+      const payload: { id: number; role: string; store_id?: number } = {
+        id: user.id,
+        role: user.role,
+      };
+      if (user.store_id) {
+        payload.store_id = user.store_id;
+      }
+      const secret = process.env.JWT_SECRET || 'secret';
+      const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+      const options: SignOptions = { expiresIn };
+      const token = jwt.sign(payload, secret, options);
 
       res.status(201).json({
         token,
@@ -117,11 +129,17 @@ export class AuthController {
       }
 
       // Gerar novo token com dados atualizados
-      const token = jwt.sign(
-        { id: user.id, role: user.role, store_id: user.store_id },
-        process.env.JWT_SECRET || 'secret',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-      );
+      const payload: { id: number; role: string; store_id?: number } = {
+        id: user.id,
+        role: user.role,
+      };
+      if (user.store_id) {
+        payload.store_id = user.store_id;
+      }
+      const secret = process.env.JWT_SECRET || 'secret';
+      const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+      const options: SignOptions = { expiresIn };
+      const token = jwt.sign(payload, secret, options);
 
       res.json({
         token,
@@ -243,8 +261,8 @@ export class AuthController {
       const hashedPassword = await bcrypt.hash(password, 10);
       await user.update({
         password: hashedPassword,
-        reset_token: null,
-        reset_token_expires_at: null,
+        reset_token: undefined,
+        reset_token_expires_at: undefined,
       });
 
       res.json({ message: 'Senha redefinida com sucesso' });

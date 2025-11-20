@@ -2,7 +2,6 @@ import { Response } from 'express';
 import { Product, ProductKey } from '../models';
 import { TenantRequest } from '../middleware/tenant';
 import { Op } from 'sequelize';
-import { uploadMultiple } from '../middleware/upload';
 
 export class ProductController {
   static async create(req: TenantRequest, res: Response): Promise<void> {
@@ -150,7 +149,7 @@ export class ProductController {
         // Buscar categoria por nome e usar category_id
         const { Category } = await import('../models');
         const categoryObj = await Category.findOne({
-          where: { name: category, store_id: req.store.id },
+          where: { name: String(category), store_id: req.store.id },
         });
         if (categoryObj) {
           where.category_id = categoryObj.id;

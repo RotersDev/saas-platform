@@ -2,7 +2,7 @@ import { DataTypes, Model, Sequelize } from 'sequelize';
 
 export interface UserAttributes {
   id?: number;
-  store_id: number;
+  store_id?: number | null;
   name: string;
   email: string;
   password: string;
@@ -17,7 +17,7 @@ export interface UserAttributes {
 
 export class User extends Model<UserAttributes> implements UserAttributes {
   public id!: number;
-  public store_id!: number;
+  public store_id?: number | null;
   public name!: string;
   public email!: string;
   public password!: string;

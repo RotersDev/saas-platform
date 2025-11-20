@@ -125,7 +125,7 @@ export class PaymentMethodController {
           store_id: req.store.id,
           provider: provider as 'mercado_pago' | 'pushin_pay',
           token: token || null,
-          account_id: platformAccountId, // Account ID da plataforma para receber split
+          account_id: platformAccountId || undefined, // Account ID da plataforma para receber split
           enabled: enabled !== undefined ? enabled : false,
           sandbox: sandbox !== undefined ? sandbox : false,
           config: config || {},

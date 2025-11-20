@@ -1,4 +1,4 @@
-import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
+import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { SplitConfig } from '../models';
 import logger from '../config/logger';
 
@@ -59,8 +59,9 @@ export class MercadoPagoService {
         qr_code_base64:
           response.point_of_interaction?.transaction_data?.qr_code_base64 || undefined,
         expiration_date: response.point_of_interaction?.transaction_data
-          ?.qr_code_expiration_date
-          ? new Date(response.point_of_interaction.transaction_data.qr_code_expiration_date)
+          ? (response.point_of_interaction.transaction_data as any)?.qr_code_expiration_date
+            ? new Date((response.point_of_interaction.transaction_data as any).qr_code_expiration_date)
+            : undefined
           : undefined,
       };
     } catch (error: any) {
