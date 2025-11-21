@@ -258,8 +258,8 @@ export class CloudflareService {
       // Verificar se algum registro CNAME aponta exatamente para o target esperado
       const isValid = records.some((record) => {
         // Remover ponto final se houver (DNS pode retornar com ponto final)
-        const cleanRecord = record.replace(/\.$/, '').toLowerCase();
-        const cleanExpected = expectedTarget.toLowerCase();
+        const cleanRecord = record.replace(/\.$/, '').trim().toLowerCase();
+        const cleanExpected = expectedTarget.trim().toLowerCase();
 
         // Verificar se o registro é exatamente igual ao esperado
         const matches = cleanRecord === cleanExpected;

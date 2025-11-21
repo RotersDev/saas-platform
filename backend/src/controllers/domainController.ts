@@ -144,25 +144,28 @@ export class DomainController {
       logger.info(`Token de verificação gerado para ${domain}: ${verifyToken}`);
 
       // Se tem token do Cloudflare, criar registro DNS
+      // NOTA: Agora todos os domínios apontam para host.nerix.online (não o subdomain da loja)
       if (cloudflare_token && zoneId) {
         const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
         const recordName = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-        const subdomain = req.store.subdomain;
+        const cnameTarget = `host.${baseDomain}`; // host.nerix.online
 
-        // Criar CNAME apontando para o subdomínio
+        // Criar CNAME apontando para host.nerix.online
         const recordExists = await CloudflareService.recordExists(zoneId, recordName, cloudflare_token);
 
         if (!recordExists) {
           const success = await CloudflareService.createCNAME(
             zoneId,
             recordName,
-            `${subdomain}.${baseDomain}`,
+            cnameTarget,
             cloudflare_token,
             true // Proxied através do Cloudflare
           );
 
           if (!success) {
             logger.warn('Não foi possível criar registro DNS automaticamente');
+          } else {
+            logger.info(`✅ CNAME criado automaticamente: ${recordName} -> ${cnameTarget}`);
           }
         }
       }
@@ -282,7 +285,9 @@ export class DomainController {
 
   /**
    * Verifica se um domínio está configurado corretamente
-   * Verifica REALMENTE o DNS para garantir que o CNAME aponta para o subdomain correto
+   * Verifica REALMENTE o DNS em duas etapas:
+   * 1. TXT record para verificar propriedade do domínio
+   * 2. CNAME record que deve apontar para host.nerix.online
    */
   static async verifyDomain(req: TenantRequest, res: Response): Promise<void> {
     try {
@@ -325,9 +330,9 @@ export class DomainController {
         return;
       }
 
-      // Calcular o target esperado: subdomain.nerix.online
+      // Target esperado do CNAME: sempre host.nerix.online (não o subdomain da loja)
       const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
-      const expectedTarget = `${store.subdomain}.${baseDomain}`;
+      const expectedTarget = `host.${baseDomain}`; // host.nerix.online
 
       logger.info(`Verificando DNS para ${domain.domain}: TXT -> ${domain.verify_token}, CNAME -> ${expectedTarget}`);
 
@@ -364,7 +369,7 @@ export class DomainController {
           cname_verified: false,
           verify_token: domain.verify_token,
           expectedTarget,
-          message: 'TXT record verificado, mas CNAME não está configurado corretamente.',
+          message: 'TXT record verificado, mas CNAME não está configurado corretamente. Deve apontar para host.nerix.online',
         });
         return;
       }

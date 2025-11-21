@@ -380,7 +380,8 @@ export default function DomainsSettings() {
             <div className="mt-6 space-y-4">
               <h4 className="text-sm font-semibold text-gray-900">Domínios Configurados</h4>
               {domains.map((domain: any) => {
-                const dnsTarget = `${store?.subdomain || 'seu-subdominio'}.${baseDomain}`;
+                // Target do CNAME: sempre host.nerix.online (não o subdomain da loja)
+                const dnsTarget = `host.${baseDomain}`;
                 return (
                   <div key={domain.id} className="space-y-3">
                     <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white">
@@ -481,7 +482,7 @@ export default function DomainsSettings() {
                               </tr>
                             </thead>
                             <tbody>
-                              {/* TXT Record - PRIMEIRO PASSO */}
+                              {/* PASSO 1 - TXT Record */}
                               <tr className="border-b border-gray-100 bg-yellow-50">
                                 <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900 bg-yellow-100">TXT</td>
                                 <td className="px-4 py-3">
@@ -514,12 +515,12 @@ export default function DomainsSettings() {
                                   {copiedDns === `txt-value-${domain.id}` ? (
                                     <span className="text-xs text-green-600 font-medium">✓ Copiado!</span>
                                   ) : (
-                                    <span className="text-xs text-yellow-600 font-medium">1º passo</span>
+                                    <span className="text-xs text-yellow-600 font-medium">PASSO 1</span>
                                   )}
                                 </td>
                               </tr>
-                              {/* CNAME Records - SEGUNDO PASSO */}
-                              <tr className="border-b border-gray-100">
+                              {/* PASSO 2 - CNAME Record (APENAS @, SEM www) */}
+                              <tr>
                                 <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900 bg-gray-50">CNAME</td>
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-2">
@@ -551,42 +552,7 @@ export default function DomainsSettings() {
                                   {copiedDns === `dns-target-${domain.id}` ? (
                                     <span className="text-xs text-green-600 font-medium">✓ Copiado!</span>
                                   ) : (
-                                    <span className="text-xs text-gray-400">2º passo</span>
-                                  )}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900 bg-gray-50">CNAME</td>
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <code className="font-mono text-xs text-gray-900 bg-gray-100 px-2 py-1 rounded">www</code>
-                                    <button
-                                      onClick={() => copyDnsInfo('www', `dns-www-name-${domain.id}`)}
-                                      className="text-indigo-600 hover:text-indigo-700"
-                                      title="Copiar www"
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <code className="font-mono text-xs text-gray-900 bg-gray-100 px-2 py-1 rounded">{dnsTarget}</code>
-                                    <button
-                                      onClick={() => copyDnsInfo(dnsTarget, `dns-www-target-${domain.id}`)}
-                                      className="text-indigo-600 hover:text-indigo-700"
-                                      title={`Copiar ${dnsTarget}`}
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-xs text-gray-600">Auto</td>
-                                <td className="px-4 py-3 text-center">
-                                  {copiedDns === `dns-www-target-${domain.id}` ? (
-                                    <span className="text-xs text-green-600 font-medium">✓ Copiado!</span>
-                                  ) : (
-                                    <span className="text-xs text-gray-400">2º passo</span>
+                                    <span className="text-xs text-gray-400">PASSO 2</span>
                                   )}
                                 </td>
                               </tr>
@@ -599,19 +565,23 @@ export default function DomainsSettings() {
                           </p>
                           <ol className="text-xs text-blue-800 space-y-2 list-decimal list-inside">
                             <li>
-                              <strong>Primeiro passo - Configure o registro TXT:</strong>
+                              <strong>PASSO 1 — Verificação TXT (Propriedade do domínio):</strong>
                               <ul className="ml-4 mt-1 space-y-1 list-disc">
                                 <li>Crie um registro TXT com o nome: <code className="bg-blue-100 px-1 rounded">_cf-custom-hostname.{domain.domain}</code></li>
                                 <li>O valor deve ser exatamente: <code className="bg-blue-100 px-1 rounded font-mono">{domain.verify_token || 'Aguardando geração...'}</code></li>
-                                <li>Este registro é obrigatório para verificação de propriedade do domínio.</li>
+                                <li>Este registro é obrigatório para verificar que você é o dono do domínio.</li>
                               </ul>
                             </li>
                             <li>
-                              <strong>Segundo passo - Configure os registros CNAME:</strong>
+                              <strong>PASSO 2 — Conexão com a plataforma (CNAME):</strong>
                               <ul className="ml-4 mt-1 space-y-1 list-disc">
-                                <li>O símbolo <code className="bg-blue-100 px-1 rounded">@</code> representa o domínio raiz. Alguns provedores podem exigir que você deixe o campo "Nome" vazio.</li>
-                                <li>O campo "Conteúdo" ou "Destino" deve conter apenas: <strong className="font-mono">{dnsTarget}</strong> (sem https:// ou http://)</li>
-                                <li>Configure tanto o registro <code className="bg-blue-100 px-1 rounded">@</code> quanto o <code className="bg-blue-100 px-1 rounded">www</code></li>
+                                <li>Crie <strong>APENAS UM</strong> registro CNAME:</li>
+                                <li>Tipo: <code className="bg-blue-100 px-1 rounded">CNAME</code></li>
+                                <li>Nome/Host: <code className="bg-blue-100 px-1 rounded">@</code> (ou deixe vazio - representa o domínio raiz)</li>
+                                <li>Destino/Conteúdo: <strong className="font-mono">{dnsTarget}</strong> (sem https:// ou http://)</li>
+                                <li><strong>⚠️ NÃO configure registro www</strong></li>
+                                <li><strong>⚠️ NÃO configure registros A ou IP</strong></li>
+                                <li><strong>⚠️ Configure APENAS este CNAME</strong></li>
                               </ul>
                             </li>
                             <li>Após configurar ambos (TXT e CNAME), aguarde alguns minutos (pode levar até 24 horas) e clique em "Verificar" para validar a configuração.</li>
