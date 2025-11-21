@@ -56,7 +56,8 @@ export class CategoryController {
             mimeType: file.mimetype,
             originalName: file.originalname,
           });
-          finalImageUrl = uploadedUrl;
+          const { cleanR2Url } = await import('../services/r2Service');
+          finalImageUrl = cleanR2Url(uploadedUrl);
         } catch (error: any) {
           console.error('[CategoryController] Erro ao fazer upload da imagem para R2:', error);
           res.status(500).json({ error: 'Erro ao fazer upload da imagem', details: error.message });
@@ -125,15 +126,15 @@ export class CategoryController {
       const file = (req as any).file;
       if (file) {
         try {
-          const { uploadToR2 } = await import('../services/r2Service');
+          const { uploadToR2, cleanR2Url } = await import('../services/r2Service');
           const uploadedUrl = await uploadToR2({
             storeId: req.store.id,
-            category: 'products', // Usar categoria 'products' para imagens de categoria
+            category: 'categories',
             buffer: file.buffer,
             mimeType: file.mimetype,
             originalName: file.originalname,
           });
-          updateData.image_url = uploadedUrl;
+          updateData.image_url = cleanR2Url(uploadedUrl);
         } catch (error: any) {
           console.error('[CategoryController] Erro ao fazer upload da imagem para R2:', error);
           res.status(500).json({ error: 'Erro ao fazer upload da imagem', details: error.message });

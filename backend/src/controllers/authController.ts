@@ -320,7 +320,9 @@ export class AuthController {
           mimeType: (req as any).file.mimetype,
           originalName: (req as any).file.originalname,
         });
-        updateData.profile_picture_url = profilePictureUrl;
+        const { cleanR2Url } = await import('../services/r2Service');
+        const cleanUrl = cleanR2Url(profilePictureUrl);
+        updateData.profile_picture_url = cleanUrl;
       } else if (profile_picture_url !== undefined) {
         // Se veio como URL vazia ou null, remover foto
         if (profile_picture_url === '' || profile_picture_url === null) {

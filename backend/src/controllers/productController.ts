@@ -43,8 +43,9 @@ export class ProductController {
           );
 
           const uploadedImages = await Promise.all(uploadPromises);
-          // Remover @ do início das URLs se houver
-          images = uploadedImages.map(url => url.startsWith('@') ? url.substring(1) : url);
+          const { cleanR2Url } = await import('../services/r2Service');
+          // Limpar URLs: remover @, r2_public_url=, espaços, etc
+          images = uploadedImages.map(cleanR2Url).filter(Boolean);
 
           // Se também há imagens por URL no body, combinar
           if (req.body.images && typeof req.body.images === 'string') {
@@ -296,8 +297,9 @@ export class ProductController {
           );
 
           const uploadedImages = await Promise.all(uploadPromises);
-          // Remover @ do início das URLs se houver
-          const cleanUploadedImages = uploadedImages.map(url => url.startsWith('@') ? url.substring(1) : url);
+          const { cleanR2Url } = await import('../services/r2Service');
+          // Limpar URLs: remover @, r2_public_url=, espaços, etc
+          const cleanUploadedImages = uploadedImages.map(cleanR2Url).filter(Boolean);
 
           // Se também há imagens por URL no body, combinar
           if (req.body.images && typeof req.body.images === 'string') {

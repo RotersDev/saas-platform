@@ -98,10 +98,21 @@ export async function uploadToR2(options: UploadOptions): Promise<string> {
     await client.send(command);
 
     // Retornar URL pública (garantir que não tenha @ no início e remover espaços)
-    const cleanPublicUrl = publicUrl.trim().replace(/^@+/, ''); // Remove @ do início e espaços
-    const url = `${cleanPublicUrl}/${key}`;
-    console.log('[R2Service] Upload concluído com sucesso:', url);
-    return url;
+    // Remover qualquer prefixo indesejado como "r2_public_url=" ou "@"
+    let cleanPublicUrl = publicUrl.trim().replace(/^@+/, ''); // Remove @ do início e espaços
+    // Remover "r2_public_url=" se estiver no início
+    cleanPublicUrl = cleanPublicUrl.replace(/^r2_public_url=/, '');
+    // Remover "https://" ou "http://" duplicados
+    cleanPublicUrl = cleanPublicUrl.replace(/^(https?:\/\/)+/, 'https://');
+    // Garantir que não termina com /
+    cleanPublicUrl = cleanPublicUrl.replace(/\/+$/, '');
+    // Garantir que key não começa com /
+    const cleanKey = key.startsWith('/') ? key.substring(1) : key;
+    const url = `${cleanPublicUrl}/${cleanKey}`;
+    // Limpar a URL final antes de retornar
+    const finalUrl = cleanR2Url(url);
+    console.log('[R2Service] Upload concluído com sucesso:', finalUrl);
+    return finalUrl;
   } catch (error: any) {
     console.error('[R2Service] Erro ao fazer upload para R2:', error);
     console.error('[R2Service] Detalhes do erro:', {
@@ -130,6 +141,29 @@ export async function deleteFromR2(key: string): Promise<void> {
 
   const client = getR2Client();
   await client.send(command);
+}
+
+/**
+ * Limpa uma URL do R2 removendo prefixos indesejados e garantindo formato correto
+ */
+export function cleanR2Url(url: string | null | undefined): string {
+  if (!url || typeof url !== 'string') return '';
+
+  let cleanUrl = url.trim();
+  // Remover @ do início
+  if (cleanUrl.startsWith('@')) cleanUrl = cleanUrl.substring(1);
+  // Remover r2_public_url= se existir
+  cleanUrl = cleanUrl.replace(/^[^=]*r2_public_url=/, '');
+  // Remover espaços
+  cleanUrl = cleanUrl.replace(/\s+/g, '');
+  // Garantir que começa com http:// ou https://
+  if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+    const r2PublicUrl = process.env.R2_PUBLIC_URL?.trim().replace(/^@+/, '').replace(/\/+$/, '') || '';
+    if (r2PublicUrl && cleanUrl.includes('stores/')) {
+      cleanUrl = `${r2PublicUrl}/${cleanUrl}`;
+    }
+  }
+  return cleanUrl;
 }
 
 /**

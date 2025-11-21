@@ -16,7 +16,9 @@ export function normalizeImageUrl(url: string | null | undefined): string {
 
   // Se a URL contém "r2_public_url=" ou está malformada, tentar extrair a URL correta
   if (cleanUrl.includes('r2_public_url=') || cleanUrl.includes('r2.dev')) {
-    // Tentar extrair URL válida
+    // Remover prefixo "r2_public_url=" se existir
+    cleanUrl = cleanUrl.replace(/^[^=]*r2_public_url=/, '');
+    // Tentar extrair URL válida (começando com http:// ou https://)
     const urlMatch = cleanUrl.match(/https?:\/\/[^\s"']+/);
     if (urlMatch) {
       cleanUrl = urlMatch[0];
@@ -26,7 +28,8 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       if (r2PublicUrl && cleanUrl.includes('stores/')) {
         const pathMatch = cleanUrl.match(/stores\/[^\s"']+/);
         if (pathMatch) {
-          cleanUrl = `${r2PublicUrl}/${pathMatch[0]}`;
+          const baseUrl = r2PublicUrl.endsWith('/') ? r2PublicUrl.slice(0, -1) : r2PublicUrl;
+          cleanUrl = `${baseUrl}/${pathMatch[0]}`;
         }
       }
     }

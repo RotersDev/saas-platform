@@ -90,8 +90,10 @@ export class StoreController {
           mimeType: (req as any).file.mimetype,
           originalName: (req as any).file.originalname,
         });
+        const { cleanR2Url } = await import('../services/r2Service');
+        const cleanUrl = cleanR2Url(logoUrl);
         // Atualizar logo da loja com URL do R2
-        await store.update({ logo_url: logoUrl });
+        await store.update({ logo_url: cleanUrl });
       }
 
       // Associar usuário à loja

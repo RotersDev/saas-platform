@@ -71,8 +71,10 @@ export class ThemeController {
               mimeType: files.logo[0].mimetype,
               originalName: files.logo[0].originalname,
             });
-            console.log('[ThemeController] Logo uploadado com sucesso:', logoUrl);
-            updateData.logo_url = logoUrl;
+            const { cleanR2Url } = await import('../services/r2Service');
+            const cleanUrl = cleanR2Url(logoUrl);
+            console.log('[ThemeController] Logo uploadado com sucesso:', cleanUrl);
+            updateData.logo_url = cleanUrl;
           } catch (error: any) {
             console.error('[ThemeController] Erro ao fazer upload do logo para R2:', error);
             res.status(500).json({ error: 'Erro ao fazer upload do logo', details: error.message });
@@ -94,8 +96,10 @@ export class ThemeController {
               mimeType: files.favicon[0].mimetype,
               originalName: files.favicon[0].originalname,
             });
-            console.log('[ThemeController] Favicon uploadado com sucesso:', faviconUrl);
-            updateData.favicon_url = faviconUrl;
+            const { cleanR2Url } = await import('../services/r2Service');
+            const cleanUrl = cleanR2Url(faviconUrl);
+            console.log('[ThemeController] Favicon uploadado com sucesso:', cleanUrl);
+            updateData.favicon_url = cleanUrl;
           } catch (error: any) {
             console.error('[ThemeController] Erro ao fazer upload do favicon para R2:', error);
             res.status(500).json({ error: 'Erro ao fazer upload do favicon', details: error.message });
