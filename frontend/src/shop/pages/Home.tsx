@@ -7,7 +7,8 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import Footer from '../components/Footer';
-import { getShopUrl, getProductUrl, getCategoryUrl, getSubdomainFromHostname } from '../../utils/urlUtils';
+import { getShopUrl, getProductUrl, getSubdomainFromHostname } from '../../utils/urlUtils';
+import CategorySection from '../components/CategorySection';
 
 export default function ShopHome() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();
@@ -50,29 +51,20 @@ export default function ShopHome() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Log para debug
-  const productsEnabled = !!storeInfo && (storeInfo.status === 'active' || storeInfo.status === 'trial');
-  console.log('[ShopHome] 🔍 Estado da query de produtos:', {
-    storeInfo: storeInfo ? `${storeInfo.name} (${storeInfo.status})` : 'não encontrado',
-    enabled: productsEnabled,
-    storeLoading,
-    storeSubdomain,
-  });
-
+  // Buscar produtos apenas quando há filtro de categoria (para página de categoria específica)
+  // Para a página principal, usaremos lazy loading por categoria
   const { data: products, isLoading: productsLoading } = useQuery(
     ['shopProducts', storeSubdomain, categorySlug],
     async () => {
       const url = categorySlug
         ? `/api/public/products?category_slug=${categorySlug}`
         : '/api/public/products';
-      console.log('[ShopHome] 🛒 Buscando produtos:', url, '| StoreInfo:', storeInfo ? `${storeInfo.name} (${storeInfo.status})` : 'não encontrado');
       const response = await api.get(url);
-      console.log('[ShopHome] ✅ Produtos recebidos:', response.data?.length || 0, 'produtos', response.data);
       return response.data || [];
     },
     {
       staleTime: 2 * 60 * 1000,
-      enabled: productsEnabled,
+      enabled: !!storeInfo && (storeInfo.status === 'active' || storeInfo.status === 'trial') && !!categorySlug, // Só buscar quando há filtro de categoria
       onError: (error: any) => {
         console.error('[ShopHome] ❌ Erro ao buscar produtos:', error);
       },
@@ -201,6 +193,8 @@ export default function ShopHome() {
                               height="200"
                               className="w-full h-full object-cover"
                               src={normalizeImageUrl(product.images[0])}
+                              loading="lazy"
+                              decoding="async"
                             />
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
@@ -293,85 +287,19 @@ export default function ShopHome() {
     );
   }
 
-  // Agrupar produtos por categoria (sem filtro)
-  const productsByCategory: Record<number, any[]> = {};
-  const categoryMap: Record<number, any> = {};
-
-  // Se não há categorias cadastradas, criar uma categoria padrão para todos os produtos
-  if (!categories || categories.length === 0) {
-    categoryMap[0] = { id: 0, name: 'Produtos', slug: 'produtos' };
-    productsByCategory[0] = products || [];
-  } else {
-    // Ordenar categorias por display_order ou created_at
-    const sortedCategories = [...categories].sort((a: any, b: any) => {
-      if (a.display_order !== undefined && b.display_order !== undefined) {
-        if (a.display_order !== b.display_order) {
-          return a.display_order - b.display_order;
-        }
-      }
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return dateA - dateB;
-    });
-
-    sortedCategories.forEach((cat: any) => {
-      categoryMap[cat.id] = cat;
-      productsByCategory[cat.id] = [];
-    });
-
-    if (products && products.length > 0) {
-      products.forEach((product: any) => {
-        // Usar category_id do produto diretamente
-        const catId = product.category_id || product.categoryData?.id;
-        if (catId && productsByCategory[catId]) {
-          productsByCategory[catId].push(product);
-        } else {
-          // Produtos sem categoria vão para uma categoria especial
-          if (!productsByCategory[0]) {
-            productsByCategory[0] = [];
-            categoryMap[0] = { id: 0, name: 'Sem Categoria', slug: 'sem-categoria' };
+  // Ordenar categorias por display_order ou created_at
+  const sortedCategories = categories
+    ? [...categories].sort((a: any, b: any) => {
+        if (a.display_order !== undefined && b.display_order !== undefined) {
+          if (a.display_order !== b.display_order) {
+            return a.display_order - b.display_order;
           }
-          productsByCategory[0].push(product);
         }
-      });
-    }
-  }
-
-  // Filtrar categorias que têm produtos e manter ordem
-  const categoriesWithProducts = Object.keys(productsByCategory)
-    .map(Number)
-    .filter((catId) => productsByCategory[catId] && productsByCategory[catId].length > 0)
-    .sort((a, b) => {
-      const catA = categoryMap[a];
-      const catB = categoryMap[b];
-      if (!catA || !catB) return 0;
-
-      // Ordenar por display_order ou created_at
-      if (catA.display_order !== undefined && catB.display_order !== undefined) {
-        if (catA.display_order !== catB.display_order) {
-          return catA.display_order - catB.display_order;
-        }
-      }
-      const dateA = new Date(catA.created_at).getTime();
-      const dateB = new Date(catB.created_at).getTime();
-      return dateA - dateB;
-    });
-
-  // Log para debug - após produtos serem carregados
-  console.log('[ShopHome] 📊 Estado dos produtos:', {
-    productsCount: products?.length || 0,
-    categoriesCount: categories?.length || 0,
-    categoriesWithProductsCount: categoriesWithProducts.length,
-    productsByCategory: Object.keys(productsByCategory).map(k => ({
-      catId: k,
-      count: productsByCategory[Number(k)]?.length || 0,
-    })),
-    products: products?.map((p: any) => ({ id: p.id, name: p.name, category_id: p.category_id })),
-    productsLoading,
-    storeInfo: storeInfo ? `${storeInfo.name} (${storeInfo.status})` : 'não encontrado',
-    willRenderProducts: !productsLoading && products && products.length > 0,
-    willRenderCategories: !productsLoading && categoriesWithProducts.length > 0,
-  });
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return dateA - dateB;
+      })
+    : [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -380,388 +308,26 @@ export default function ShopHome() {
         {/* Produtos por Categoria */}
         <section id="produtos" className="py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {productsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            {sortedCategories.length > 0 ? (
+              // Renderizar categorias com lazy loading
+              <div className="space-y-16">
+                {sortedCategories.map((category: any) => (
+                  <CategorySection
+                    key={category.id}
+                    category={category}
+                    storeSubdomain={storeSubdomain}
+                    onAddToCart={addToCart}
+                    onBuyNow={buyNow}
+                  />
+                ))}
               </div>
-            ) : !products || products.length === 0 ? (
+            ) : (
+              // Se não há categorias, mostrar mensagem
               <div className="text-center py-12">
                 <Package className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                <p className="text-gray-500 text-lg">Nenhum produto disponível no momento.</p>
+                <p className="text-gray-500 text-lg">Nenhuma categoria disponível no momento.</p>
               </div>
-            ) : categoriesWithProducts.length === 0 && products && products.length > 0 ? (
-              // Se há produtos mas não há categorias com produtos, mostrar todos os produtos sem agrupar
-              <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-                {products.map((product: any) => {
-                  const realPrice = Number(product.price);
-                  const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
-                  const discountPercentage = comparisonPrice
-                    ? Math.round(((comparisonPrice - realPrice) / comparisonPrice) * 100)
-                    : null;
-                  const stockLimit = product.stock_limit ?? product.available_stock ?? product.stock_quantity;
-                  const hasStock = stockLimit === null || stockLimit === undefined || stockLimit > 0;
-                  const isAutoDelivery = product.auto_delivery || false;
-
-                  return (
-                    <Link
-                      key={product.id}
-                      to={getProductUrl(storeSubdomain, product.slug)}
-                      className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
-                    >
-                      {discountPercentage && discountPercentage > 0 && (
-                        <div className="absolute top-2 left-2 z-10 bg-blue-600 text-white font-bold text-xs px-2 py-0.5 rounded-full shadow-md flex items-center">
-                          <ArrowDown className="w-3 h-3 mr-1" />
-                          {discountPercentage}% OFF
-                        </div>
-                      )}
-                      <div className="relative overflow-hidden aspect-video">
-                        {!hasStock && (
-                          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 p-4 text-center">
-                            <XCircle className="w-8 h-8 text-red-500 mb-2" />
-                            <span className="font-bold text-white">ESGOTADO</span>
-                          </div>
-                        )}
-                        {product.images && product.images.length > 0 ? (
-                          <img
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            src={normalizeImageUrl(product.images[0])}
-                            alt={product.name}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                            <Package className="w-12 h-12 text-gray-500" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-3 lg:p-3 flex flex-col flex-grow gap-2">
-                        <div className="mb-1">
-                          <h4 className="text-sm lg:text-base font-semibold text-gray-900 line-clamp-2 leading-tight">{product.name}</h4>
-                        </div>
-                        <div className="mt-auto">
-                          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-1 sm:gap-0">
-                            <div>
-                              {comparisonPrice && (
-                                <del className="block text-xs text-gray-400 leading-none mb-0.5">
-                                  {new Intl.NumberFormat('pt-BR', {
-                                    style: 'currency',
-                                    currency: 'BRL',
-                                  }).format(comparisonPrice)}
-                                </del>
-                              )}
-                              <span className="text-lg lg:text-xl font-bold text-gray-900">
-                                {new Intl.NumberFormat('pt-BR', {
-                                  style: 'currency',
-                                  currency: 'BRL',
-                                }).format(realPrice)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              buyNow(product);
-                            }}
-                            disabled={!hasStock}
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-all hover:shadow-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
-                          >
-                            <span>COMPRAR AGORA</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              addToCart(product);
-                            }}
-                            disabled={!hasStock}
-                            className="w-8 h-8 lg:w-9 lg:h-9 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Adicionar ao carrinho"
-                            aria-label="Adicionar ao carrinho"
-                          >
-                            <ShoppingCart className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                        {isAutoDelivery && (
-                          <div className="flex flex-col items-center gap-2 mt-3 sm:mt-4">
-                            <div className="text-xs text-green-400 flex items-center gap-1">
-                              <Zap className="w-3 h-3" />
-                              <span>Entrega automática</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : categoriesWithProducts.length > 0 ? (
-              <div className="space-y-16">
-                {categoriesWithProducts.map((categoryId) => {
-                  const category = categoryMap[categoryId];
-                  const categoryProducts = productsByCategory[categoryId];
-
-                  return (
-                    <div key={categoryId}>
-                      <div className="flex items-center justify-between mb-8">
-                        <div>
-                          <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2 tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
-                            {category.name}
-                          </h2>
-                        </div>
-                        <Link
-                          to={getCategoryUrl(storeSubdomain, category.slug)}
-                          className="text-indigo-600 hover:text-indigo-700 font-medium"
-                        >
-                          Ver mais →
-                        </Link>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-                        {categoryProducts.map((product: any) => {
-                          // Preço real (o que cobra) = price
-                          const realPrice = Number(product.price);
-                          // Preço comparativo (marketing) = promotional_price quando existe
-                          const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
-                          // Calcular porcentagem de desconto: ((comparisonPrice - realPrice) / comparisonPrice) * 100
-                          const discountPercentage = comparisonPrice
-                            ? Math.round(((comparisonPrice - realPrice) / comparisonPrice) * 100)
-                            : null;
-
-                          // Verifica estoque: se stock_limit é null/undefined, estoque ilimitado (tem estoque)
-                    // Se stock_limit existe, verifica se é maior que 0
-                    // Também verifica available_stock ou stock_quantity caso venham da API
-                    const stockLimit = product.stock_limit ?? product.available_stock ?? product.stock_quantity;
-                    const hasStock = stockLimit === null || stockLimit === undefined || stockLimit > 0;
-                          const isAutoDelivery = product.auto_delivery || false;
-
-                          return (
-                            <Link
-                              key={product.id}
-                              to={getProductUrl(storeSubdomain, product.slug)}
-                              className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
-                            >
-                              {/* Tag de desconto */}
-                              {discountPercentage && discountPercentage > 0 && (
-                                <div className="absolute top-3 left-3 z-10 bg-blue-600 text-white font-bold text-sm px-3 py-1 rounded-full shadow-md flex items-center">
-                                  <ArrowDown className="w-4 h-4 mr-1" />
-                                  {discountPercentage}% OFF
-                                </div>
-                              )}
-
-                              {/* Imagem do produto com overlay */}
-                              <div className="relative overflow-hidden aspect-video">
-                                {!hasStock && (
-                                  <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 p-4 text-center">
-                                    <XCircle className="w-8 h-8 text-red-500 mb-2" />
-                                    <span className="font-bold text-white">ESGOTADO</span>
-                                    <span className="text-sm text-gray-300 mt-1">Avise-me quando disponível</span>
-                                  </div>
-                                )}
-
-                                {product.images && product.images.length > 0 ? (
-                                  <img
-                                    alt={product.name}
-                                    width="400"
-                                    height="200"
-                                    className="w-full h-full object-cover"
-                                    src={normalizeImageUrl(product.images[0])}
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                                    <Package className="w-12 h-12 text-gray-500" />
-                                  </div>
-                                )}
-
-                                {/* Overlay de hover */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4"></div>
-                              </div>
-
-                              {/* Conteúdo do card */}
-                              <div className="p-3 lg:p-3 flex flex-col flex-grow gap-2">
-                                {/* Título */}
-                                <div className="mb-1">
-                                  <h4 className="text-sm lg:text-base font-semibold text-gray-900 line-clamp-2 leading-tight">{product.name}</h4>
-                                </div>
-
-                                {/* Preços */}
-                                <div className="mt-auto">
-                                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-1 sm:gap-0">
-                                    <div>
-                                      {comparisonPrice && (
-                                        <del className="block text-xs text-gray-400 leading-none mb-0.5">
-                                          {new Intl.NumberFormat('pt-BR', {
-                                            style: 'currency',
-                                            currency: 'BRL',
-                                          }).format(comparisonPrice)}
-                                        </del>
-                                      )}
-
-                                      <span className="text-lg lg:text-xl font-bold text-gray-900">
-                                        {new Intl.NumberFormat('pt-BR', {
-                                          style: 'currency',
-                                          currency: 'BRL',
-                                        }).format(realPrice)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Botões de ação */}
-                                <div className="flex gap-2 mt-2">
-                                  <button
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      buyNow(product);
-                                    }}
-                                    disabled={!hasStock}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-all hover:shadow-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
-                                  >
-                                    <span>COMPRAR AGORA</span>
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      addToCart(product);
-                                    }}
-                                    disabled={!hasStock}
-                                    className="w-8 h-8 lg:w-9 lg:h-9 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title="Adicionar ao carrinho"
-                                    aria-label="Adicionar ao carrinho"
-                                  >
-                                    <ShoppingCart className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-
-                                {/* Selos inferiores */}
-                                {isAutoDelivery && (
-                                  <div className="flex flex-col items-center gap-2 mt-3 sm:mt-4">
-                                    <div className="text-xs text-green-400 flex items-center gap-1">
-                                      <Zap className="w-3 h-3" />
-                                      <span>Entrega automática</span>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : products && products.length > 0 ? (
-              // Fallback: se há produtos mas não foram agrupados, mostrar todos
-              <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-4">
-                {products.map((product: any) => {
-                  const realPrice = Number(product.price);
-                  const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
-                  const discountPercentage = comparisonPrice
-                    ? Math.round(((comparisonPrice - realPrice) / comparisonPrice) * 100)
-                    : null;
-                  const stockLimit = product.stock_limit ?? product.available_stock ?? product.stock_quantity;
-                  const hasStock = stockLimit === null || stockLimit === undefined || stockLimit > 0;
-                  const isAutoDelivery = product.auto_delivery || false;
-
-                  return (
-                    <Link
-                      key={product.id}
-                      to={getProductUrl(storeSubdomain, product.slug)}
-                      className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
-                    >
-                      {discountPercentage && discountPercentage > 0 && (
-                        <div className="absolute top-2 left-2 z-10 bg-blue-600 text-white font-bold text-xs px-2 py-0.5 rounded-full shadow-md flex items-center">
-                          <ArrowDown className="w-3 h-3 mr-1" />
-                          {discountPercentage}% OFF
-                        </div>
-                      )}
-                      <div className="relative overflow-hidden aspect-video">
-                        {!hasStock && (
-                          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 p-4 text-center">
-                            <XCircle className="w-8 h-8 text-red-500 mb-2" />
-                            <span className="font-bold text-white">ESGOTADO</span>
-                          </div>
-                        )}
-                        {product.images && product.images.length > 0 ? (
-                          <img
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            src={normalizeImageUrl(product.images[0])}
-                            alt={product.name}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                            <Package className="w-12 h-12 text-gray-500" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-3 lg:p-3 flex flex-col flex-grow gap-2">
-                        <div className="mb-1">
-                          <h4 className="text-sm lg:text-base font-semibold text-gray-900 line-clamp-2 leading-tight">{product.name}</h4>
-                        </div>
-                        <div className="mt-auto">
-                          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-1 sm:gap-0">
-                            <div>
-                              {comparisonPrice && (
-                                <del className="block text-xs text-gray-400 leading-none mb-0.5">
-                                  {new Intl.NumberFormat('pt-BR', {
-                                    style: 'currency',
-                                    currency: 'BRL',
-                                  }).format(comparisonPrice)}
-                                </del>
-                              )}
-                              <span className="text-lg lg:text-xl font-bold text-gray-900">
-                                {new Intl.NumberFormat('pt-BR', {
-                                  style: 'currency',
-                                  currency: 'BRL',
-                                }).format(realPrice)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              buyNow(product);
-                            }}
-                            disabled={!hasStock}
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-all hover:shadow-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
-                          >
-                            <span>COMPRAR AGORA</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              addToCart(product);
-                            }}
-                            disabled={!hasStock}
-                            className="w-8 h-8 lg:w-9 lg:h-9 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Adicionar ao carrinho"
-                            aria-label="Adicionar ao carrinho"
-                          >
-                            <ShoppingCart className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                        {isAutoDelivery && (
-                          <div className="flex flex-col items-center gap-2 mt-3 sm:mt-4">
-                            <div className="text-xs text-green-400 flex items-center gap-1">
-                              <Zap className="w-3 h-3" />
-                              <span>Entrega automática</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : null}
+            )}
           </div>
         </section>
       </main>

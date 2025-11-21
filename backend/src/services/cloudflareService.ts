@@ -197,6 +197,7 @@ export class CloudflareService {
       const dns = await import('dns').then((m) => m.promises);
 
       logger.info(`🔍 Verificando TXT record para ${txtRecordName}...`);
+      logger.info(`🔍 Token esperado: ${expectedToken}`);
 
       // Resolver TXT record
       const records = await dns.resolveTxt(txtRecordName);
@@ -204,17 +205,30 @@ export class CloudflareService {
       // TXT records retornam arrays de strings, então precisamos "achatar" o array
       const txtValues = records.flat();
 
-      logger.info(`📋 Registros TXT encontrados para ${txtRecordName}:`, txtValues);
+      logger.info(`📋 Registros TXT encontrados para ${txtRecordName}:`, JSON.stringify(txtValues, null, 2));
+      logger.info(`📋 Total de registros: ${txtValues.length}`);
 
       // Verificar se algum registro TXT contém o token esperado
       const isValid = txtValues.some((record) => {
-        const cleanRecord = record.trim();
+        // Limpar o registro: remover espaços, aspas simples e duplas do início e fim
+        let cleanRecord = record.trim();
+        // Remover aspas duplas do início e fim
+        if (cleanRecord.startsWith('"') && cleanRecord.endsWith('"')) {
+          cleanRecord = cleanRecord.slice(1, -1);
+        }
+        // Remover aspas simples do início e fim
+        if (cleanRecord.startsWith("'") && cleanRecord.endsWith("'")) {
+          cleanRecord = cleanRecord.slice(1, -1);
+        }
+        cleanRecord = cleanRecord.trim();
+
         const matches = cleanRecord === expectedToken;
 
         if (matches) {
-          logger.info(`✅ TXT record encontrado e correto: ${cleanRecord} === ${expectedToken}`);
+          logger.info(`✅ TXT record encontrado e correto: "${cleanRecord}" === "${expectedToken}"`);
         } else {
-          logger.warn(`❌ TXT record não corresponde: ${cleanRecord} !== ${expectedToken}`);
+          logger.warn(`❌ TXT record não corresponde: "${cleanRecord}" !== "${expectedToken}"`);
+          logger.warn(`   Record original: "${record}"`);
         }
 
         return matches;
