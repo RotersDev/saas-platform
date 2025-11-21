@@ -65,8 +65,9 @@ npm run build
 echo "🔄 Reiniciando aplicação com PM2..."
 cd "$PROJECT_DIR"
 pm2 delete saas-platform-backend 2>/dev/null || true
-pm2 start ecosystem.config.js
+pm2 start ./backend/dist/server.js --name saas-platform-backend
 pm2 save
+
 
 echo -e "${GREEN}✅ Deploy concluído com sucesso!${NC}"
 echo ""
