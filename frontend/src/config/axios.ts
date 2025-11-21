@@ -80,7 +80,7 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  async (error) => {
     // Erros de conexão (backend não está rodando) não devem causar redirecionamento
     if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
       return Promise.reject(error);
@@ -114,10 +114,39 @@ api.interceptors.response.use(
       const hasCustomerToken = storeParam ? localStorage.getItem(`customer_token_${storeParam}`) : null;
       const hasToken = localStorage.getItem('token');
 
-      // Só fazer logout e redirecionar se já havia um token (sessão expirada)
+      // Tentar renovar token se for erro 401 e tiver token (pode ser token expirado)
+      if (hasToken && !isLoginAttempt && !isCustomerRoute && error.config && !error.config._retry) {
+        error.config._retry = true;
+
+        try {
+          // Tentar renovar o token
+          const refreshResponse = await axios.post(`${baseURL}/api/auth/refresh-token`, {}, {
+            headers: {
+              Authorization: `Bearer ${hasToken}`,
+            },
+          });
+
+          if (refreshResponse.data.token) {
+            // Atualizar token no localStorage
+            localStorage.setItem('token', refreshResponse.data.token);
+            if (refreshResponse.data.user) {
+              localStorage.setItem('user', JSON.stringify(refreshResponse.data.user));
+            }
+
+            // Atualizar header da requisição original e tentar novamente
+            error.config.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
+            return api.request(error.config);
+          }
+        } catch (refreshError) {
+          // Se falhar ao renovar, fazer logout apenas se realmente não conseguir autenticar
+          console.error('Erro ao renovar token:', refreshError);
+        }
+      }
+
+      // Só fazer logout e redirecionar se já havia um token (sessão expirada) e não conseguiu renovar
       // Se não há token, é apenas uma tentativa de login que falhou
       // Para rotas de cliente, não fazer logout automático - deixar o componente tratar
-      if ((hasToken || hasCustomerToken) && !isLoginAttempt && !isCustomerRoute) {
+      if ((hasToken || hasCustomerToken) && !isLoginAttempt && !isCustomerRoute && error.config?._retry) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('store_subdomain');

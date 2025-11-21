@@ -203,7 +203,7 @@ export const resolveTenantPublic = async (
     }
 
     // Log para debug (sempre logar para identificar problemas)
-    console.log('[resolveTenantPublic] Host:', host, '| Host sem porta:', hostWithoutPort, '| Subdomain extraído:', subdomain);
+    console.log('[resolveTenantPublic] 🔍 Host:', host, '| Host sem porta:', hostWithoutPort, '| Subdomain extraído:', subdomain, '| HostParts:', hostParts);
 
     if (subdomain && subdomain !== 'www' && subdomain !== 'admin' && subdomain !== 'localhost' && subdomain !== '127' && subdomain !== '127.0.0.1') {
       try {

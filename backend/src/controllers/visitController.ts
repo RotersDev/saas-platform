@@ -6,8 +6,12 @@ import { Op } from 'sequelize';
 export class VisitController {
   static async trackVisit(req: TenantRequest, res: Response): Promise<void> {
     try {
+      // Log para debug
+      console.log('[VisitController.trackVisit] Host:', req.headers.host, '| Store:', req.store ? `${req.store.name} (ID: ${req.store.id})` : 'Não encontrada');
+
       if (!req.store) {
         // Se não encontrar a loja, retornar sucesso silenciosamente (não quebrar o frontend)
+        console.log('[VisitController.trackVisit] Loja não encontrada, retornando sucesso silencioso');
         res.status(200).json({ success: true, message: 'Loja não encontrada, visita não registrada' });
         return;
       }
@@ -19,15 +23,28 @@ export class VisitController {
       // Aceitar path de query params ou body
       const path = (req.query.path as string) || (req.body?.page_url as string) || req.originalUrl || '/';
 
-      await Visit.create({
-        store_id: req.store.id,
-        ip_address: Array.isArray(ipAddress) ? ipAddress[0] : (ipAddress || 'unknown'),
-        user_agent: userAgent,
-        referer: referer,
-        path: path,
-      });
+      // Validar path (limitar tamanho)
+      const cleanPath = path.length > 500 ? path.substring(0, 500) : path;
 
-      res.json({ success: true });
+      try {
+        await Visit.create({
+          store_id: req.store.id,
+          ip_address: Array.isArray(ipAddress) ? ipAddress[0] : (ipAddress || 'unknown'),
+          user_agent: userAgent,
+          referer: referer,
+          path: cleanPath,
+        });
+        console.log('[VisitController.trackVisit] ✅ Visita registrada com sucesso');
+        res.json({ success: true });
+      } catch (dbError: any) {
+        // Se for erro de tabela não existir, retornar sucesso silenciosamente
+        if (dbError.message?.includes('does not exist') || dbError.code === '42P01') {
+          console.warn('[VisitController.trackVisit] Tabela visits não existe, retornando sucesso silencioso');
+          res.status(200).json({ success: true, message: 'Tabela de visitas não configurada' });
+          return;
+        }
+        throw dbError;
+      }
     } catch (error: any) {
       console.error('[VisitController] Error tracking visit:', error);
       // Retornar sucesso mesmo em caso de erro para não quebrar o frontend

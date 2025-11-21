@@ -65,9 +65,29 @@ export class ApiController {
       if (products.length === 0) {
         console.warn('[ApiController.listProducts] ⚠️ Nenhum produto encontrado para a loja. Verificando produtos no banco...');
         // Verificar se há produtos no banco (mesmo inativos) para debug
-        const allProducts = await Product.count({ where: { store_id: req.store.id } });
-        const activeProducts = await Product.count({ where: { store_id: req.store.id, is_active: true } });
-        console.log('[ApiController.listProducts] Total de produtos no banco:', allProducts, '| Produtos ativos:', activeProducts);
+        try {
+          const allProducts = await Product.count({ where: { store_id: req.store.id } });
+          const activeProducts = await Product.count({ where: { store_id: req.store.id, is_active: true } });
+          const inactiveProducts = await Product.count({ where: { store_id: req.store.id, is_active: false } });
+          console.log('[ApiController.listProducts] 📊 Estatísticas de produtos:');
+          console.log('  - Total de produtos:', allProducts);
+          console.log('  - Produtos ativos:', activeProducts);
+          console.log('  - Produtos inativos:', inactiveProducts);
+          console.log('  - Store ID:', req.store.id);
+          console.log('  - Store Subdomain:', req.store.subdomain);
+
+          // Se há produtos mas nenhum ativo, listar os inativos
+          if (allProducts > 0 && activeProducts === 0) {
+            const inactiveList = await Product.findAll({
+              where: { store_id: req.store.id, is_active: false },
+              attributes: ['id', 'name', 'is_active'],
+              limit: 5,
+            });
+            console.log('[ApiController.listProducts] 📋 Produtos inativos encontrados:', inactiveList.map(p => ({ id: p.id, name: p.name, is_active: p.is_active })));
+          }
+        } catch (countError: any) {
+          console.error('[ApiController.listProducts] Erro ao contar produtos:', countError);
+        }
       }
 
       res.json(products);
