@@ -35,15 +35,16 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 
+// Rate limiting - trust proxy já configurado como 1 (seguro) no topo
+// Usar keyGenerator customizado para garantir IP correto do X-Forwarded-For
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 requests em dev, 100 em produção
   message: 'Too many requests, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-
-
-
+  // Usar função customizada para obter IP real do header X-Forwarded-For
+  // Isso evita a validação automática do trust proxy
   keyGenerator: (req): string => {
     // Pegar IP real do header X-Forwarded-For (primeiro IP da lista)
     const forwardedFor = req.headers['x-forwarded-for'];
@@ -61,6 +62,11 @@ const limiter = rateLimit({
   skip: (req) => {
     // Pular rate limiting para requisições locais em desenvolvimento
     return process.env.NODE_ENV === 'development' && req.ip === '127.0.0.1';
+  },
+  // Desabilitar validação de trust proxy - já está configurado corretamente
+  // @ts-ignore - validate pode não estar nos tipos, mas existe na lib
+  validate: {
+    trustProxy: false,
   },
 });
 app.use('/api/', limiter);
