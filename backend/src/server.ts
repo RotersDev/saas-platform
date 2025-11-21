@@ -15,7 +15,9 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 // Trust proxy para capturar IP real quando atrás de proxy/load balancer
-app.set('trust proxy', true);
+// Confiar apenas no Nginx local (127.0.0.1) para segurança
+// Isso permite que o rate limiting funcione corretamente
+app.set('trust proxy', 1); // Confiar apenas no primeiro proxy (Nginx)
 
 // Middlewares de segurança
 app.use(helmet());
@@ -39,6 +41,16 @@ const limiter = rateLimit({
   message: 'Too many requests, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Usar função customizada para obter IP real do header X-Forwarded-For
+  keyGenerator: (req) => {
+    // Pegar IP real do header X-Forwarded-For (primeiro IP da lista)
+    const forwardedFor = req.headers['x-forwarded-for'];
+    if (forwardedFor) {
+      const ips = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor.split(',')[0].trim();
+      return ips || req.ip;
+    }
+    return req.ip || req.socket.remoteAddress || 'unknown';
+  },
   skip: (req) => {
     // Pular rate limiting para requisições locais em desenvolvimento
     return process.env.NODE_ENV === 'development' && req.ip === '127.0.0.1';
