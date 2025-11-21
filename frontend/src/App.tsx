@@ -3,6 +3,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
+import { getSubdomainFromHostname } from './utils/urlUtils';
 
 // Admin Master
 import AdminLayout from './admin/layouts/AdminLayout';
@@ -129,6 +130,31 @@ function ProtectedRoute({ children, requiredRole }: { children: JSX.Element; req
   return children;
 }
 
+// Componente que detecta subdomínio no hostname e renderiza ShopLayout
+function SubdomainShopWrapper() {
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const subdomain = getSubdomainFromHostname();
+  
+  // Se há subdomínio conhecido no hostname, renderizar ShopLayout
+  if (subdomain) {
+    return <ShopLayout />;
+  }
+  
+  // Se o hostname não é localhost e não é o domínio base, pode ser um domínio customizado
+  // Nesse caso, tentar renderizar ShopLayout e deixar o backend decidir
+  const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost');
+  const isBaseDomain = hostname === baseDomain || hostname === `www.${baseDomain}`;
+  
+  // Se não é localhost nem domínio base, pode ser domínio customizado - tentar ShopLayout
+  if (!isLocalhost && !isBaseDomain) {
+    return <ShopLayout />;
+  }
+  
+  // Caso contrário (localhost ou domínio base), renderizar Landing
+  return <Landing />;
+}
+
 function App() {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -215,8 +241,8 @@ function App() {
             <Route path="account" element={<StoreAccount />} />
           </Route>
 
-          {/* Landing Page - por último */}
-          <Route path="/" element={<Landing />} />
+          {/* Landing Page ou Shop baseado no hostname */}
+          <Route path="/" element={<SubdomainShopWrapper />} />
         </Routes>
         </BrowserRouter>
         <Toaster position="top-right" />

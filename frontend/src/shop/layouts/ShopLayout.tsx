@@ -6,17 +6,19 @@ import StoreNotFound from '../pages/StoreNotFound';
 import { useEffect, useState } from 'react';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import ShopHeader from '../components/ShopHeader';
+import { getSubdomainFromHostname } from '../../utils/urlUtils';
 
 export default function ShopLayout() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  // Priorizar subdomain do path, depois query param (fallback para rotas antigas)
-  const storeSubdomain = storeSubdomainParam || searchParams.get('store');
+  // Priorizar: hostname > path > query param (fallback para rotas antigas)
+  const subdomainFromHostname = getSubdomainFromHostname();
+  const storeSubdomain = subdomainFromHostname || storeSubdomainParam || searchParams.get('store');
   const [cartCount, setCartCount] = useState(0);
 
   const { data: storeInfo, isLoading: storeLoading, error: storeError } = useQuery(
-    ['shopStore', storeSubdomain],
+    ['shopStore', storeSubdomain, window.location.hostname],
     async () => {
       try {
         const response = await api.get('/api/public/store');
@@ -35,7 +37,9 @@ export default function ShopLayout() {
     },
     {
       staleTime: Infinity,
-      enabled: !!storeSubdomain,
+      // Sempre tentar buscar, mesmo sem subdomain explícito (pode ser domínio customizado)
+      // O backend resolve via header Host
+      enabled: true,
       retry: false,
     }
   );

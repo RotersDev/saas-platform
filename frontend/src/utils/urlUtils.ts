@@ -1,4 +1,51 @@
 /**
+ * Extrai o subdomínio do hostname atual
+ * Exemplo: asdad.nerix.online -> asdad
+ * Exemplo: loja1.nerix.online -> loja1
+ * Exemplo: nerix.online -> null (domínio principal)
+ */
+export function getSubdomainFromHostname(): string | null {
+  if (typeof window === 'undefined') return null;
+  
+  const hostname = window.location.hostname;
+  
+  // Em desenvolvimento local, não há subdomínio
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost')) {
+    return null;
+  }
+  
+  // Pegar o domínio base da variável de ambiente ou usar padrão
+  const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
+  
+  // Se o hostname é exatamente o domínio base, não há subdomínio
+  if (hostname === baseDomain || hostname === `www.${baseDomain}`) {
+    return null;
+  }
+  
+  // Verificar se o hostname termina com o domínio base
+  if (hostname.endsWith(`.${baseDomain}`)) {
+    // Extrair o subdomínio (tudo antes do último ponto + domínio base)
+    const parts = hostname.split('.');
+    const baseParts = baseDomain.split('.');
+    
+    // Remover as partes do domínio base
+    const subdomainParts = parts.slice(0, parts.length - baseParts.length);
+    
+    if (subdomainParts.length > 0) {
+      const subdomain = subdomainParts.join('.');
+      // Ignorar 'www' como subdomínio
+      if (subdomain !== 'www' && subdomain !== 'admin') {
+        return subdomain;
+      }
+    }
+  }
+  
+  // Se não encontrou subdomínio conhecido, pode ser um domínio customizado
+  // Retornar null para que o backend resolva via middleware
+  return null;
+}
+
+/**
  * Gera URLs limpas para a loja pública
  * Formato: /{subdomain}/... ao invés de /shop?store={subdomain}
  */

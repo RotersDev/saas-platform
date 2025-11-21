@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getSubdomainFromHostname } from '../utils/urlUtils';
 
 // Configurar baseURL do axios
 // Em desenvolvimento, usar proxy do Vite (baseURL vazio)
@@ -17,15 +18,18 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Adicionar subdomain do store se estiver na URL atual
-    // Primeiro tentar pegar do path (formato: /{subdomain}/...)
+    // 1. Primeiro tentar pegar do hostname (ex: asdad.nerix.online -> asdad)
+    const subdomainFromHostname = getSubdomainFromHostname();
+    
+    // 2. Tentar pegar do path (formato: /{subdomain}/...)
     const pathParts = window.location.pathname.split('/').filter(Boolean);
     const subdomainFromPath = pathParts[0];
 
-    // Se não encontrar no path, tentar query param (fallback para rotas antigas)
+    // 3. Tentar query param (fallback para rotas antigas)
     const urlParams = new URLSearchParams(window.location.search);
-    let storeParam = urlParams.get('store') || subdomainFromPath;
+    let storeParam = subdomainFromHostname || urlParams.get('store') || subdomainFromPath;
 
-    // Se ainda não encontrou, tentar pegar do localStorage (armazenado após login ou primeira requisição)
+    // 4. Se ainda não encontrou, tentar pegar do localStorage (armazenado após login ou primeira requisição)
     if (!storeParam || storeParam === 'admin' || storeParam === 'store' || storeParam === 'login' || storeParam === 'create-store') {
       const storedSubdomain = localStorage.getItem('store_subdomain');
       if (storedSubdomain) {

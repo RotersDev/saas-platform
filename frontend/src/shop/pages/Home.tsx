@@ -7,13 +7,14 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import Footer from '../components/Footer';
-import { getShopUrl, getProductUrl, getCategoryUrl } from '../../utils/urlUtils';
+import { getShopUrl, getProductUrl, getCategoryUrl, getSubdomainFromHostname } from '../../utils/urlUtils';
 
 export default function ShopHome() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();
   const [searchParams] = useSearchParams();
-  // Priorizar subdomain do path, depois query param (fallback)
-  const storeSubdomain = storeSubdomainParam || searchParams.get('store');
+  // Priorizar: hostname > path > query param (fallback)
+  const subdomainFromHostname = getSubdomainFromHostname();
+  const storeSubdomain = subdomainFromHostname || storeSubdomainParam || searchParams.get('store');
   const categorySlug = searchParams.get('category');
   const navigate = useNavigate();
   const [cart, setCart] = useState<any[]>(() => {
@@ -22,13 +23,15 @@ export default function ShopHome() {
   });
 
   const { data: storeInfo, isLoading: storeLoading } = useQuery(
-    ['shopStore', storeSubdomain],
+    ['shopStore', storeSubdomain, window.location.hostname],
     async () => {
       const response = await api.get('/api/public/store');
       return response.data;
     },
     {
       staleTime: Infinity,
+      // Sempre tentar buscar, mesmo sem subdomain explícito (pode ser domínio customizado)
+      enabled: true,
     }
   );
 
