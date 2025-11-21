@@ -25,7 +25,7 @@ const sequelize = new Sequelize(connectionString, {
   pool: {
     max: 20,
     min: 0,
-    acquire: 30000,
+    acquire: 10000, // Reduzir timeout de aquisição
     idle: 10000,
   },
   define: {
@@ -34,13 +34,16 @@ const sequelize = new Sequelize(connectionString, {
     freezeTableName: true,
   },
   dialectOptions: {
-    connectTimeout: 10000,
+    connectTimeout: 5000, // Reduzir timeout de conexão para 5 segundos
     application_name: 'saas-platform',
     // Forçar timezone UTC para garantir consistência
     timezone: '+00:00',
   },
   timezone: '+00:00', // Sequelize timezone
   native: false,
+  retry: {
+    max: 2, // Tentar apenas 2 vezes
+  },
 });
 
 export default sequelize;

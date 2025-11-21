@@ -21,7 +21,16 @@ export default function ShopLayout() {
     ['shopStore', storeSubdomain, window.location.hostname],
     async () => {
       try {
-        const response = await api.get('/api/public/store');
+        // Adicionar timestamp para evitar cache quando domínio é removido
+        const response = await api.get('/api/public/store', {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+          params: {
+            _t: Date.now(), // Timestamp para evitar cache
+          },
+        });
         // Se retornar null ou undefined, considerar como loja não encontrada
         if (!response.data) {
           throw new Error('Store not found');
@@ -38,11 +47,13 @@ export default function ShopLayout() {
       }
     },
     {
-      staleTime: Infinity,
+      staleTime: 0, // Sempre buscar dados frescos (não usar cache)
+      cacheTime: 0, // Não manter em cache
       // Sempre tentar buscar, mesmo sem subdomain explícito (pode ser domínio customizado)
       // O backend resolve via header Host
       enabled: true,
       retry: false,
+      refetchOnWindowFocus: true, // Refazer busca quando a janela ganha foco
     }
   );
 

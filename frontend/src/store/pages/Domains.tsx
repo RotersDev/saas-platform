@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useLocation, Link } from 'react-router-dom';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { Globe, Save, Plus, Trash2, CheckCircle2, XCircle, Loader2, AlertCircle, ExternalLink, Code, Bell, Copy, Settings as SettingsIcon, FileText } from 'lucide-react';
+import { Globe, Save, Plus, Trash2, CheckCircle2, XCircle, Loader2, AlertCircle, Code, Bell, Copy, Settings as SettingsIcon, FileText, ExternalLink, PlayCircle } from 'lucide-react';
 import { useConfirm } from '../../hooks/useConfirm';
 
 export default function DomainsSettings() {
@@ -12,10 +12,8 @@ export default function DomainsSettings() {
   const { confirm, Dialog } = useConfirm();
   const [subdomain, setSubdomain] = useState('');
   const [newDomain, setNewDomain] = useState('');
-  const [cloudflareToken, setCloudflareToken] = useState('');
-  const [cloudflareZoneId, setCloudflareZoneId] = useState('');
-  const [showCloudflareFields, setShowCloudflareFields] = useState(false);
   const [copiedDns, setCopiedDns] = useState<string | null>(null);
+  const [isAddingDomain, setIsAddingDomain] = useState(false);
 
   const { data: store, isLoading: storeLoading } = useQuery('store', async () => {
     const response = await api.get('/api/stores');
@@ -55,7 +53,7 @@ export default function DomainsSettings() {
   );
 
   const addDomainMutation = useMutation(
-    async (data: { domain: string; cloudflare_token?: string; cloudflare_zone_id?: string }) => {
+    async (data: { domain: string }) => {
       const response = await api.post('/api/domains', data);
       return response.data;
     },
@@ -63,12 +61,11 @@ export default function DomainsSettings() {
       onSuccess: () => {
         queryClient.invalidateQueries('domains');
         setNewDomain('');
-        setCloudflareToken('');
-        setCloudflareZoneId('');
-        setShowCloudflareFields(false);
+        setIsAddingDomain(false);
         toast.success('Domínio adicionado com sucesso!');
       },
       onError: (error: any) => {
+        setIsAddingDomain(false);
         const errorMessage = error.response?.data?.error || 'Erro ao adicionar domínio';
         toast.error(errorMessage);
       },
@@ -84,7 +81,7 @@ export default function DomainsSettings() {
       onSuccess: () => {
         queryClient.invalidateQueries('domains');
         queryClient.invalidateQueries('store');
-        toast.success('Domínio removido com sucesso!');
+        toast.success('Domínio removido com sucesso! O site pode continuar acessível por algumas horas devido à propagação DNS.');
       },
       onError: (error: any) => {
         const errorMessage = error.response?.data?.error || 'Erro ao remover domínio';
@@ -146,25 +143,25 @@ export default function DomainsSettings() {
     updateSubdomainMutation.mutate(subdomain.trim().toLowerCase());
   };
 
-  const handleAddDomain = () => {
-    if (!newDomain.trim()) {
-      toast.error('Domínio é obrigatório');
-      return;
-    }
-
-    const domainData: any = {
-      domain: newDomain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, ''),
-    };
-
-    if (showCloudflareFields && cloudflareToken) {
-      domainData.cloudflare_token = cloudflareToken;
-      if (cloudflareZoneId) {
-        domainData.cloudflare_zone_id = cloudflareZoneId;
+    const handleAddDomain = () => {
+      if (!newDomain.trim()) {
+        toast.error('Domínio é obrigatório');
+        return;
       }
-    }
 
-    addDomainMutation.mutate(domainData);
-  };
+      // Verificar se já existe um domínio
+      if (domains && domains.length >= 1) {
+        toast.error('Você já possui um domínio configurado. Remova o domínio existente para adicionar um novo.');
+        return;
+      }
+
+      setIsAddingDomain(true);
+      const domainData = {
+        domain: newDomain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, ''),
+      };
+
+      addDomainMutation.mutate(domainData);
+    };
 
   const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
 
@@ -283,7 +280,7 @@ export default function DomainsSettings() {
             </p>
           </div>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -291,85 +288,46 @@ export default function DomainsSettings() {
             }}
             className="space-y-4"
           >
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
                 <input
                   type="text"
                   value={newDomain}
                   onChange={(e) => setNewDomain(e.target.value)}
                   placeholder="exemplo.com"
-                  className="flex h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  disabled={isAddingDomain || addDomainMutation.isLoading || (domains && domains.length >= 1)}
+                  className="flex h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <button
                 type="submit"
-                disabled={addDomainMutation.isLoading || !newDomain.trim()}
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                disabled={isAddingDomain || addDomainMutation.isLoading || !newDomain.trim() || (domains && domains.length >= 1)}
+                className="inline-flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium min-w-[140px] h-11"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                {addDomainMutation.isLoading ? 'Adicionando...' : 'Adicionar'}
+                {isAddingDomain || addDomainMutation.isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Adicionando...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar
+                  </>
+                )}
               </button>
             </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="cloudflare-config"
-                checked={showCloudflareFields}
-                onChange={(e) => setShowCloudflareFields(e.target.checked)}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label htmlFor="cloudflare-config" className="ml-2 text-sm text-gray-700">
-                Configurar automaticamente via Cloudflare
-              </label>
-            </div>
-
-            {showCloudflareFields && (
-              <div className="space-y-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            {domains && domains.length >= 1 && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-800">
-                    <p className="font-semibold mb-1">Configuração Automática do Cloudflare</p>
-                    <p className="text-xs mb-3">
-                      Forneça suas credenciais do Cloudflare para configurar o DNS automaticamente.
-                      Seu domínio precisa estar gerenciado pelo Cloudflare.
+                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-semibold mb-1">Limite de domínios</p>
+                    <p className="text-xs">
+                      Você já possui um domínio configurado. Remova o domínio existente para adicionar um novo.
                     </p>
-                    <a
-                      href="/docs/cloudflare-setup"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
-                    >
-                      Ver guia de configuração <ExternalLink className="w-3 h-3" />
-                    </a>
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Token da API do Cloudflare
-                  </label>
-                  <input
-                    type="password"
-                    value={cloudflareToken}
-                    onChange={(e) => setCloudflareToken(e.target.value)}
-                    placeholder="Seu token da API do Cloudflare"
-                    className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Token com permissões de DNS:Edit e Zone:Read
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Zone ID (Opcional)
-                  </label>
-                  <input
-                    type="text"
-                    value={cloudflareZoneId}
-                    onChange={(e) => setCloudflareZoneId(e.target.value)}
-                    placeholder="Deixe em branco para detectar automaticamente"
-                    className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
                 </div>
               </div>
             )}
@@ -453,140 +411,137 @@ export default function DomainsSettings() {
 
                     {/* Instruções de DNS */}
                     {!domain.verified && (
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start gap-2 mb-3">
-                          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <h5 className="text-sm font-semibold text-gray-900 mb-1">
-                              Configure o DNS do seu domínio
-                            </h5>
-                            <p className="text-xs text-gray-600">
-                              Adicione o seguinte registro DNS no seu provedor de domínio:
-                            </p>
-                          </div>
+                      <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300 rounded-xl p-4 sm:p-6 shadow-sm">
+                        <div className="mb-4">
+                          <h5 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                            <Globe className="w-5 h-5 text-indigo-600" />
+                            Configuração de DNS
+                          </h5>
+                          <p className="text-sm text-gray-600">
+                            Configure os registros DNS no seu provedor de domínio conforme a tabela abaixo.
+                          </p>
                         </div>
-                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+
+                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm mb-4">
                           <div className="p-3 bg-indigo-50 border-b border-indigo-200">
                             <p className="text-xs font-medium text-indigo-900">
-                              ⚠️ Importante: Copie apenas o valor da coluna "Conteúdo/Destino" (sem https://, sem http://, sem barra no final)
+                              Importante: Copie apenas o valor da coluna "Conteúdo/Destino" (sem https://, sem http://, sem barra no final)
                             </p>
                           </div>
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                              <tr>
-                                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">Tipo</th>
-                                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">Nome/Host</th>
-                                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">Conteúdo/Destino</th>
-                                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">TTL</th>
-                                <th className="px-4 py-2 text-center text-xs font-semibold text-gray-700">Copiar</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {/* PASSO 1 - TXT Record */}
-                              <tr className="border-b border-gray-100 bg-yellow-50">
-                                <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900 bg-yellow-100">TXT</td>
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <code className="font-mono text-xs text-gray-900 bg-white px-2 py-1 rounded border border-yellow-300">_cf-custom-hostname.{domain.domain}</code>
-                                    <button
-                                      onClick={() => copyDnsInfo(`_cf-custom-hostname.${domain.domain}`, `txt-name-${domain.id}`)}
-                                      className="text-indigo-600 hover:text-indigo-700"
-                                      title="Copiar nome TXT"
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <code className="font-mono text-xs text-gray-900 bg-white px-2 py-1 rounded border border-yellow-300">{domain.verify_token || 'Gerando...'}</code>
-                                    <button
-                                      onClick={() => copyDnsInfo(domain.verify_token || '', `txt-value-${domain.id}`)}
-                                      className="text-indigo-600 hover:text-indigo-700"
-                                      title="Copiar token TXT"
-                                      disabled={!domain.verify_token}
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-xs text-gray-600">Auto</td>
-                                <td className="px-4 py-3 text-center">
-                                  {copiedDns === `txt-value-${domain.id}` ? (
-                                    <span className="text-xs text-green-600 font-medium">✓ Copiado!</span>
-                                  ) : (
-                                    <span className="text-xs text-yellow-600 font-medium">PASSO 1</span>
-                                  )}
-                                </td>
-                              </tr>
-                              {/* PASSO 2 - CNAME Record (APENAS @, SEM www) */}
-                              <tr>
-                                <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900 bg-gray-50">CNAME</td>
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <code className="font-mono text-xs text-gray-900 bg-gray-100 px-2 py-1 rounded">@</code>
-                                    <span className="text-xs text-gray-500">(ou deixe vazio)</span>
-                                    <button
-                                      onClick={() => copyDnsInfo('@', `dns-name-${domain.id}`)}
-                                      className="text-indigo-600 hover:text-indigo-700"
-                                      title="Copiar @"
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <code className="font-mono text-xs text-gray-900 bg-gray-100 px-2 py-1 rounded">{dnsTarget}</code>
-                                    <button
-                                      onClick={() => copyDnsInfo(dnsTarget, `dns-target-${domain.id}`)}
-                                      className="text-indigo-600 hover:text-indigo-700"
-                                      title={`Copiar ${dnsTarget}`}
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-xs text-gray-600">Auto</td>
-                                <td className="px-4 py-3 text-center">
-                                  {copiedDns === `dns-target-${domain.id}` ? (
-                                    <span className="text-xs text-green-600 font-medium">✓ Copiado!</span>
-                                  ) : (
-                                    <span className="text-xs text-gray-400">PASSO 2</span>
-                                  )}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm min-w-[600px]">
+                              <thead className="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-semibold text-gray-700">Tipo</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-semibold text-gray-700">Nome/Host</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-semibold text-gray-700">Conteúdo/Destino</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-xs font-semibold text-gray-700 hidden sm:table-cell">TTL</th>
+                                  <th className="px-3 sm:px-4 py-2 text-center text-xs font-semibold text-gray-700">Copiar</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {/* TXT Record */}
+                                <tr className="border-b border-gray-100 bg-yellow-50">
+                                  <td className="px-3 sm:px-4 py-3 font-mono text-xs font-medium text-gray-900 bg-yellow-100">TXT</td>
+                                  <td className="px-3 sm:px-4 py-3">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <code className="font-mono text-xs text-gray-900 bg-white px-2 py-1 rounded border border-yellow-300 break-all">{`_cf-custom-hostname.${domain.domain}`}</code>
+                                      <button
+                                        onClick={() => copyDnsInfo(`_cf-custom-hostname.${domain.domain}`, `txt-name-${domain.id}`)}
+                                        className="text-indigo-600 hover:text-indigo-700 flex-shrink-0"
+                                        title="Copiar nome TXT"
+                                      >
+                                        <Copy className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td className="px-3 sm:px-4 py-3">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <code className="font-mono text-xs text-gray-900 bg-white px-2 py-1 rounded border border-yellow-300 break-all">{domain.verify_token || 'Gerando...'}</code>
+                                      <button
+                                        onClick={() => copyDnsInfo(domain.verify_token || '', `txt-value-${domain.id}`)}
+                                        className="text-indigo-600 hover:text-indigo-700 flex-shrink-0"
+                                        title="Copiar token TXT"
+                                        disabled={!domain.verify_token}
+                                      >
+                                        <Copy className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td className="px-3 sm:px-4 py-3 text-xs text-gray-600 hidden sm:table-cell">Auto</td>
+                                  <td className="px-3 sm:px-4 py-3 text-center">
+                                    {copiedDns === `txt-value-${domain.id}` ? (
+                                      <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                                {/* CNAME Record */}
+                                <tr>
+                                  <td className="px-3 sm:px-4 py-3 font-mono text-xs font-medium text-gray-900 bg-gray-50">CNAME</td>
+                                  <td className="px-3 sm:px-4 py-3">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <code className="font-mono text-xs text-gray-900 bg-gray-100 px-2 py-1 rounded">@</code>
+                                      <span className="text-xs text-gray-500 hidden sm:inline">(ou deixe vazio)</span>
+                                      <button
+                                        onClick={() => copyDnsInfo('@', `dns-name-${domain.id}`)}
+                                        className="text-indigo-600 hover:text-indigo-700 flex-shrink-0"
+                                        title="Copiar @"
+                                      >
+                                        <Copy className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td className="px-3 sm:px-4 py-3">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <code className="font-mono text-xs text-gray-900 bg-gray-100 px-2 py-1 rounded break-all">{dnsTarget}</code>
+                                      <button
+                                        onClick={() => copyDnsInfo(dnsTarget, `dns-target-${domain.id}`)}
+                                        className="text-indigo-600 hover:text-indigo-700 flex-shrink-0"
+                                        title={`Copiar ${dnsTarget}`}
+                                      >
+                                        <Copy className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td className="px-3 sm:px-4 py-3 text-xs text-gray-600 hidden sm:table-cell">Auto</td>
+                                  <td className="px-3 sm:px-4 py-3 text-center">
+                                    {copiedDns === `dns-target-${domain.id}` ? (
+                                      <span className="text-xs text-green-600 font-medium">Copiado</span>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
-                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-xs text-blue-800 mb-2">
-                            <strong>Instruções importantes:</strong>
-                          </p>
-                          <ol className="text-xs text-blue-800 space-y-2 list-decimal list-inside">
-                            <li>
-                              <strong>PASSO 1 — Verificação TXT (Propriedade do domínio):</strong>
-                              <ul className="ml-4 mt-1 space-y-1 list-disc">
-                                <li>Crie um registro TXT com o nome: <code className="bg-blue-100 px-1 rounded">_cf-custom-hostname.{domain.domain}</code></li>
-                                <li>O valor deve ser exatamente: <code className="bg-blue-100 px-1 rounded font-mono">{domain.verify_token || 'Aguardando geração...'}</code></li>
-                                <li>Este registro é obrigatório para verificar que você é o dono do domínio.</li>
-                              </ul>
-                            </li>
-                            <li>
-                              <strong>PASSO 2 — Conexão com a plataforma (CNAME):</strong>
-                              <ul className="ml-4 mt-1 space-y-1 list-disc">
-                                <li>Crie <strong>APENAS UM</strong> registro CNAME:</li>
-                                <li>Tipo: <code className="bg-blue-100 px-1 rounded">CNAME</code></li>
-                                <li>Nome/Host: <code className="bg-blue-100 px-1 rounded">@</code> (ou deixe vazio - representa o domínio raiz)</li>
-                                <li>Destino/Conteúdo: <strong className="font-mono">{dnsTarget}</strong> (sem https:// ou http://)</li>
-                                <li><strong>⚠️ NÃO configure registro www</strong></li>
-                                <li><strong>⚠️ NÃO configure registros A ou IP</strong></li>
-                                <li><strong>⚠️ Configure APENAS este CNAME</strong></li>
-                              </ul>
-                            </li>
-                            <li>Após configurar ambos (TXT e CNAME), aguarde alguns minutos (pode levar até 24 horas) e clique em "Verificar" para validar a configuração.</li>
-                            <li>A verificação só será bem-sucedida quando <strong>ambos</strong> os registros (TXT e CNAME) estiverem configurados corretamente.</li>
-                          </ol>
+
+                        {/* Tutorial Link */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <PlayCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <h6 className="text-sm font-semibold text-gray-900 mb-1">
+                                Precisa de ajuda?
+                              </h6>
+                              <p className="text-xs text-gray-600 mb-3">
+                                Assista ao tutorial em vídeo para configurar o DNS passo a passo.
+                              </p>
+                              <a
+                                href={import.meta.env.VITE_DNS_TUTORIAL_URL || "https://www.youtube.com"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                              >
+                                <PlayCircle className="w-4 h-4" />
+                                Assistir Tutorial
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

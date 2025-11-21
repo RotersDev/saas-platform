@@ -58,6 +58,7 @@ export class DomainController {
 
   /**
    * Adiciona um domínio customizado
+   * Limite: apenas 1 domínio por loja
    */
   static async addDomain(req: TenantRequest, res: Response): Promise<void> {
     try {
@@ -66,7 +67,19 @@ export class DomainController {
         return;
       }
 
-      const { domain, cloudflare_token, cloudflare_zone_id } = req.body;
+      // Verificar se a loja já possui um domínio
+      const existingDomains = await Domain.count({
+        where: { store_id: req.store.id },
+      });
+
+      if (existingDomains >= 1) {
+        res.status(400).json({
+          error: 'Você já possui um domínio configurado. Remova o domínio existente para adicionar um novo.'
+        });
+        return;
+      }
+
+      const { domain } = req.body;
 
       if (!domain || typeof domain !== 'string') {
         res.status(400).json({ error: 'Domínio é obrigatório' });
@@ -90,27 +103,6 @@ export class DomainController {
         return;
       }
 
-      let zoneId = cloudflare_zone_id;
-
-      // Se não forneceu zone_id, tentar buscar automaticamente
-      if (!zoneId && cloudflare_token) {
-        zoneId = await CloudflareService.getZoneId(domain, cloudflare_token);
-        if (!zoneId) {
-          res.status(400).json({
-            error: 'Não foi possível encontrar a zona do domínio no Cloudflare. Verifique se o domínio está configurado no Cloudflare.',
-          });
-          return;
-        }
-      }
-
-      // Verificar token do Cloudflare se fornecido
-      if (cloudflare_token) {
-        const isValidToken = await CloudflareService.verifyToken(cloudflare_token);
-        if (!isValidToken) {
-          res.status(400).json({ error: 'Token do Cloudflare inválido' });
-          return;
-        }
-      }
 
       // Gerar token de verificação único
       const verifyToken = crypto.randomUUID();
@@ -142,33 +134,6 @@ export class DomainController {
       }
 
       logger.info(`Token de verificação gerado para ${domain}: ${verifyToken}`);
-
-      // Se tem token do Cloudflare, criar registro DNS
-      // NOTA: Agora todos os domínios apontam para host.nerix.online (não o subdomain da loja)
-      if (cloudflare_token && zoneId) {
-        const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
-        const recordName = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-        const cnameTarget = `host.${baseDomain}`; // host.nerix.online
-
-        // Criar CNAME apontando para host.nerix.online
-        const recordExists = await CloudflareService.recordExists(zoneId, recordName, cloudflare_token);
-
-        if (!recordExists) {
-          const success = await CloudflareService.createCNAME(
-            zoneId,
-            recordName,
-            cnameTarget,
-            cloudflare_token,
-            true // Proxied através do Cloudflare
-          );
-
-          if (!success) {
-            logger.warn('Não foi possível criar registro DNS automaticamente');
-          } else {
-            logger.info(`✅ CNAME criado automaticamente: ${recordName} -> ${cnameTarget}`);
-          }
-        }
-      }
 
       res.json({
         success: true,
@@ -240,9 +205,22 @@ export class DomainController {
         return;
       }
 
-      logger.info(`✅ Confirmação: Domínio ${domainName} foi completamente removido do banco.`);
+      // Verificar se existe algum outro registro com o mesmo domínio (caso tenha duplicatas)
+      const anyOtherDomain = await Domain.findOne({
+        where: { domain: domainName },
+      });
 
-      res.json({ success: true, message: 'Domínio removido com sucesso' });
+      if (anyOtherDomain) {
+        logger.warn(`⚠️ Ainda existe outro registro com o domínio ${domainName} (ID: ${anyOtherDomain.id})`);
+      }
+
+      logger.info(`✅ Confirmação: Domínio ${domainName} foi completamente removido do banco.`);
+      logger.info(`ℹ️ Nota: O DNS pode levar algumas horas para propagar a remoção. O site pode continuar acessível temporariamente.`);
+
+      res.json({
+        success: true,
+        message: 'Domínio removido com sucesso. O site pode continuar acessível por algumas horas devido à propagação DNS.'
+      });
     } catch (error: any) {
       logger.error('Erro ao remover domínio:', error);
       res.status(400).json({ error: error.message || 'Erro ao remover domínio' });
@@ -380,7 +358,7 @@ export class DomainController {
       // 1. O proxy do Cloudflare está ocultando o CNAME (comum)
       // 2. O servidor não consegue resolver o domínio (problema de rede)
       // 3. O DNS ainda não propagou completamente
-      // 
+      //
       // Como o TXT está correto, isso indica que o usuário configurou corretamente.
       // Se o CNAME também estiver configurado no Cloudflare (como o usuário confirmou),
       // podemos aceitar como válido mesmo que não consigamos verificar do servidor.
@@ -388,7 +366,7 @@ export class DomainController {
         logger.warn(`⚠️ CNAME não verificado diretamente para ${domain.domain}, mas TXT está correto.`);
         logger.info(`ℹ️ Se o CNAME está configurado no Cloudflare (como confirmado), o domínio deve funcionar.`);
         logger.info(`ℹ️ Aceitando como válido: TXT correto + CNAME configurado no Cloudflare = domínio válido`);
-        
+
         // Aceitar como válido se o TXT está correto
         // O usuário confirmou que o CNAME está configurado no Cloudflare
         await domain.update({

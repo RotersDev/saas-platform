@@ -58,6 +58,11 @@ publicRoutes.get('/store', async (req: any, res) => {
     const host = req.headers.host || '';
     const hostWithoutPort = host.split(':')[0];
 
+    // Headers para evitar cache quando domínio é removido
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     if (req.store) {
       console.log('[PublicRoutes.getStore] ✅ Loja encontrada:', req.store.name, '| ID:', req.store.id, '| Host:', hostWithoutPort);
       res.json({
@@ -72,8 +77,9 @@ publicRoutes.get('/store', async (req: any, res) => {
       });
     } else {
       console.log('[PublicRoutes.getStore] ❌ Loja NÃO encontrada para host:', hostWithoutPort);
-      // Retornar null para que o frontend mostre "Loja não encontrada"
-      res.status(404).json(null);
+      // Retornar 404 para que o frontend mostre "Loja não encontrada"
+      // Isso acontece quando o domínio foi removido ou não existe
+      res.status(404).json({ error: 'Loja não encontrada' });
     }
   } catch (error: any) {
     console.error('[PublicRoutes.getStore] ❌ Erro ao buscar loja:', error);

@@ -106,9 +106,51 @@ async function startServer() {
     const dbHost = process.env.DB_HOST === 'localhost' ? '127.0.0.1' : (process.env.DB_HOST || '127.0.0.1');
     logger.info(`📊 Configuração: ${dbHost}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'saas_platform'}`);
 
-    // Testar conexão com banco
-    await sequelize.authenticate();
-    logger.info('✅ Conexão com banco de dados estabelecida');
+    // Testar conexão com banco (com timeout)
+    try {
+      logger.info(`🔍 Tentando conectar em: ${dbHost}:${process.env.DB_PORT || '5432'}`);
+      logger.info(`🔍 Usuário: ${process.env.DB_USER || 'postgres'}`);
+      logger.info(`🔍 Banco: ${process.env.DB_NAME || 'saas_platform'}`);
+
+      const authenticatePromise = sequelize.authenticate();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout ao conectar ao banco de dados (5s)')), 5000)
+      );
+      await Promise.race([authenticatePromise, timeoutPromise]);
+      logger.info('✅ Conexão com banco de dados estabelecida');
+    } catch (dbError: any) {
+      const errorMessage = dbError.message || 'Erro desconhecido';
+      const errorCode = dbError.code || 'N/A';
+      const originalError = dbError.original?.message || dbError.original?.code || 'N/A';
+
+      logger.error('❌ Erro ao conectar ao banco de dados:', {
+        error: errorMessage,
+        code: errorCode,
+        original: originalError,
+        host: dbHost,
+        port: process.env.DB_PORT || '5432',
+        database: process.env.DB_NAME || 'saas_platform',
+        user: process.env.DB_USER || 'postgres',
+      });
+
+      console.error('\n❌ ============================================');
+      console.error('❌ ERRO AO CONECTAR AO BANCO DE DADOS');
+      console.error('❌ ============================================');
+      console.error(`Mensagem: ${errorMessage}`);
+      console.error(`Código: ${errorCode}`);
+      console.error(`Original: ${originalError}`);
+      console.error(`Host: ${dbHost}:${process.env.DB_PORT || '5432'}`);
+      console.error(`Banco: ${process.env.DB_NAME || 'saas_platform'}`);
+      console.error(`Usuário: ${process.env.DB_USER || 'postgres'}`);
+      console.error('\n💡 Possíveis soluções:');
+      console.error('   1. Verifique se o container está rodando: docker ps');
+      console.error('   2. Verifique se o banco existe: docker exec saas_postgres psql -U postgres -l');
+      console.error('   3. Crie o banco se não existir: docker exec saas_postgres psql -U postgres -c "CREATE DATABASE saas_platform;"');
+      console.error('   4. Verifique as credenciais no arquivo .env');
+      console.error('❌ ============================================\n');
+
+      process.exit(1);
+    }
 
     // Sincronizar modelos (apenas em desenvolvimento)
     if (process.env.NODE_ENV === 'development') {

@@ -319,25 +319,25 @@ export class CloudflareService {
       // mas o domínio resolve para IPs do Cloudflare, indicando que está configurado corretamente
       try {
         logger.info(`🔍 Tentando verificar se o domínio resolve (proxy pode estar ativado)...`);
-        
+
         // Tentar resolver o domínio (pode retornar A record se proxy estiver ativado)
         try {
           const aRecords = await dns.resolve4(domain);
           if (aRecords && aRecords.length > 0) {
             logger.info(`📋 Domínio ${domain} resolve para IPs:`, aRecords);
-            
+
             // Verificar se os IPs são do Cloudflare (indicando que proxy está ativado)
             // IPs do Cloudflare geralmente começam com 104.x.x.x, 172.x.x.x, ou outros ranges conhecidos
             const cloudflareIPs = aRecords.filter(ip => {
-              return ip.startsWith('104.') || 
-                     ip.startsWith('172.') || 
+              return ip.startsWith('104.') ||
+                     ip.startsWith('172.') ||
                      ip.startsWith('198.') ||
                      ip.startsWith('162.') ||
                      ip.startsWith('188.') ||
                      ip.startsWith('141.') ||
                      ip.startsWith('190.');
             });
-            
+
             if (cloudflareIPs.length > 0) {
               logger.info(`✅ Domínio ${domain} resolve para IPs do Cloudflare (proxy ativado) - CNAME está configurado corretamente`);
               logger.info(`✅ IPs do Cloudflare detectados: ${cloudflareIPs.join(', ')}`);
@@ -355,7 +355,7 @@ export class CloudflareService {
           // Se não consegue resolver A record, pode ser que ainda não esteja configurado
           // Mas se o TXT está correto, pode ser que o DNS ainda não propagou ou há algum problema de rede
           logger.warn(`ℹ️ Não foi possível resolver A record para ${domain}: ${resolveError.code} - ${resolveError.message}`);
-          
+
           // Se o TXT está correto e o domínio está configurado no Cloudflare com proxy,
           // mas não conseguimos resolver do servidor, ainda podemos considerar válido
           // pois o problema pode ser de rede do servidor, não da configuração do cliente
