@@ -35,6 +35,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Não precisamos mais servir arquivos estáticos localmente
 
 // Rate limiting - mais permissivo em desenvolvimento
+// IMPORTANTE: trust proxy está configurado como 1 (apenas primeiro proxy/Nginx)
+// Isso é seguro e permite que o rate limiting funcione corretamente
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 requests em dev, 100 em produção
@@ -42,14 +44,20 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   // Usar função customizada para obter IP real do header X-Forwarded-For
+  // Isso garante que sempre retorna uma string válida
   keyGenerator: (req): string => {
     // Pegar IP real do header X-Forwarded-For (primeiro IP da lista)
     const forwardedFor = req.headers['x-forwarded-for'];
     if (forwardedFor) {
       const ips = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor.split(',')[0].trim();
-      return ips || req.ip || req.socket?.remoteAddress || 'unknown';
+      if (ips && ips.length > 0) {
+        return ips;
+      }
     }
-    return req.ip || req.socket?.remoteAddress || 'unknown';
+    // Fallback: usar req.ip (já processado pelo trust proxy: 1)
+    // Se req.ip não estiver disponível, usar socket address
+    const ip = req.ip || req.socket?.remoteAddress;
+    return ip && ip.length > 0 ? ip : 'unknown';
   },
   skip: (req) => {
     // Pular rate limiting para requisições locais em desenvolvimento
