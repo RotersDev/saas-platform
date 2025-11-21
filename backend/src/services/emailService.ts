@@ -60,12 +60,15 @@ class EmailService {
    * Envia email de recuperação de senha para lojista
    */
   async sendPasswordResetStoreAdmin(email: string, resetToken: string): Promise<boolean> {
-    // Usar SAAS_DOMAIN se disponível, senão APP_URL, senão FRONTEND_URL, senão localhost
+    // Sempre usar o domínio de produção para emails (não usar localhost)
     const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? `https://${saasDomain}`
-      : (process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:5173');
+    // Se APP_URL contém localhost, usar o domínio de produção
+    const appUrl = process.env.APP_URL || '';
+    const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+    const baseUrl = isLocalhost ? `https://${saasDomain}` : (appUrl || `https://${saasDomain}`);
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+    logger.info('Gerando link de reset de senha:', { baseUrl, resetUrl: resetUrl.substring(0, 50) + '...' });
 
     const html = `
       <!DOCTYPE html>
@@ -78,102 +81,129 @@ class EmailService {
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
               line-height: 1.6;
-              color: #1f2937;
-              background-color: #f3f4f6;
+              color: #000000;
+              background-color: #f5f5f5;
               padding: 20px;
             }
             .container {
               max-width: 600px;
               margin: 0 auto;
               background: #ffffff;
-              border-radius: 12px;
+              border-radius: 0;
               overflow: hidden;
-              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
             .header {
-              background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-              color: white;
-              padding: 40px 30px;
+              background: #2563eb;
+              color: #ffffff;
+              padding: 36px 32px;
               text-align: center;
+              border-bottom: 3px solid #1e40af;
             }
             .header h1 {
-              font-size: 28px;
-              font-weight: 700;
+              font-size: 32px;
+              font-weight: 800;
               margin-bottom: 8px;
               letter-spacing: -0.5px;
+              color: #ffffff;
             }
             .header p {
               font-size: 16px;
+              font-weight: 500;
+              color: #ffffff;
               opacity: 0.95;
-              font-weight: 400;
             }
             .content {
               background: #ffffff;
-              padding: 40px 30px;
+              padding: 40px 32px;
             }
             .content p {
-              font-size: 16px;
-              line-height: 1.7;
-              color: #374151;
-              margin-bottom: 16px;
+              font-size: 17px;
+              line-height: 1.8;
+              color: #000000;
+              margin-bottom: 20px;
+              font-weight: 400;
+            }
+            .content p strong {
+              font-weight: 700;
+              color: #000000;
             }
             .button-container {
               text-align: center;
-              margin: 32px 0;
+              margin: 36px 0;
             }
             .button {
               display: inline-block;
-              padding: 14px 32px;
-              background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-              color: white;
+              padding: 16px 40px;
+              background: #2563eb;
+              color: #ffffff;
               text-decoration: none;
-              border-radius: 8px;
-              font-weight: 600;
-              font-size: 16px;
-              transition: transform 0.2s, box-shadow 0.2s;
-              box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
+              border-radius: 6px;
+              font-weight: 700;
+              font-size: 17px;
+              letter-spacing: 0.3px;
+              border: 2px solid #1e40af;
             }
             .button:hover {
-              transform: translateY(-2px);
-              box-shadow: 0 6px 12px rgba(79, 70, 229, 0.4);
+              background: #1e40af;
+              border-color: #1e3a8a;
             }
             .link-box {
-              background: #f9fafb;
-              border: 1px solid #e5e7eb;
-              border-radius: 8px;
-              padding: 16px;
-              margin: 24px 0;
+              background: #f8f9fa;
+              border: 2px solid #e5e7eb;
+              border-radius: 6px;
+              padding: 18px;
+              margin: 28px 0;
               word-break: break-all;
             }
             .link-box a {
-              color: #4f46e5;
+              color: #2563eb;
               text-decoration: none;
               font-size: 14px;
               font-family: 'Courier New', monospace;
+              font-weight: 500;
+            }
+            .link-label {
+              font-size: 15px;
+              color: #000000;
+              font-weight: 600;
+              margin-bottom: 10px;
+              display: block;
             }
             .warning {
-              background: #fef3c7;
-              border-left: 4px solid #f59e0b;
-              padding: 16px;
+              background: #fff7ed;
+              border: 2px solid #fb923c;
+              border-left: 4px solid #f97316;
+              padding: 18px;
               border-radius: 6px;
-              margin: 24px 0;
+              margin: 28px 0;
             }
             .warning p {
-              color: #92400e;
-              font-size: 14px;
+              color: #9a3412;
+              font-size: 15px;
               margin: 0;
+              font-weight: 500;
+            }
+            .warning strong {
+              font-weight: 700;
+              color: #7c2d12;
             }
             .footer {
               text-align: center;
-              padding: 24px 30px;
-              background: #f9fafb;
-              border-top: 1px solid #e5e7eb;
-              color: #6b7280;
-              font-size: 13px;
+              padding: 28px 32px;
+              background: #f8f9fa;
+              border-top: 2px solid #e5e7eb;
             }
             .footer p {
               margin: 0;
-              color: #6b7280;
+              color: #000000;
+              font-size: 14px;
+              font-weight: 500;
+            }
+            .divider {
+              height: 1px;
+              background: #e5e7eb;
+              margin: 28px 0;
             }
           </style>
         </head>
@@ -185,12 +215,13 @@ class EmailService {
             </div>
             <div class="content">
               <p>Olá,</p>
-              <p>Recebemos uma solicitação para redefinir a senha da sua conta na plataforma Nerix.</p>
+              <p>Recebemos uma solicitação para redefinir a senha da sua conta na plataforma <strong>Nerix</strong>.</p>
               <p>Clique no botão abaixo para criar uma nova senha:</p>
               <div class="button-container">
                 <a href="${resetUrl}" class="button">Redefinir Senha</a>
               </div>
-              <p style="font-size: 14px; color: #6b7280;">Ou copie e cole este link no seu navegador:</p>
+              <div class="divider"></div>
+              <span class="link-label">Ou copie e cole este link no seu navegador:</span>
               <div class="link-box">
                 <a href="${resetUrl}">${resetUrl}</a>
               </div>
@@ -217,20 +248,148 @@ class EmailService {
    * Envia email de recuperação de senha para cliente
    */
   async sendPasswordResetCustomer(email: string, resetToken: string, storeName: string): Promise<boolean> {
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+    // Sempre usar o domínio de produção para emails (não usar localhost)
+    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const appUrl = process.env.APP_URL || '';
+    const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+    const baseUrl = isLocalhost ? `https://${saasDomain}` : (appUrl || `https://${saasDomain}`);
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
     const html = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #0070F3 0%, #0051CC 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 12px 30px; background: #0070F3; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              color: #000000;
+              background-color: #f5f5f5;
+              padding: 20px;
+            }
+            .container {
+              max-width: 600px;
+              margin: 0 auto;
+              background: #ffffff;
+              border-radius: 0;
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+              background: #2563eb;
+              color: #ffffff;
+              padding: 36px 32px;
+              text-align: center;
+              border-bottom: 3px solid #1e40af;
+            }
+            .header h1 {
+              font-size: 32px;
+              font-weight: 800;
+              margin-bottom: 8px;
+              letter-spacing: -0.5px;
+              color: #ffffff;
+            }
+            .header p {
+              font-size: 16px;
+              font-weight: 500;
+              color: #ffffff;
+              opacity: 0.95;
+            }
+            .content {
+              background: #ffffff;
+              padding: 40px 32px;
+            }
+            .content p {
+              font-size: 17px;
+              line-height: 1.8;
+              color: #000000;
+              margin-bottom: 20px;
+              font-weight: 400;
+            }
+            .content p strong {
+              font-weight: 700;
+              color: #000000;
+            }
+            .button-container {
+              text-align: center;
+              margin: 36px 0;
+            }
+            .button {
+              display: inline-block;
+              padding: 16px 40px;
+              background: #2563eb;
+              color: #ffffff;
+              text-decoration: none;
+              border-radius: 6px;
+              font-weight: 700;
+              font-size: 17px;
+              letter-spacing: 0.3px;
+              border: 2px solid #1e40af;
+            }
+            .button:hover {
+              background: #1e40af;
+              border-color: #1e3a8a;
+            }
+            .link-box {
+              background: #f8f9fa;
+              border: 2px solid #e5e7eb;
+              border-radius: 6px;
+              padding: 18px;
+              margin: 28px 0;
+              word-break: break-all;
+            }
+            .link-box a {
+              color: #2563eb;
+              text-decoration: none;
+              font-size: 14px;
+              font-family: 'Courier New', monospace;
+              font-weight: 500;
+            }
+            .link-label {
+              font-size: 15px;
+              color: #000000;
+              font-weight: 600;
+              margin-bottom: 10px;
+              display: block;
+            }
+            .warning {
+              background: #fff7ed;
+              border: 2px solid #fb923c;
+              border-left: 4px solid #f97316;
+              padding: 18px;
+              border-radius: 6px;
+              margin: 28px 0;
+            }
+            .warning p {
+              color: #9a3412;
+              font-size: 15px;
+              margin: 0;
+              font-weight: 500;
+            }
+            .warning strong {
+              font-weight: 700;
+              color: #7c2d12;
+            }
+            .footer {
+              text-align: center;
+              padding: 28px 32px;
+              background: #f8f9fa;
+              border-top: 2px solid #e5e7eb;
+            }
+            .footer p {
+              margin: 0;
+              color: #000000;
+              font-size: 14px;
+              font-weight: 500;
+            }
+            .divider {
+              height: 1px;
+              background: #e5e7eb;
+              margin: 28px 0;
+            }
           </style>
         </head>
         <body>
@@ -241,15 +400,19 @@ class EmailService {
             </div>
             <div class="content">
               <p>Olá,</p>
-              <p>Recebemos uma solicitação para redefinir a senha da sua conta na loja ${storeName}.</p>
+              <p>Recebemos uma solicitação para redefinir a senha da sua conta na loja <strong>${storeName}</strong>.</p>
               <p>Clique no botão abaixo para criar uma nova senha:</p>
-              <p style="text-align: center;">
+              <div class="button-container">
                 <a href="${resetUrl}" class="button">Redefinir Senha</a>
-              </p>
-              <p>Ou copie e cole este link no seu navegador:</p>
-              <p style="word-break: break-all; color: #0070F3;">${resetUrl}</p>
-              <p><strong>Este link expira em 1 hora.</strong></p>
-              <p>Se você não solicitou esta alteração, ignore este email.</p>
+              </div>
+              <div class="divider"></div>
+              <span class="link-label">Ou copie e cole este link no seu navegador:</span>
+              <div class="link-box">
+                <a href="${resetUrl}">${resetUrl}</a>
+              </div>
+              <div class="warning">
+                <p><strong>⚠️ Importante:</strong> Este link expira em 1 hora. Se você não solicitou esta alteração, ignore este email.</p>
+              </div>
             </div>
             <div class="footer">
               <p>© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.</p>
