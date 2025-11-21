@@ -11,6 +11,27 @@ export function normalizeImageUrl(url: string | null | undefined): string {
     cleanUrl = cleanUrl.substring(1);
   }
 
+  // Remover espaços e quebras de linha
+  cleanUrl = cleanUrl.replace(/\s+/g, '');
+
+  // Se a URL contém "r2_public_url=" ou está malformada, tentar extrair a URL correta
+  if (cleanUrl.includes('r2_public_url=') || cleanUrl.includes('r2.dev')) {
+    // Tentar extrair URL válida
+    const urlMatch = cleanUrl.match(/https?:\/\/[^\s"']+/);
+    if (urlMatch) {
+      cleanUrl = urlMatch[0];
+    } else {
+      // Se não encontrar, tentar construir a URL correta
+      const r2PublicUrl = import.meta.env.VITE_R2_PUBLIC_URL || '';
+      if (r2PublicUrl && cleanUrl.includes('stores/')) {
+        const pathMatch = cleanUrl.match(/stores\/[^\s"']+/);
+        if (pathMatch) {
+          cleanUrl = `${r2PublicUrl}/${pathMatch[0]}`;
+        }
+      }
+    }
+  }
+
   // Se já é uma URL relativa, retornar como está
   if (cleanUrl.startsWith('/')) {
     return cleanUrl;
@@ -24,6 +45,16 @@ export function normalizeImageUrl(url: string | null | undefined): string {
   // Se é uma URL externa (http/https), retornar como está
   if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
     return cleanUrl;
+  }
+
+  // Se não começa com http e temos R2_PUBLIC_URL, construir URL completa
+  const r2PublicUrl = import.meta.env.VITE_R2_PUBLIC_URL || '';
+  if (r2PublicUrl && !cleanUrl.startsWith('http')) {
+    // Remover barra inicial se houver
+    const path = cleanUrl.startsWith('/') ? cleanUrl.substring(1) : cleanUrl;
+    // Garantir que r2PublicUrl não termina com /
+    const baseUrl = r2PublicUrl.endsWith('/') ? r2PublicUrl.slice(0, -1) : r2PublicUrl;
+    return `${baseUrl}/${path}`;
   }
 
   // Caso contrário, assumir que é relativa

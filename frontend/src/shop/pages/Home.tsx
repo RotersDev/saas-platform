@@ -382,6 +382,114 @@ export default function ShopHome() {
                 <Package className="mx-auto h-16 w-16 text-gray-400 mb-4" />
                 <p className="text-gray-500 text-lg">Nenhum produto disponível no momento.</p>
               </div>
+            ) : categoriesWithProducts.length === 0 && products && products.length > 0 ? (
+              // Se há produtos mas não há categorias com produtos, mostrar todos os produtos sem agrupar
+              <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-4">
+                {products.map((product: any) => {
+                  const realPrice = Number(product.price);
+                  const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
+                  const discountPercentage = comparisonPrice
+                    ? Math.round(((comparisonPrice - realPrice) / comparisonPrice) * 100)
+                    : null;
+                  const stockLimit = product.stock_limit ?? product.available_stock ?? product.stock_quantity;
+                  const hasStock = stockLimit === null || stockLimit === undefined || stockLimit > 0;
+                  const isAutoDelivery = product.auto_delivery || false;
+
+                  return (
+                    <Link
+                      key={product.id}
+                      to={getProductUrl(storeSubdomain, product.slug)}
+                      className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500"
+                    >
+                      {discountPercentage && discountPercentage > 0 && (
+                        <div className="absolute top-3 left-3 z-10 bg-blue-600 text-white font-bold text-sm px-3 py-1 rounded-full shadow-md flex items-center">
+                          <ArrowDown className="w-4 h-4 mr-1" />
+                          {discountPercentage}% OFF
+                        </div>
+                      )}
+                      <div className="relative overflow-hidden aspect-video">
+                        {!hasStock && (
+                          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 p-4 text-center">
+                            <XCircle className="w-8 h-8 text-red-500 mb-2" />
+                            <span className="font-bold text-white">ESGOTADO</span>
+                          </div>
+                        )}
+                        {product.images && product.images.length > 0 ? (
+                          <img
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            src={normalizeImageUrl(product.images[0])}
+                            alt={product.name}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                            <Package className="w-12 h-12 text-gray-500" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3 lg:p-4 flex flex-col flex-grow gap-2">
+                        <div className="mb-1 sm:mb-2">
+                          <h4 className="text-base lg:text-lg font-bold text-gray-900 line-clamp-2 leading-snug">{product.name}</h4>
+                        </div>
+                        <div className="mt-auto">
+                          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-2 sm:gap-0">
+                            <div>
+                              {comparisonPrice && (
+                                <del className="block text-sm text-gray-400 leading-none mb-0.5">
+                                  {new Intl.NumberFormat('pt-BR', {
+                                    style: 'currency',
+                                    currency: 'BRL',
+                                  }).format(comparisonPrice)}
+                                </del>
+                              )}
+                              <span className="text-2xl font-bold text-gray-900">
+                                {new Intl.NumberFormat('pt-BR', {
+                                  style: 'currency',
+                                  currency: 'BRL',
+                                }).format(realPrice)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-2 sm:mt-3">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              buyNow(product);
+                            }}
+                            disabled={!hasStock}
+                            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2 lg:py-2.5 rounded-md flex items-center justify-center gap-2 transition-all hover:shadow-md text-xs sm:text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
+                          >
+                            <ShoppingCart className="hidden sm:block w-4 h-4 flex-shrink-0" />
+                            <span>COMPRAR AGORA</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              addToCart(product);
+                            }}
+                            disabled={!hasStock}
+                            className="w-9 h-9 lg:w-10 lg:h-10 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Adicionar ao carrinho"
+                            aria-label="Adicionar ao carrinho"
+                          >
+                            <ShoppingCart className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {isAutoDelivery && (
+                          <div className="flex flex-col items-center gap-2 mt-3 sm:mt-4">
+                            <div className="text-xs text-green-400 flex items-center gap-1">
+                              <Zap className="w-3 h-3" />
+                              <span>Entrega automática</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             ) : categoriesWithProducts.length === 0 ? (
               <div className="text-center py-12">
                 <Package className="mx-auto h-16 w-16 text-gray-400 mb-4" />
