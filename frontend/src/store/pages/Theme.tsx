@@ -50,30 +50,75 @@ export default function StoreTheme() {
       // Se for FormData, não definir Content-Type (navegador define automaticamente)
       // Se for objeto, enviar como JSON
       const isFormData = data instanceof FormData;
-      const config: any = {};
+      const config: any = {
+        headers: {},
+      };
 
       if (!isFormData) {
-        config.headers = {
-          'Content-Type': 'application/json',
-        };
+        config.headers['Content-Type'] = 'application/json';
       }
-      // Se for FormData, deixar o navegador definir o Content-Type com boundary
+      // Para FormData, não definir Content-Type - o interceptor do axios já remove
+
+      console.log('[Theme] Enviando requisição:', {
+        isFormData,
+        hasLogo: isFormData ? data.has('logo') : false,
+        hasFavicon: isFormData ? data.has('favicon') : false,
+        contentType: config.headers['Content-Type'] || 'multipart/form-data (auto)',
+      });
 
       const response = await api.put('/api/themes', data, config);
       return response.data;
     },
     {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log('[Theme] Resposta do backend:', data);
         queryClient.invalidateQueries('theme');
         queryClient.invalidateQueries('shopTheme');
         toast.success('Tema atualizado com sucesso!');
-        setLogoFile(null);
-        setFaviconFile(null);
+
+        // Atualizar previews com as URLs retornadas do backend
+        // IMPORTANTE: Só atualizar se realmente recebeu uma URL do backend
+        // Se havia um arquivo sendo enviado, manter o preview até receber a URL
+        if (data.logo_url) {
+          console.log('[Theme] Atualizando logo preview com URL:', data.logo_url);
+          setLogoPreview(data.logo_url);
+          setFormData((prev) => ({ ...prev, logo_url: data.logo_url }));
+          setLogoFile(null); // Limpar apenas após receber URL
+        } else if (data.logo_url === null || data.logo_url === '') {
+          // Só limpar se explicitamente removido
+          if (!logoFile) {
+            setLogoPreview(null);
+            setFormData((prev) => ({ ...prev, logo_url: '' }));
+          }
+        } else if (logoFile) {
+          // Se enviou arquivo mas não recebeu URL, manter preview local
+          console.log('[Theme] Arquivo enviado mas URL não retornada, mantendo preview local');
+        }
+
+        if (data.favicon_url) {
+          console.log('[Theme] Atualizando favicon preview com URL:', data.favicon_url);
+          setFaviconPreview(data.favicon_url);
+          setFormData((prev) => ({ ...prev, favicon_url: data.favicon_url }));
+          setFaviconFile(null); // Limpar apenas após receber URL
+        } else if (data.favicon_url === null || data.favicon_url === '') {
+          // Só limpar se explicitamente removido
+          if (!faviconFile) {
+            setFaviconPreview(null);
+            setFormData((prev) => ({ ...prev, favicon_url: '' }));
+          }
+        } else if (faviconFile) {
+          // Se enviou arquivo mas não recebeu URL, manter preview local
+          console.log('[Theme] Arquivo enviado mas URL não retornada, mantendo preview local');
+        }
+      },
+      onError: (error: any) => {
+        console.error('[Theme] Erro ao atualizar tema:', error);
+        toast.error(error.response?.data?.error || 'Erro ao atualizar tema');
       },
     }
   );
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setLogoFile(file);
@@ -82,10 +127,13 @@ export default function StoreTheme() {
         setLogoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      // Limpar o input para permitir selecionar o mesmo arquivo novamente
+      e.target.value = '';
     }
   };
 
-  const handleFaviconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFaviconChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setFaviconFile(file);
@@ -94,19 +142,78 @@ export default function StoreTheme() {
         setFaviconPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      // Limpar o input para permitir selecionar o mesmo arquivo novamente
+      e.target.value = '';
     }
   };
 
-  const removeLogo = () => {
+  const removeLogo = async () => {
     setLogoFile(null);
     setLogoPreview(null);
-    setFormData({ ...formData, logo_url: '' });
+    setFormData((prev) => ({ ...prev, logo_url: '' }));
+
+    // Salvar remoção imediatamente no backend
+    try {
+      const dataToSend: any = {
+        primary_color: formData.primary_color || '#000000',
+        secondary_color: formData.secondary_color || '#ffffff',
+        accent_color: formData.accent_color || '#007bff',
+        logo_url: '', // String vazia para remover
+      };
+
+      if (formData.font_family && formData.font_family.trim()) {
+        dataToSend.font_family = formData.font_family;
+      }
+
+      if (formData.favicon_url) {
+        dataToSend.favicon_url = formData.favicon_url;
+      }
+
+      await api.put('/api/themes', dataToSend, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      queryClient.invalidateQueries('theme');
+      queryClient.invalidateQueries('shopTheme');
+      toast.success('Logo removida com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Erro ao remover logo');
+    }
   };
 
-  const removeFavicon = () => {
+  const removeFavicon = async () => {
     setFaviconFile(null);
     setFaviconPreview(null);
-    setFormData({ ...formData, favicon_url: '' });
+    setFormData((prev) => ({ ...prev, favicon_url: '' }));
+
+    // Salvar remoção imediatamente no backend
+    try {
+      const dataToSend: any = {
+        primary_color: formData.primary_color || '#000000',
+        secondary_color: formData.secondary_color || '#ffffff',
+        accent_color: formData.accent_color || '#007bff',
+        favicon_url: '', // String vazia para remover
+      };
+
+      if (formData.font_family && formData.font_family.trim()) {
+        dataToSend.font_family = formData.font_family;
+      }
+
+      if (formData.logo_url) {
+        dataToSend.logo_url = formData.logo_url;
+      }
+
+      await api.put('/api/themes', dataToSend, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      queryClient.invalidateQueries('theme');
+      queryClient.invalidateQueries('shopTheme');
+      toast.success('Favicon removido com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Erro ao remover favicon');
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -118,9 +225,19 @@ export default function StoreTheme() {
 
       // Adicionar arquivos se houver
       if (logoFile) {
+        console.log('[Theme] Adicionando logo ao FormData:', {
+          name: logoFile.name,
+          type: logoFile.type,
+          size: logoFile.size,
+        });
         formDataToSend.append('logo', logoFile);
       }
       if (faviconFile) {
+        console.log('[Theme] Adicionando favicon ao FormData:', {
+          name: faviconFile.name,
+          type: faviconFile.type,
+          size: faviconFile.size,
+        });
         formDataToSend.append('favicon', faviconFile);
       }
 
@@ -133,13 +250,15 @@ export default function StoreTheme() {
       }
 
       // Se não há arquivo novo mas há URL, manter a URL
-      if (!logoFile && formData.logo_url) {
-        formDataToSend.append('logo_url', formData.logo_url);
+      // Se logo_url está vazio, enviar como string vazia para remover
+      if (!logoFile) {
+        formDataToSend.append('logo_url', formData.logo_url || '');
       }
-      if (!faviconFile && formData.favicon_url) {
-        formDataToSend.append('favicon_url', formData.favicon_url);
+      if (!faviconFile) {
+        formDataToSend.append('favicon_url', formData.favicon_url || '');
       }
 
+      console.log('[Theme] Enviando FormData com arquivos');
       updateMutation.mutate(formDataToSend);
     } else {
       // Se não há arquivos, enviar como JSON
@@ -154,12 +273,12 @@ export default function StoreTheme() {
         dataToSend.font_family = formData.font_family;
       }
 
-      // Manter URLs se existirem
-      if (formData.logo_url) {
-        dataToSend.logo_url = formData.logo_url;
+      // Enviar URLs (vazias se foram removidas, ou manter existentes)
+      if (formData.logo_url !== undefined) {
+        dataToSend.logo_url = formData.logo_url || '';
       }
-      if (formData.favicon_url) {
-        dataToSend.favicon_url = formData.favicon_url;
+      if (formData.favicon_url !== undefined) {
+        dataToSend.favicon_url = formData.favicon_url || '';
       }
 
       updateMutation.mutate(dataToSend as any);
@@ -322,8 +441,12 @@ export default function StoreTheme() {
                     </div>
                     <button
                       type="button"
-                      onClick={removeLogo}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        removeLogo();
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg transition-colors z-10"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -368,8 +491,12 @@ export default function StoreTheme() {
                     </div>
                     <button
                       type="button"
-                      onClick={removeFavicon}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        removeFavicon();
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg transition-colors z-10"
                     >
                       <X className="w-4 h-4" />
                     </button>

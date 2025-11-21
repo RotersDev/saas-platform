@@ -1,0 +1,70 @@
+# Configuração Nginx para produção
+# Copie este arquivo para /etc/nginx/sites-available/saas-platform
+# e crie um symlink: ln -s /etc/nginx/sites-available/saas-platform /etc/nginx/sites-enabled/
+# Depois: nginx -t && systemctl reload nginx
+
+# Redirecionar HTTP para HTTPS (opcional, descomente se tiver SSL)
+# server {
+#     listen 80;
+#     server_name seu-dominio.com www.seu-dominio.com;
+#     return 301 https://$server_name$request_uri;
+# }
+
+server {
+    listen 80;
+    # listen 443 ssl http2;  # Descomente se tiver SSL
+    server_name seu-dominio.com www.seu-dominio.com;
+
+    # SSL (descomente se tiver certificado)
+    # ssl_certificate /etc/letsencrypt/live/seu-dominio.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/seu-dominio.com/privkey.pem;
+
+    # Tamanho máximo de upload
+    client_max_body_size 50M;
+
+    # Logs
+    access_log /var/log/nginx/saas-platform-access.log;
+    error_log /var/log/nginx/saas-platform-error.log;
+
+    # Frontend (React/Vite)
+    location / {
+        root /var/www/saas-platform/frontend/dist;
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+
+    # Backend API
+    location /api {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+    }
+
+    # Uploads (se não usar R2)
+    location /uploads {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Webhooks
+    location /api/webhooks {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+}
+

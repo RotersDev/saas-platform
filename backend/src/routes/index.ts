@@ -15,6 +15,9 @@ import { notificationRoutes } from './notificationRoutes';
 import { domainRoutes } from './domainRoutes';
 import { paymentMethodRoutes } from './paymentMethodRoutes';
 import { webhookRoutes } from './webhookRoutes';
+import { walletRoutes } from './walletRoutes';
+import { visitRoutes } from './visitRoutes';
+import { uploadRoutes } from './uploadRoutes';
 
 const router = Router();
 
@@ -34,6 +37,9 @@ router.use('/categories', categoryRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/domains', domainRoutes);
 router.use('/payment-methods', paymentMethodRoutes);
+router.use('/wallet', walletRoutes);
+router.use('/visits', visitRoutes);
+router.use('/upload', uploadRoutes);
 router.use('/admin', adminRoutes);
 router.use('/api', apiRoutes);
 

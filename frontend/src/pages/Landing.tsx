@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import {
-  Store, TrendingUp, Users, Zap, ArrowRight, LogIn, UserPlus,
+  Store, TrendingUp, Users, Zap, ArrowRight, LogIn, UserPlus, LogOut,
   Shield, CreditCard, Globe, Sparkles, Lock, Rocket, CheckCircle2,
   BarChart3, Clock, Star, Target, Layers,
   FileText, Settings, Filter, Download
@@ -14,13 +14,22 @@ export default function Landing() {
   const [showRegister, setShowRegister] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ name: '', email: '', password: '' });
+  const [registerData, setRegisterData] = useState({ username: '', email: '', password: '' });
   const navigate = useNavigate();
-  const { login, register, isAuthenticated, user } = useAuthStore();
+  const { login, register, logout, isAuthenticated, user } = useAuthStore();
   const [animatedStats, setAnimatedStats] = useState([0, 0, 0, 0]);
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
+    // Redirecionar usuários logados para o dashboard apenas se não estiverem interagindo com modais
+    if (isAuthenticated && user && !showLogin && !showRegister) {
+      if (user.store_id) {
+        navigate('/store', { replace: true });
+        return;
+      }
+      // Se for master_admin, não redireciona automaticamente (ele pode acessar diretamente /admin)
+    }
+
     // Animação dos números
     const duration = 2000;
     const steps = 60;
@@ -53,7 +62,7 @@ export default function Landing() {
       clearInterval(timer);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [isAuthenticated, user, navigate, showLogin, showRegister]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,9 +72,16 @@ export default function Landing() {
       await login(loginData.email, loginData.password);
       const currentUser = useAuthStore.getState().user;
 
-      if (currentUser?.role === 'master_admin') {
-        navigate('/admin');
-      } else if (currentUser?.store_id) {
+      // Fechar o modal antes de redirecionar
+      setShowLogin(false);
+
+      // Limpar os dados do formulário
+      setLoginData({ email: '', password: '' });
+
+      // Redirecionar baseado no tipo de usuário
+      // NÃO redirecionar master_admin para /admin automaticamente
+      // O acesso ao /admin deve ser manual (digitando a URL)
+      if (currentUser?.store_id) {
         navigate('/store');
       } else {
         navigate('/create-store');
@@ -73,8 +89,9 @@ export default function Landing() {
 
       toast.success('Login realizado com sucesso!');
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Erro ao fazer login');
-    } finally {
+      // Não redirecionar em caso de erro, apenas mostrar mensagem
+      const errorMessage = error.response?.data?.error || error.message || 'Erro ao fazer login';
+      toast.error(errorMessage);
       setLoading(false);
     }
   };
@@ -84,7 +101,7 @@ export default function Landing() {
     setLoading(true);
 
     try {
-      await register(registerData.name, registerData.email, registerData.password);
+      await register(registerData.username, registerData.email, registerData.password);
       toast.success('Conta criada com sucesso!');
       setShowRegister(false);
       navigate('/create-store');
@@ -204,17 +221,10 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-white tracking-tight">Nerix</h1>
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 items-center">
               {isAuthenticated ? (
                 <>
-                  {user?.role === 'master_admin' ? (
-                    <a
-                      href="/admin"
-                      className="text-white/90 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all"
-                    >
-                      Admin
-                    </a>
-                  ) : user?.store_id ? (
+                  {user?.store_id ? (
                     <a
                       href="/store"
                       className="text-white/90 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all"
@@ -229,6 +239,18 @@ export default function Landing() {
                       Criar Loja
                     </button>
                   )}
+                  <button
+                    onClick={() => {
+                      logout();
+                      toast.success('Logout realizado com sucesso!');
+                      navigate('/');
+                    }}
+                    className="text-white/90 hover:text-white px-4 py-2 rounded-lg hover:bg-white/10 transition-all inline-flex items-center"
+                    title="Sair"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sair
+                  </button>
                 </>
               ) : (
                 <>
@@ -711,16 +733,26 @@ export default function Landing() {
             <form onSubmit={handleRegister} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nome *
+                  Username <span className="text-gray-500">(3-20 caracteres)</span> *
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={registerData.name}
-                  onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Seu nome completo"
-                />
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500 font-medium">@</span>
+                  <input
+                    type="text"
+                    required
+                    value={registerData.username}
+                    onChange={(e) => {
+                      const value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setRegisterData({ ...registerData, username: value });
+                    }}
+                    maxLength={20}
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="jproters"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Apenas letras, números e underscore (_)
+                </p>
               </div>
 
               <div>

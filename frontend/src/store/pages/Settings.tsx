@@ -3,10 +3,27 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useLocation } from 'react-router-dom';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { Code, FileCode, Save, Bell, Mail, MessageSquare, Smartphone, AlertCircle, CheckCircle2, Loader2, Globe, ChevronDown, ChevronUp, Settings as SettingsIcon } from 'lucide-react';
+import { Code, FileCode, Save, Bell, Mail, MessageSquare, Smartphone, AlertCircle, CheckCircle2, Loader2, Globe, ChevronDown, ChevronUp, Settings as SettingsIcon, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
-type TabType = 'general' | 'advanced' | 'notifications' | 'domains';
+// Estilos customizados para o editor
+const quillStyles = `
+  .ql-container {
+    font-size: 16px;
+    font-family: inherit;
+  }
+  .ql-editor {
+    min-height: 400px;
+  }
+  .ql-editor.ql-blank::before {
+    font-style: normal;
+    color: #9ca3af;
+  }
+`;
+
+type TabType = 'general' | 'advanced' | 'notifications' | 'domains' | 'terms';
 
 export default function StoreSettings() {
   const location = useLocation();
@@ -16,10 +33,13 @@ export default function StoreSettings() {
 
   // Determinar aba ativa baseado na URL ou hash
   const getActiveTab = (): TabType => {
+    // Se está na página de domínios, não mostrar tabs (a página de domínios tem sua própria navegação)
     if (location.pathname.includes('/domains')) return 'domains';
     const hash = location.hash.replace('#', '');
     if (hash === 'notifications') return 'notifications';
     if (hash === 'domains') return 'domains';
+    if (hash === 'terms') return 'terms';
+    if (hash === 'advanced') return 'advanced';
     if (hash === 'general') return 'general';
     return 'general'; // Padrão agora é 'general'
   };
@@ -29,14 +49,17 @@ export default function StoreSettings() {
   // Atualizar aba quando hash ou pathname mudar
   useEffect(() => {
     const hash = location.hash.replace('#', '');
+    // Se está na página de domínios, não atualizar tabs (deixar a página de domínios gerenciar)
     if (location.pathname.includes('/domains')) {
-      setActiveTab('domains');
-    } else if (hash === 'notifications') {
+      return; // Não atualizar tabs quando está em /domains
+    }
+    
+    if (hash === 'notifications') {
       setActiveTab('notifications');
     } else if (hash === 'domains') {
       setActiveTab('domains');
-    } else if (hash === 'general') {
-      setActiveTab('general');
+    } else if (hash === 'terms') {
+      setActiveTab('terms');
     } else if (hash === 'advanced') {
       setActiveTab('advanced');
     } else {
@@ -53,21 +76,32 @@ export default function StoreSettings() {
   });
 
   const [requireLogin, setRequireLogin] = useState(false);
+  const [storeName, setStoreName] = useState('');
+  const [storeDescription, setStoreDescription] = useState('');
+  const [terms, setTerms] = useState('');
 
   useEffect(() => {
     if (storeData) {
       setRequireLogin(storeData.require_login_to_purchase || false);
+      setStoreName(storeData.name || '');
+      setStoreDescription(storeData.settings?.description || '');
+      setTerms(storeData.settings?.terms || '');
     }
   }, [storeData]);
 
   const updateStoreMutation = useMutation(
-    async (data: { require_login_to_purchase?: boolean }) => {
+    async (data: {
+      require_login_to_purchase?: boolean;
+      name?: string;
+      settings?: { description?: string; terms?: string };
+    }) => {
       const response = await api.put('/api/stores', data);
       return response.data;
     },
     {
       onSuccess: () => {
         queryClient.invalidateQueries('store');
+        queryClient.invalidateQueries('shopStore');
         toast.success('Configurações salvas com sucesso!');
       },
       onError: (error: any) => {
@@ -76,6 +110,23 @@ export default function StoreSettings() {
       },
     }
   );
+
+  const handleSaveStoreInfo = () => {
+    updateStoreMutation.mutate({
+      name: storeName,
+      settings: {
+        description: storeDescription,
+      },
+    });
+  };
+
+  const handleSaveTerms = () => {
+    updateStoreMutation.mutate({
+      settings: {
+        terms: terms,
+      },
+    });
+  };
 
   // Notificações state
   const [notifications, setNotifications] = useState<Record<string, boolean>>({});
@@ -275,6 +326,7 @@ export default function StoreSettings() {
 
   const tabs = [
     { id: 'general' as TabType, label: 'Geral', icon: SettingsIcon },
+    { id: 'terms' as TabType, label: 'Termos', icon: FileText },
     { id: 'advanced' as TabType, label: 'Avançado', icon: Code },
     { id: 'notifications' as TabType, label: 'Notificações', icon: Bell },
     { id: 'domains' as TabType, label: 'Domínios', icon: Globe },
@@ -297,6 +349,9 @@ export default function StoreSettings() {
     );
   }
 
+  // Não mostrar tabs quando está na página de domínios (ela tem sua própria navegação)
+  const showTabs = !location.pathname.includes('/domains');
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
@@ -304,36 +359,110 @@ export default function StoreSettings() {
         <p className="text-gray-600 mt-2">Gerencie as configurações avançadas e notificações da sua loja</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6 p-1 border rounded-xl w-fit bg-gray-50">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <Link
-              key={tab.id}
-              to={tab.id === 'domains' ? '/store/settings/domains' : `/store/settings#${tab.id}`}
-              onClick={() => {
-                if (tab.id !== 'domains') {
-                  setActiveTab(tab.id);
-                }
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                (isActive || (tab.id === 'domains' && location.pathname.includes('/domains')))
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
+      {/* Tabs - só mostrar se não estiver na página de domínios */}
+      {showTabs && (
+        <div className="flex flex-wrap gap-2 mb-6 p-1 border rounded-xl w-fit bg-gray-50">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <Link
+                key={tab.id}
+                to={tab.id === 'domains' ? '/store/settings/domains' : `/store/settings#${tab.id}`}
+                onClick={() => {
+                  if (tab.id !== 'domains') {
+                    setActiveTab(tab.id);
+                  }
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  (isActive || (tab.id === 'domains' && location.pathname.includes('/domains')))
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       {/* Tab Content */}
       {activeTab === 'general' && (
         <div className="space-y-6">
+          {/* Informações da Loja */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <SettingsIcon className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Informações da Loja</h3>
+                  <p className="text-sm text-gray-600">Configure o nome e descrição da sua loja</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Nome da Loja */}
+              <div>
+                <label htmlFor="storeName" className="block text-sm font-medium text-gray-900 mb-2">
+                  Nome da Loja *
+                </label>
+                <input
+                  id="storeName"
+                  type="text"
+                  value={storeName}
+                  onChange={(e) => setStoreName(e.target.value)}
+                  placeholder="Ex: Minha Loja Digital"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  maxLength={255}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Este nome aparecerá no cabeçalho e em outras partes do seu site
+                </p>
+              </div>
+
+              {/* Descrição da Loja */}
+              <div>
+                <label htmlFor="storeDescription" className="block text-sm font-medium text-gray-900 mb-2">
+                  Descrição do Site
+                </label>
+                <textarea
+                  id="storeDescription"
+                  value={storeDescription}
+                  onChange={(e) => setStoreDescription(e.target.value)}
+                  placeholder="Descreva sua loja, produtos ou serviços..."
+                  rows={4}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none"
+                  maxLength={500}
+                />
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-gray-500">
+                    Esta descrição pode aparecer em páginas públicas e resultados de busca
+                  </p>
+                  <span className="text-xs text-gray-400">
+                    {storeDescription.length}/500
+                  </span>
+                </div>
+              </div>
+
+              {/* Botão Salvar */}
+              <div className="flex justify-end pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={handleSaveStoreInfo}
+                  disabled={updateStoreMutation.isLoading || !storeName.trim()}
+                  className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-md hover:shadow-lg"
+                >
+                  <Save className="w-5 h-5 mr-2" />
+                  {updateStoreMutation.isLoading ? 'Salvando...' : 'Salvar Informações'}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Configurações de Vendas */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
             <div className="p-6 border-b border-gray-200">
@@ -684,6 +813,69 @@ export default function StoreSettings() {
           >
             Ir para Configuração de Domínios
           </Link>
+        </div>
+      )}
+
+      {activeTab === 'terms' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <FileText className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Termos de Uso</h2>
+                  <p className="text-sm text-gray-600">Configure os termos de uso da sua loja. Estes termos serão exibidos em /terms do seu site.</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <style>{quillStyles}</style>
+              <div className="mb-4">
+                <ReactQuill
+                  theme="snow"
+                  value={terms}
+                  onChange={setTerms}
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                      [{ 'font': [] }],
+                      [{ 'size': [] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'color': [] }, { 'background': [] }],
+                      [{ 'script': 'sub'}, { 'script': 'super' }],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'align': [] }],
+                      ['blockquote', 'code-block'],
+                      ['link', 'image'],
+                      ['clean']
+                    ],
+                  }}
+                  formats={[
+                    'header', 'font', 'size',
+                    'bold', 'italic', 'underline', 'strike',
+                    'color', 'background',
+                    'script',
+                    'list', 'bullet',
+                    'align',
+                    'blockquote', 'code-block',
+                    'link', 'image'
+                  ]}
+                />
+              </div>
+              <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
+                <button
+                  onClick={handleSaveTerms}
+                  disabled={updateStoreMutation.isLoading}
+                  className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors font-medium shadow-md hover:shadow-lg"
+                >
+                  <Save className="w-5 h-5 mr-2" />
+                  {updateStoreMutation.isLoading ? 'Salvando...' : 'Salvar Termos'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

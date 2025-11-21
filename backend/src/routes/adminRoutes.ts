@@ -33,4 +33,16 @@ adminRoutes.get('/stats', AdminController.getStats);
 // Faturas
 adminRoutes.get('/invoices', AdminController.listInvoices);
 
+// Saques
+adminRoutes.get('/withdrawals', AdminController.listWithdrawals);
+adminRoutes.post('/withdrawals/:id/approve', AdminController.approveWithdrawal);
+adminRoutes.post('/withdrawals/:id/reject', AdminController.rejectWithdrawal);
+
+// Vendas
+adminRoutes.get('/sales', AdminController.listSales);
+
+// Contas
+adminRoutes.get('/accounts', AdminController.listAccounts);
+adminRoutes.delete('/accounts/:id', AdminController.deleteAccount);
+
 

@@ -58,14 +58,6 @@ export class StoreController {
         return;
       }
 
-      // Processar logo se houver
-      let logoUrl = null;
-      if ((req as any).file) {
-        logoUrl = `/uploads/${(req as any).file.filename}`;
-      } else if (logo) {
-        logoUrl = logo;
-      }
-
       // Buscar plano básico
       const basicPlan = await Plan.findOne({ where: { slug: 'basico' } });
       if (!basicPlan) {
@@ -73,7 +65,7 @@ export class StoreController {
         return;
       }
 
-      // Criar loja
+      // Criar loja primeiro (precisamos do ID para fazer upload)
       const store = await Store.create({
         name,
         subdomain,
@@ -81,12 +73,26 @@ export class StoreController {
         plan_id: basicPlan.id,
         status: 'trial',
         trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias
-        logo_url: logoUrl,
+        logo_url: logo || null,
         is_white_label: false,
         settings: {
           description: description || '',
         },
       });
+
+      // Processar logo se houver - agora usando Cloudflare R2 (após criar a loja)
+      if ((req as any).file) {
+        const { uploadToR2 } = await import('../services/r2Service');
+        const logoUrl = await uploadToR2({
+          storeId: store.id,
+          category: 'logos',
+          buffer: (req as any).file.buffer,
+          mimeType: (req as any).file.mimetype,
+          originalName: (req as any).file.originalname,
+        });
+        // Atualizar logo da loja com URL do R2
+        await store.update({ logo_url: logoUrl });
+      }
 
       // Associar usuário à loja
       if (user) {
@@ -126,7 +132,30 @@ export class StoreController {
         return;
       }
 
-      await req.store.update(req.body);
+      const updateData: any = { ...req.body };
+
+      // Se settings foi enviado, fazer merge com settings existentes
+      if (req.body.settings) {
+        const currentSettings = req.store.settings || {};
+        updateData.settings = {
+          ...currentSettings,
+          ...req.body.settings,
+        };
+      }
+
+      // Validar nome se fornecido
+      if (req.body.name !== undefined) {
+        if (!req.body.name || req.body.name.trim().length === 0) {
+          res.status(400).json({ error: 'Nome da loja é obrigatório' });
+          return;
+        }
+        if (req.body.name.length > 255) {
+          res.status(400).json({ error: 'Nome da loja deve ter no máximo 255 caracteres' });
+          return;
+        }
+      }
+
+      await req.store.update(updateData);
 
       res.json(req.store);
     } catch (error: any) {

@@ -19,7 +19,19 @@ export const authenticateCustomer = async (
       return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+    } catch (jwtError: any) {
+      // Se o token expirou, retornar erro específico
+      if (jwtError.name === 'TokenExpiredError') {
+        res.status(401).json({ error: 'Token expirado', code: 'TOKEN_EXPIRED' });
+        return;
+      }
+      // Para outros erros de JWT, retornar erro genérico
+      res.status(401).json({ error: 'Token inválido', code: 'TOKEN_INVALID' });
+      return;
+    }
 
     // Verificar se é token de cliente
     if (decoded.type !== 'customer') {
@@ -53,8 +65,9 @@ export const authenticateCustomer = async (
     };
 
     next();
-  } catch (error) {
-    res.status(401).json({ error: 'Token inválido' });
+  } catch (error: any) {
+    console.error('[CustomerAuth] Erro inesperado:', error);
+    res.status(401).json({ error: 'Erro ao autenticar' });
   }
 };
 

@@ -4,8 +4,8 @@ import api from '../../config/axios';
 import { useState, useEffect } from 'react';
 import {
   ArrowLeft, CheckCircle2, Clock, XCircle, Package,
-  Calendar, ShoppingBag, DollarSign, CreditCard,
-  Copy, Check, Shield, User, Mail
+  Calendar,
+  Copy, Check, Shield, Mail
 } from 'lucide-react';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
@@ -17,6 +17,7 @@ export default function MyOrderDetails() {
   const navigate = useNavigate();
   const [customer, setCustomer] = useState<any>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [copiedAllKeys, setCopiedAllKeys] = useState<string | null>(null);
 
   useEffect(() => {
     const customerData = localStorage.getItem(`customer_${storeSubdomain}`);
@@ -54,6 +55,20 @@ export default function MyOrderDetails() {
     navigator.clipboard.writeText(text);
     setCopiedKey(keyId);
     toast.success('Copiado para a área de transferência!');
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const copyAllKeys = (allKeys: string, itemIndex: number) => {
+    navigator.clipboard.writeText(allKeys);
+    setCopiedAllKeys(`all-${itemIndex}`);
+    toast.success('Todas as chaves copiadas!');
+    setTimeout(() => setCopiedAllKeys(null), 2000);
+  };
+
+  const copySingleKey = (key: string, keyIndex: number, itemIndex: number) => {
+    navigator.clipboard.writeText(key.trim());
+    setCopiedKey(`item-${itemIndex}-key-${keyIndex}`);
+    toast.success('Chave copiada!');
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
@@ -95,13 +110,10 @@ export default function MyOrderDetails() {
     const Icon = badge.icon;
 
     return (
-      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${badge.className}`}>
-        <Icon className="w-4 h-4" />
-        <div className="flex flex-col">
-          <span className="text-sm font-semibold">{badge.label}</span>
-          <span className="text-xs opacity-75">{badge.description}</span>
-        </div>
-      </div>
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${badge.className}`}>
+        <Icon className="w-3 h-3" />
+        <span>{badge.label}</span>
+      </span>
     );
   };
 
@@ -111,7 +123,7 @@ export default function MyOrderDetails() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
@@ -119,7 +131,7 @@ export default function MyOrderDetails() {
 
   if (!order) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Pedido não encontrado</h1>
@@ -136,7 +148,7 @@ export default function MyOrderDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen">
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
@@ -149,20 +161,20 @@ export default function MyOrderDetails() {
           </Link>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
           {/* Coluna Principal - Detalhes do Pedido */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             {/* Card Principal do Pedido */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-6">
-                <div className="flex items-center justify-between">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-4 md:p-6 border-b border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <h1 className="text-2xl font-bold text-white mb-2">
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
                       Pedido {order.order_number || `#${order.id}`}
                     </h1>
-                    <div className="flex items-center gap-2 text-white/90">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Calendar className="w-4 h-4" />
-                      <span className="text-sm">
+                      <span>
                         {new Date(order.created_at).toLocaleDateString('pt-BR', {
                           day: '2-digit',
                           month: 'long',
@@ -177,24 +189,21 @@ export default function MyOrderDetails() {
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-6 md:p-8">
                 {/* Itens do Pedido */}
                 {order.items && order.items.length > 0 && (
-                  <div className="mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <ShoppingBag className="w-5 h-5 text-indigo-600" />
-                      Itens do Pedido
-                    </h2>
+                  <div>
+                    <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Itens do Pedido</h2>
                     <div className="space-y-4">
                       {order.items.map((item: any, index: number) => (
                         <div
                           key={index}
-                          className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                          className="bg-gray-50 rounded-lg p-4 md:p-5 border border-gray-200"
                         >
                           <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-gray-900 mb-1">{item.product_name}</h3>
-                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium text-gray-900 mb-2 text-sm md:text-base">{item.product_name}</h3>
+                              <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm text-gray-600">
                                 <span className="flex items-center gap-1.5">
                                   <Package className="w-4 h-4" />
                                   Quantidade: {item.quantity}
@@ -210,29 +219,78 @@ export default function MyOrderDetails() {
                           </div>
 
                           {/* Chave do Produto */}
-                          {item.product_key && (
-                            <div className="mt-3 pt-3 border-t border-gray-200">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-gray-600 mb-1">Chave do Produto</p>
-                                  <code className="text-sm font-mono text-gray-900 break-all bg-white px-3 py-2 rounded border border-gray-300 block">
-                                    {item.product_key}
-                                  </code>
-                                </div>
-                                <button
-                                  onClick={() => copyToClipboard(item.product_key, `key-${index}`)}
-                                  className="ml-3 p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                  title="Copiar chave"
-                                >
-                                  {copiedKey === `key-${index}` ? (
-                                    <Check className="w-5 h-5 text-green-600" />
-                                  ) : (
-                                    <Copy className="w-5 h-5" />
+                          {item.product_key && (() => {
+                            const keys = item.product_key.split('\n').filter((k: string) => k.trim());
+                            const hasMultipleKeys = keys.length > 1;
+
+                            return (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-sm font-medium text-gray-700">
+                                    {hasMultipleKeys ? `Chaves do Produto (${keys.length})` : 'Chave do Produto'}
+                                  </p>
+                                  {hasMultipleKeys && (
+                                    <button
+                                      onClick={() => copyAllKeys(item.product_key, index)}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                                    >
+                                      {copiedAllKeys === `all-${index}` ? (
+                                        <>
+                                          <Check className="w-3.5 h-3.5 text-green-600" />
+                                          <span>Copiado!</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="w-3.5 h-3.5" />
+                                          <span>Copiar todas</span>
+                                        </>
+                                      )}
+                                    </button>
                                   )}
-                                </button>
+                                </div>
+
+                                {hasMultipleKeys ? (
+                                  <div className="space-y-2">
+                                    {keys.map((key: string, keyIndex: number) => (
+                                      <div key={keyIndex} className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 border border-gray-200">
+                                        <code className="flex-1 text-xs font-mono text-gray-900 break-all px-2 py-1.5 bg-white rounded border border-gray-200">
+                                          {key.trim()}
+                                        </code>
+                                        <button
+                                          onClick={() => copySingleKey(key, keyIndex, index)}
+                                          className="flex-shrink-0 p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                          title="Copiar esta chave"
+                                        >
+                                          {copiedKey === `item-${index}-key-${keyIndex}` ? (
+                                            <Check className="w-4 h-4 text-green-600" />
+                                          ) : (
+                                            <Copy className="w-4 h-4" />
+                                          )}
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <code className="flex-1 text-sm font-mono text-gray-900 break-all bg-white px-3 py-2 rounded border border-gray-300">
+                                      {item.product_key.trim()}
+                                    </code>
+                                    <button
+                                      onClick={() => copyToClipboard(item.product_key, `key-${index}`)}
+                                      className="flex-shrink-0 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                      title="Copiar chave"
+                                    >
+                                      {copiedKey === `key-${index}` ? (
+                                        <Check className="w-5 h-5 text-green-600" />
+                                      ) : (
+                                        <Copy className="w-5 h-5" />
+                                      )}
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
                         </div>
                       ))}
                     </div>
@@ -240,14 +298,11 @@ export default function MyOrderDetails() {
                 )}
 
                 {/* Resumo Financeiro */}
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-6 border border-indigo-200">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-indigo-600" />
-                    Resumo Financeiro
-                  </h2>
-                  <div className="space-y-2">
+                <div className="bg-white rounded-lg shadow-sm p-6 md:p-8 border border-gray-200 mt-6">
+                  <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-5">Resumo Financeiro</h2>
+                  <div className="space-y-3">
                     {order.subtotal && Number(order.subtotal) !== Number(order.total) && (
-                      <div className="flex justify-between text-gray-700">
+                      <div className="flex justify-between text-sm text-gray-700">
                         <span>Subtotal</span>
                         <span>
                           {new Intl.NumberFormat('pt-BR', {
@@ -257,9 +312,9 @@ export default function MyOrderDetails() {
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t border-indigo-200">
+                    <div className="flex justify-between text-lg md:text-xl font-bold text-gray-900 pt-3 border-t border-gray-200">
                       <span>Total Pago</span>
-                      <span className="text-indigo-600">
+                      <span>
                         {new Intl.NumberFormat('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
@@ -273,14 +328,11 @@ export default function MyOrderDetails() {
           </div>
 
           {/* Sidebar - Informações Adicionais */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Informações de Pagamento */}
             {order.payment && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-indigo-600" />
-                  Informações de Pagamento
-                </h3>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Informações de Pagamento</h3>
                 <div className="space-y-3">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Método</p>
@@ -321,11 +373,8 @@ export default function MyOrderDetails() {
             )}
 
             {/* Informações do Cliente */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <User className="w-5 h-5 text-indigo-600" />
-                Informações
-              </h3>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Informações</h3>
               <div className="space-y-3">
                 {customer.name && (
                   <div>
@@ -346,12 +395,12 @@ export default function MyOrderDetails() {
             </div>
 
             {/* Ajuda */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 md:p-6">
               <div className="flex items-start gap-3">
-                <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <Shield className="w-5 h-5 text-gray-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Precisa de ajuda?</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Precisa de ajuda?</h3>
+                  <p className="text-xs text-gray-600">
                     Se tiver alguma dúvida sobre seu pedido, entre em contato com o suporte da loja.
                   </p>
                 </div>

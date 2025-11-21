@@ -57,19 +57,31 @@ export default function ResetPassword() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-4">
+      <div className="min-h-screen relative flex items-center justify-center p-4">
+        {/* Background com degradê sutil e bolinhas azuis */}
+        <div
+          className="fixed inset-0 -z-10"
+          style={{
+            background: `
+              radial-gradient(circle, rgba(59, 130, 246, 0.25) 1.5px, transparent 1.5px),
+              linear-gradient(to top, #e2e8f0 0%, #f1f5f9 25%, #f8fafc 75%, #ffffff 100%)
+            `,
+            backgroundSize: '30px 30px, 100% 100%',
+            backgroundPosition: '0 0, 0 0',
+          }}
+        />
         <div className="max-w-md w-full">
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-full mb-4">
-              <CheckCircle2 className="w-8 h-8 text-green-400" />
+          <div className="bg-white/90 backdrop-blur-xl border border-gray-200 rounded-2xl p-8 shadow-2xl text-center relative z-10">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+              <CheckCircle2 className="w-8 h-8 text-green-600" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Senha redefinida!</h1>
-            <p className="text-white/70 mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Senha redefinida!</h1>
+            <p className="text-gray-600 mb-6">
               Sua senha foi redefinida com sucesso. Você será redirecionado para a página inicial.
             </p>
             <Link
               to="/"
-              className="inline-flex items-center text-blue-400 hover:text-blue-300 font-medium"
+              className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
             >
               Ir para página inicial
             </Link>
@@ -80,22 +92,34 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen relative flex items-center justify-center p-4">
+      {/* Background com degradê sutil e bolinhas azuis */}
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
+          background: `
+            radial-gradient(circle, rgba(59, 130, 246, 0.25) 1.5px, transparent 1.5px),
+            linear-gradient(to top, #e2e8f0 0%, #f1f5f9 25%, #f8fafc 75%, #ffffff 100%)
+          `,
+          backgroundSize: '30px 30px, 100% 100%',
+          backgroundPosition: '0 0, 0 0',
+        }}
+      />
       <div className="max-w-md w-full">
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-white/90 backdrop-blur-xl border border-gray-200 rounded-2xl p-8 shadow-2xl relative z-10">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500/20 rounded-full mb-4">
-              <Lock className="w-8 h-8 text-blue-400" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+              <Lock className="w-8 h-8 text-blue-600" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Redefinir senha</h1>
-            <p className="text-white/70">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Redefinir senha</h1>
+            <p className="text-gray-600">
               Digite sua nova senha abaixo.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Nova senha
               </label>
               <input
@@ -104,14 +128,14 @@ export default function ResetPassword() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Mínimo 6 caracteres"
                 minLength={6}
               />
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/90 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
                 Confirmar senha
               </label>
               <input
@@ -120,7 +144,7 @@ export default function ResetPassword() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Digite a senha novamente"
                 minLength={6}
               />
@@ -138,7 +162,7 @@ export default function ResetPassword() {
           <div className="mt-8 text-center">
             <Link
               to="/"
-              className="inline-flex items-center text-white/70 hover:text-white transition-colors"
+              className="inline-flex items-center text-gray-700 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar para o início

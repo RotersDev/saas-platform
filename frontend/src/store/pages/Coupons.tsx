@@ -3,8 +3,10 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { Plus, Edit, Trash2, Ticket } from 'lucide-react';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export default function StoreCoupons() {
+  const { confirm, Dialog } = useConfirm();
   const [showModal, setShowModal] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -186,8 +188,14 @@ export default function StoreCoupons() {
                         <Edit className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Excluir este cupom?')) {
+                        onClick={async () => {
+                          const confirmed = await confirm({
+                            title: 'Excluir cupom',
+                            message: 'Tem certeza que deseja excluir este cupom? Esta ação não pode ser desfeita.',
+                            type: 'danger',
+                            confirmText: 'Excluir',
+                          });
+                          if (confirmed) {
                             deleteMutation.mutate(coupon.id);
                           }
                         }}
@@ -364,9 +372,10 @@ export default function StoreCoupons() {
                 </div>
               </form>
             </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      {Dialog}
     </div>
   );
 }

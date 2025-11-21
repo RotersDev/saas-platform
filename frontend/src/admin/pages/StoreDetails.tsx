@@ -4,6 +4,7 @@ import { X, Store, Globe, Mail, Phone, Calendar, DollarSign, Package, ShoppingCa
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import toast from 'react-hot-toast';
+import { useConfirm } from '../../hooks/useConfirm';
 
 interface StoreDetailsProps {
   storeId: number;
@@ -12,6 +13,7 @@ interface StoreDetailsProps {
 }
 
 export default function StoreDetails({ storeId, onClose, onUpdate }: StoreDetailsProps) {
+  const { confirm, Dialog } = useConfirm();
   const { data: store, isLoading, refetch } = useQuery(
     ['storeDetails', storeId],
     async () => {
@@ -23,13 +25,25 @@ export default function StoreDetails({ storeId, onClose, onUpdate }: StoreDetail
   const handleStatusChange = async (newStatus: 'active' | 'suspended' | 'blocked') => {
     try {
       if (newStatus === 'blocked') {
-        if (!confirm('Tem certeza que deseja BLOQUEAR esta loja? Esta ação pode ser revertida.')) {
+        const confirmed = await confirm({
+          title: 'Bloquear loja',
+          message: 'Tem certeza que deseja BLOQUEAR esta loja? Esta ação pode ser revertida.',
+          type: 'danger',
+          confirmText: 'Bloquear',
+        });
+        if (!confirmed) {
           return;
         }
         await api.post(`/api/admin/stores/${storeId}/block`);
         toast.success('Loja bloqueada com sucesso!');
       } else if (newStatus === 'suspended') {
-        if (!confirm('Tem certeza que deseja SUSPENDER esta loja?')) {
+        const confirmed = await confirm({
+          title: 'Suspender loja',
+          message: 'Tem certeza que deseja SUSPENDER esta loja?',
+          type: 'warning',
+          confirmText: 'Suspender',
+        });
+        if (!confirmed) {
           return;
         }
         await api.post(`/api/admin/stores/${storeId}/suspend`);
@@ -261,6 +275,7 @@ export default function StoreDetails({ storeId, onClose, onUpdate }: StoreDetail
           )}
         </div>
       </div>
+      {Dialog}
     </div>
   );
 }

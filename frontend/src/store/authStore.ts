@@ -3,10 +3,12 @@ import api from '../config/axios';
 
 interface User {
   id: number;
-  name: string;
+  name: string | null;
+  username: string | null;
   email: string;
   role: string;
   store_id?: number;
+  profile_picture_url?: string | null;
 }
 
 interface AuthState {
@@ -14,7 +16,7 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
   setToken: (token: string) => void;
@@ -47,8 +49,8 @@ export const useAuthStore = create<AuthState>((set) => {
 
       set({ user, token, isAuthenticated: true });
     },
-    register: async (name: string, email: string, password: string) => {
-      const response = await api.post('/api/auth/register', { name, email, password });
+    register: async (username: string, email: string, password: string) => {
+      const response = await api.post('/api/auth/register', { username, email, password });
       const { token, user } = response.data;
 
       localStorage.setItem('token', token);

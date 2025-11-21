@@ -7,6 +7,7 @@ export interface CategoryAttributes {
   slug: string;
   image_url?: string;
   is_active: boolean;
+  display_order?: number;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -18,6 +19,7 @@ export class Category extends Model<CategoryAttributes> implements CategoryAttri
   public slug!: string;
   public image_url?: string;
   public is_active!: boolean;
+  public display_order?: number;
 
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
@@ -50,6 +52,11 @@ export class Category extends Model<CategoryAttributes> implements CategoryAttri
           type: DataTypes.BOOLEAN,
           allowNull: false,
           defaultValue: true,
+        },
+        display_order: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          defaultValue: 0,
         },
         created_at: {
           type: DataTypes.DATE,

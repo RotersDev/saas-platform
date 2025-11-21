@@ -22,6 +22,10 @@ import { ErrorLog } from './ErrorLog';
 import { SplitConfig } from './SplitConfig';
 import { Category } from './Category';
 import { PaymentMethod } from './PaymentMethod';
+import { Wallet } from './Wallet';
+import { Withdrawal } from './Withdrawal';
+import { Visit } from './Visit';
+import { UserSession } from './UserSession';
 
 // Initialize all models
 Store.initialize(sequelize);
@@ -47,6 +51,10 @@ ErrorLog.initialize(sequelize);
 SplitConfig.initialize(sequelize);
 Category.initialize(sequelize);
 PaymentMethod.initialize(sequelize);
+Wallet.initialize(sequelize);
+Withdrawal.initialize(sequelize);
+Visit.initialize(sequelize);
+UserSession.initialize(sequelize);
 
 // Define associations
 Store.hasMany(User, { foreignKey: 'store_id', as: 'users' });
@@ -127,6 +135,20 @@ Category.hasMany(Product, { foreignKey: 'category_id', as: 'products' });
 Store.hasMany(PaymentMethod, { foreignKey: 'store_id', as: 'paymentMethods' });
 PaymentMethod.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
 
+// Wallet relationships
+Store.hasOne(Wallet, { foreignKey: 'store_id', as: 'wallet' });
+Wallet.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+Wallet.hasMany(Withdrawal, { foreignKey: 'wallet_id', as: 'withdrawals' });
+Withdrawal.belongsTo(Wallet, { foreignKey: 'wallet_id', as: 'wallet' });
+Withdrawal.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+
+Store.hasMany(Visit, { foreignKey: 'store_id', as: 'visits' });
+Visit.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+
+// UserSession relationships
+User.hasMany(UserSession, { foreignKey: 'user_id', as: 'sessions' });
+UserSession.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 export {
   sequelize,
   Store,
@@ -152,6 +174,10 @@ export {
   SplitConfig,
   Category,
   PaymentMethod,
+  Wallet,
+  Withdrawal,
+  Visit,
+  UserSession,
 };
 
 

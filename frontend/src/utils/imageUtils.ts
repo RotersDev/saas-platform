@@ -5,23 +5,29 @@
 export function normalizeImageUrl(url: string | null | undefined): string {
   if (!url) return '';
 
+  // Remover @ no início se houver (erro de formatação)
+  let cleanUrl = url.trim();
+  if (cleanUrl.startsWith('@')) {
+    cleanUrl = cleanUrl.substring(1);
+  }
+
   // Se já é uma URL relativa, retornar como está
-  if (url.startsWith('/')) {
-    return url;
+  if (cleanUrl.startsWith('/')) {
+    return cleanUrl;
   }
 
   // Se é uma URL absoluta do backend, converter para relativa
-  if (url.includes('localhost:3000/uploads') || url.includes('127.0.0.1:3000/uploads')) {
-    return url.replace(/https?:\/\/[^/]+/, '');
+  if (cleanUrl.includes('localhost:3000/uploads') || cleanUrl.includes('127.0.0.1:3000/uploads')) {
+    return cleanUrl.replace(/https?:\/\/[^/]+/, '');
   }
 
   // Se é uma URL externa (http/https), retornar como está
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+    return cleanUrl;
   }
 
   // Caso contrário, assumir que é relativa
-  return url.startsWith('/') ? url : `/${url}`;
+  return cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`;
 }
 
 /**

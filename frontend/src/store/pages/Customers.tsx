@@ -1,19 +1,24 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { Users, Ban, CheckCircle, Search, Shield, ShieldOff, UserCheck, UserX, Mail, Phone, Calendar, DollarSign, ShoppingBag } from 'lucide-react';
+import { useConfirm } from '../../hooks/useConfirm';
+import { useDebounce } from '../../hooks/useDebounce';
 
 export default function StoreCustomers() {
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 500);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [showBlockedOnly, setShowBlockedOnly] = useState(false);
   const queryClient = useQueryClient();
+  const { confirm, Dialog } = useConfirm();
 
   const { data, isLoading } = useQuery(
-    ['customers', search, showBlockedOnly],
+    ['customers', debouncedSearch, showBlockedOnly],
     async () => {
       const params = new URLSearchParams();
-      if (search) params.append('search', search);
+      if (debouncedSearch) params.append('search', debouncedSearch);
       if (showBlockedOnly) params.append('blocked_only', 'true');
       const url = `/api/customers${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await api.get(url);
@@ -123,17 +128,11 @@ export default function StoreCustomers() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Buscar por nome ou e-mail..."
               value={search}
-              onChange={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setSearch(e.target.value);
-              }}
-              onKeyDown={(e) => {
-                e.stopPropagation();
-              }}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
@@ -256,8 +255,14 @@ export default function StoreCustomers() {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {customer.is_blocked ? (
                         <button
-                          onClick={() => {
-                            if (window.confirm(`Deseja desbloquear ${customer.name}?`)) {
+                          onClick={async () => {
+                            const confirmed = await confirm({
+                              title: 'Desbloquear cliente',
+                              message: `Deseja desbloquear ${customer.name}?`,
+                              type: 'success',
+                              confirmText: 'Desbloquear',
+                            });
+                            if (confirmed) {
                               unblockMutation.mutate(customer.id);
                             }
                           }}
@@ -269,8 +274,14 @@ export default function StoreCustomers() {
                         </button>
                       ) : (
                         <button
-                          onClick={() => {
-                            if (window.confirm(`Deseja bloquear ${customer.name}?`)) {
+                          onClick={async () => {
+                            const confirmed = await confirm({
+                              title: 'Bloquear cliente',
+                              message: `Deseja bloquear ${customer.name}? Este cliente não poderá mais fazer compras.`,
+                              type: 'warning',
+                              confirmText: 'Bloquear',
+                            });
+                            if (confirmed) {
                               blockMutation.mutate(customer.id);
                             }
                           }}
@@ -309,6 +320,7 @@ export default function StoreCustomers() {
           </div>
         )}
       </div>
+      {Dialog}
     </div>
   );
 }

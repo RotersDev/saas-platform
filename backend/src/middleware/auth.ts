@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { User } from '../models';
+import crypto from 'crypto';
+import { User, UserSession } from '../models';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -38,6 +39,37 @@ export const authenticate = async (
       role: user.role,
       email: user.email,
     };
+
+    // Verificar se a sessão está ativa antes de autenticar
+    try {
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const session = await UserSession.findOne({
+        where: {
+          user_id: user.id,
+          token_hash: tokenHash,
+        },
+      });
+
+      // Se a sessão não existe ou está inativa, negar acesso
+      if (!session || !session.is_active) {
+        res.status(401).json({ error: 'Sessão inválida ou expirada' });
+        return;
+      }
+
+      // Atualizar última atividade da sessão
+      await session.update({ last_activity: new Date() });
+    } catch (sessionError: any) {
+      // Log erro mas não falhar a autenticação se for erro de conexão
+      console.error('[AuthMiddleware] Erro ao verificar sessão:', sessionError);
+      // Se for erro de tabela não encontrada, permitir continuar (compatibilidade)
+      if (sessionError.message?.includes('does not exist') || sessionError.message?.includes('relation')) {
+        console.warn('[AuthMiddleware] Tabela de sessões não encontrada, continuando sem verificação');
+      } else {
+        // Para outros erros, negar acesso por segurança
+        res.status(401).json({ error: 'Erro ao verificar sessão' });
+        return;
+      }
+    }
 
     next();
   } catch (error) {

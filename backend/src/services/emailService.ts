@@ -375,6 +375,129 @@ class EmailService {
       html,
     });
   }
+
+  /**
+   * Envia email de aprovação de saque
+   */
+  async sendWithdrawalApproved(
+    email: string,
+    fullName: string,
+    amount: number,
+    withdrawalId: string
+  ): Promise<boolean> {
+    const amountFormatted = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(amount);
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10B981; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>✅ Saque Aprovado!</h1>
+            </div>
+            <div class="content">
+              <p>Olá, <strong>${fullName}</strong>,</p>
+              <p>Ótimas notícias! Seu saque foi aprovado e está sendo processado.</p>
+              <div class="info-box">
+                <p><strong>ID do Saque:</strong> ${withdrawalId}</p>
+                <p><strong>Valor:</strong> ${amountFormatted}</p>
+                <p><strong>Prazo de entrega:</strong> 1 a 3 dias úteis</p>
+              </div>
+              <p>O valor será transferido para a chave PIX informada no prazo de 1 a 3 dias úteis.</p>
+              <p>Se tiver alguma dúvida, entre em contato conosco.</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: 'Saque Aprovado - Nerix',
+      html,
+    });
+  }
+
+  /**
+   * Envia email de cancelamento de saque
+   */
+  async sendWithdrawalRejected(
+    email: string,
+    fullName: string,
+    amount: number,
+    withdrawalId: string,
+    reason: string
+  ): Promise<boolean> {
+    const amountFormatted = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(amount);
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #EF4444; }
+            .reason-box { background: #FEE2E2; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #FECACA; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>❌ Saque Cancelado</h1>
+            </div>
+            <div class="content">
+              <p>Olá, <strong>${fullName}</strong>,</p>
+              <p>Infelizmente, seu saque foi cancelado.</p>
+              <div class="info-box">
+                <p><strong>ID do Saque:</strong> ${withdrawalId}</p>
+                <p><strong>Valor:</strong> ${amountFormatted}</p>
+              </div>
+              <div class="reason-box">
+                <p><strong>Motivo do cancelamento:</strong></p>
+                <p>${reason}</p>
+              </div>
+              <p>O valor foi devolvido para o saldo disponível da sua carteira.</p>
+              <p>Se tiver alguma dúvida ou quiser solicitar um novo saque, entre em contato conosco.</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: 'Saque Cancelado - Nerix',
+      html,
+    });
+  }
 }
 
 export default new EmailService();

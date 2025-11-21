@@ -23,27 +23,44 @@ export class ProductController {
         }
       }
 
-      // Processar imagens enviadas
+      // Processar imagens enviadas - agora usando Cloudflare R2
       let images: string[] = [];
 
-      // Processar arquivos enviados
+      // Processar arquivos enviados - fazer upload para R2
       if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-        // Usar URL relativa para funcionar com proxy do Vite
-        const uploadedImages = req.files.map((file: Express.Multer.File) =>
-          `/uploads/${file.filename}`
-        );
-        images = uploadedImages;
+        try {
+          const { uploadToR2 } = await import('../services/r2Service');
 
-        // Se também há imagens por URL no body, combinar
-        if (req.body.images && typeof req.body.images === 'string') {
-          try {
-            const urlImages = JSON.parse(req.body.images);
-            if (Array.isArray(urlImages)) {
-              images = [...uploadedImages, ...urlImages];
+          // Fazer upload de todas as imagens para R2
+          const uploadPromises = req.files.map((file: Express.Multer.File) =>
+            uploadToR2({
+              storeId: req.store.id,
+              category: 'products',
+              buffer: file.buffer,
+              mimeType: file.mimetype,
+              originalName: file.originalname,
+            })
+          );
+
+          const uploadedImages = await Promise.all(uploadPromises);
+          // Remover @ do início das URLs se houver
+          images = uploadedImages.map(url => url.startsWith('@') ? url.substring(1) : url);
+
+          // Se também há imagens por URL no body, combinar
+          if (req.body.images && typeof req.body.images === 'string') {
+            try {
+              const urlImages = JSON.parse(req.body.images);
+              if (Array.isArray(urlImages)) {
+                images = [...uploadedImages, ...urlImages];
+              }
+            } catch (e) {
+              // Ignorar erro de parse
             }
-          } catch (e) {
-            // Ignorar erro de parse
           }
+        } catch (error: any) {
+          console.error('[ProductController] Erro ao fazer upload para R2:', error);
+          res.status(500).json({ error: `Erro ao fazer upload das imagens: ${error.message}` });
+          return;
         }
       } else if (req.body.images) {
         // Se imagens vieram apenas como JSON (URLs)
@@ -113,6 +130,43 @@ export class ProductController {
           productData.tags = JSON.parse(productData.tags);
         } catch (e) {
           productData.tags = [];
+        }
+      }
+
+      // Processar tipo de estoque
+      if (productData.inventory_type) {
+        if (productData.inventory_type === 'file' && req.files) {
+          // Procurar arquivo de estoque
+          const inventoryFile = Array.isArray(req.files)
+            ? req.files.find((f: Express.Multer.File) => f.fieldname === 'inventory_file')
+            : null;
+
+          if (inventoryFile) {
+            try {
+              const { uploadToR2 } = await import('../services/r2Service');
+              const fileUrl = await uploadToR2({
+                storeId: req.store.id,
+                category: 'products',
+                buffer: inventoryFile.buffer,
+                mimeType: inventoryFile.mimetype,
+                originalName: inventoryFile.originalname,
+              });
+              productData.inventory_file_url = fileUrl.startsWith('@') ? fileUrl.substring(1) : fileUrl;
+            } catch (error: any) {
+              console.error('[ProductController] Erro ao fazer upload do arquivo de estoque:', error);
+            }
+          }
+        }
+
+        // Limpar campos do tipo não usado
+        if (productData.inventory_type !== 'text') {
+          productData.inventory_text = null;
+        }
+        if (productData.inventory_type !== 'file') {
+          productData.inventory_file_url = null;
+        }
+        if (productData.inventory_type !== 'lines') {
+          // Não precisa fazer nada, as linhas são gerenciadas via ProductKey
         }
       }
 
@@ -222,42 +276,67 @@ export class ProductController {
         return;
       }
 
-      // Processar imagens enviadas
+      // Processar imagens enviadas - agora usando Cloudflare R2
       let images: string[] = product.images || [];
 
-      // Processar arquivos enviados
+      // Processar arquivos enviados - fazer upload para R2
       if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-        // Usar URL relativa para funcionar com proxy do Vite
-        const uploadedImages = req.files.map((file: Express.Multer.File) =>
-          `/uploads/${file.filename}`
-        );
+        try {
+          const { uploadToR2 } = await import('../services/r2Service');
 
-        // Se também há imagens por URL no body, combinar
-        if (req.body.images && typeof req.body.images === 'string') {
-          try {
-            const urlImages = JSON.parse(req.body.images);
-            if (Array.isArray(urlImages)) {
-              images = [...uploadedImages, ...urlImages];
-            } else {
-              images = uploadedImages;
+          // Fazer upload de todas as imagens para R2
+          const uploadPromises = req.files.map((file: Express.Multer.File) =>
+            uploadToR2({
+              storeId: req.store.id,
+              category: 'products',
+              buffer: file.buffer,
+              mimeType: file.mimetype,
+              originalName: file.originalname,
+            })
+          );
+
+          const uploadedImages = await Promise.all(uploadPromises);
+          // Remover @ do início das URLs se houver
+          const cleanUploadedImages = uploadedImages.map(url => url.startsWith('@') ? url.substring(1) : url);
+
+          // Se também há imagens por URL no body, combinar
+          if (req.body.images && typeof req.body.images === 'string') {
+            try {
+              const urlImages = JSON.parse(req.body.images);
+              if (Array.isArray(urlImages)) {
+                // Remover @ das URLs existentes também
+                const cleanUrlImages = urlImages.map((url: string) => url.startsWith('@') ? url.substring(1) : url);
+                images = [...cleanUploadedImages, ...cleanUrlImages];
+              } else {
+                images = cleanUploadedImages;
+              }
+            } catch (e) {
+              images = cleanUploadedImages;
             }
-          } catch (e) {
-            images = uploadedImages;
+          } else {
+            // Se não há URLs no body, apenas adicionar as novas imagens às existentes
+            images = [...images, ...cleanUploadedImages];
           }
-        } else {
-          // Se não há URLs no body, apenas adicionar as novas imagens às existentes
-          images = [...images, ...uploadedImages];
+        } catch (error: any) {
+          console.error('[ProductController] Erro ao fazer upload para R2:', error);
+          res.status(500).json({ error: `Erro ao fazer upload das imagens: ${error.message}` });
+          return;
         }
       } else if (req.body.images) {
         // Se imagens vieram apenas como JSON (URLs)
         if (typeof req.body.images === 'string') {
           try {
-            images = JSON.parse(req.body.images);
+            const parsedImages = JSON.parse(req.body.images);
+            // Remover @ do início das URLs se houver
+            images = Array.isArray(parsedImages)
+              ? parsedImages.map((url: string) => url.startsWith('@') ? url.substring(1) : url)
+              : product.images || [];
           } catch (e) {
             images = product.images || [];
           }
         } else if (Array.isArray(req.body.images)) {
-          images = req.body.images;
+          // Remover @ do início das URLs se houver
+          images = req.body.images.map((url: string) => url.startsWith('@') ? url.substring(1) : url);
         }
       }
 
@@ -328,6 +407,46 @@ export class ProductController {
         }
       }
 
+      // Processar tipo de estoque
+      if (updateData.inventory_type !== undefined) {
+        if (updateData.inventory_type === 'file' && req.files) {
+          // Procurar arquivo de estoque
+          const inventoryFile = Array.isArray(req.files)
+            ? req.files.find((f: Express.Multer.File) => f.fieldname === 'inventory_file')
+            : null;
+
+          if (inventoryFile) {
+            try {
+              const { uploadToR2 } = await import('../services/r2Service');
+              const fileUrl = await uploadToR2({
+                storeId: req.store.id,
+                category: 'products',
+                buffer: inventoryFile.buffer,
+                mimeType: inventoryFile.mimetype,
+                originalName: inventoryFile.originalname,
+              });
+              updateData.inventory_file_url = fileUrl.startsWith('@') ? fileUrl.substring(1) : fileUrl;
+            } catch (error: any) {
+              console.error('[ProductController] Erro ao fazer upload do arquivo de estoque:', error);
+            }
+          } else if (updateData.inventory_file_url === '') {
+            // Se enviou string vazia, manter o arquivo atual
+            delete updateData.inventory_file_url;
+          }
+        }
+
+        // Limpar campos do tipo não usado
+        if (updateData.inventory_type !== 'text') {
+          updateData.inventory_text = null;
+        }
+        if (updateData.inventory_type !== 'file') {
+          updateData.inventory_file_url = null;
+        }
+        if (updateData.inventory_type !== 'lines') {
+          // Não precisa fazer nada, as linhas são gerenciadas via ProductKey
+        }
+      }
+
       await product.update(updateData);
 
       // Recarregar o produto com todas as associações
@@ -386,7 +505,9 @@ export class ProductController {
         order: [['created_at', 'ASC']],
       });
 
-      res.json(productKeys);
+      // Retornar apenas chaves não usadas (disponíveis)
+      const availableKeys = productKeys.filter((pk: any) => !pk.is_used);
+      res.json(availableKeys);
     } catch (error: any) {
       console.error('[ProductController] Error getting keys:', error);
       res.status(500).json({ error: error.message || 'Erro ao buscar chaves' });
@@ -436,6 +557,78 @@ export class ProductController {
     } catch (error: any) {
       console.error('[ProductController] Error uploading keys:', error);
       res.status(400).json({ error: error.message || 'Erro ao adicionar chaves' });
+    }
+  }
+
+  static async deleteKey(req: TenantRequest, res: Response): Promise<void> {
+    try {
+      if (!req.store) {
+        res.status(400).json({ error: 'Loja não encontrada' });
+        return;
+      }
+
+      const productId = req.params.id;
+      const keyId = req.params.keyId;
+
+      const product = await Product.findOne({
+        where: { id: productId, store_id: req.store.id },
+      });
+
+      if (!product) {
+        res.status(404).json({ error: 'Produto não encontrado' });
+        return;
+      }
+
+      const productKey = await ProductKey.findOne({
+        where: { id: keyId, product_id: product.id },
+      });
+
+      if (!productKey) {
+        res.status(404).json({ error: 'Chave não encontrada' });
+        return;
+      }
+
+      // Não permitir deletar chaves já usadas
+      if (productKey.is_used) {
+        res.status(400).json({ error: 'Não é possível deletar uma chave já utilizada' });
+        return;
+      }
+
+      await productKey.destroy();
+      res.json({ message: 'Chave removida com sucesso' });
+    } catch (error: any) {
+      console.error('[ProductController] Error deleting key:', error);
+      res.status(500).json({ error: error.message || 'Erro ao remover chave' });
+    }
+  }
+
+  static async deleteAllKeys(req: TenantRequest, res: Response): Promise<void> {
+    try {
+      if (!req.store) {
+        res.status(400).json({ error: 'Loja não encontrada' });
+        return;
+      }
+
+      const productId = req.params.id;
+
+      const product = await Product.findOne({
+        where: { id: productId, store_id: req.store.id },
+      });
+
+      if (!product) {
+        res.status(404).json({ error: 'Produto não encontrado' });
+        return;
+      }
+
+      // Deletar TODAS as chaves (não apenas não usadas, pois agora deletamos quando usadas)
+      const deletedCount = await ProductKey.destroy({
+        where: { product_id: product.id },
+      });
+
+      res.json({ message: `${deletedCount} chave(s) removida(s) com sucesso`, count: deletedCount });
+    } catch (error: any) {
+      console.error('[ProductController] Error deleting all keys:', error);
+      res.status(500).json({ error: error.message || 'Erro ao remover chaves' });
     }
   }
 }

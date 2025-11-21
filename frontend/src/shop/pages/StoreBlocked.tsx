@@ -9,7 +9,18 @@ export default function StoreBlocked({ status, storeName }: StoreBlockedProps) {
   const isBlocked = status === 'blocked';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen relative flex items-center justify-center px-4">
+      {/* Background com degradê de baixo para cima e bolinhas azuis */}
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
+          background: `
+            radial-gradient(circle, rgba(59, 130, 246, 0.15) 1px, transparent 1px),
+            linear-gradient(to top, #e2e8f0 0%, #f1f5f9 30%, #f8fafc 60%, #ffffff 100%)
+          `,
+          backgroundSize: '30px 30px, 100% 100%',
+        }}
+      />
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
         {isBlocked ? (
           <Ban className="w-16 h-16 text-red-600 mx-auto mb-4" />

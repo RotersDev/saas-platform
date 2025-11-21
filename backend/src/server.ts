@@ -14,6 +14,9 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
+// Trust proxy para capturar IP real quando atrás de proxy/load balancer
+app.set('trust proxy', true);
+
 // Middlewares de segurança
 app.use(helmet());
 app.use(cors({
@@ -22,24 +25,24 @@ app.use(cors({
   exposedHeaders: ['Content-Type', 'Content-Length'],
 }));
 
-// Headers para permitir acesso a imagens
-app.use('/uploads', (_req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:5173');
-  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  next();
-});
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Servir arquivos estáticos de uploads
-app.use('/uploads', express.static('uploads'));
+// Nota: Uploads agora são feitos diretamente para Cloudflare R2
+// Não precisamos mais servir arquivos estáticos localmente
 
-// Rate limiting
+// Rate limiting - mais permissivo em desenvolvimento
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // 100 requests por IP
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 requests em dev, 100 em produção
+  message: 'Too many requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Pular rate limiting para requisições locais em desenvolvimento
+    return process.env.NODE_ENV === 'development' && req.ip === '127.0.0.1';
+  },
 });
 app.use('/api/', limiter);
 
@@ -59,11 +62,24 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   });
 });
 
+// Tratamento de erros não capturados
+process.on('unhandledRejection', (reason: any, promise) => {
+  logger.error('❌ Unhandled Rejection', { reason, promise });
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error('❌ Uncaught Exception', { error: error.message, stack: error.stack });
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
 // Inicializar servidor
 async function startServer() {
   try {
     logger.info('🔄 Tentando conectar ao banco de dados...');
-    logger.info(`📊 Configuração: ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'saas_platform'}`);
+    const dbHost = process.env.DB_HOST === 'localhost' ? '127.0.0.1' : (process.env.DB_HOST || '127.0.0.1');
+    logger.info(`📊 Configuração: ${dbHost}:${process.env.DB_PORT || '5432'}/${process.env.DB_NAME || 'saas_platform'}`);
 
     // Testar conexão com banco
     await sequelize.authenticate();
@@ -74,14 +90,44 @@ async function startServer() {
       // await sequelize.sync({ alter: true });
     }
 
-    app.listen(PORT, '0.0.0.0', () => {
+    // Importar modelos antes de iniciar o servidor (não bloquear se falhar)
+    // Usar Promise.race com timeout para evitar travamento
+    try {
+      logger.info('📦 Importando modelos...');
+      const importPromise = import('./models/index');
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout ao importar modelos')), 5000)
+      );
+      await Promise.race([importPromise, timeoutPromise]);
+      logger.info('✅ Modelos importados com sucesso');
+    } catch (error: any) {
+      logger.warn('⚠️ Aviso ao importar modelos (continuando):', { error: error.message });
+      console.warn('Aviso ao importar modelos (continuando):', error.message);
+      // Continuar mesmo com erro na importação dos modelos - eles serão carregados quando necessário
+    }
+
+    logger.info('🎯 Iniciando servidor HTTP...');
+    const server = app.listen(PORT, '0.0.0.0', () => {
       logger.info(`🚀 Servidor rodando na porta ${PORT}`);
       logger.info(`🌐 Acesse: http://localhost:${PORT}`);
+      logger.info(`🌐 IPv4: http://127.0.0.1:${PORT}`);
 
       // Iniciar cron jobs
       if (process.env.NODE_ENV === 'production') {
         startBillingCron();
       }
+    });
+
+    // Tratamento de erros do servidor
+    server.on('error', (error: any) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`❌ Porta ${PORT} já está em uso`);
+        console.error(`Porta ${PORT} já está em uso. Tente usar outra porta.`);
+      } else {
+        logger.error('❌ Erro no servidor', { error: error.message, stack: error.stack });
+        console.error('Erro no servidor:', error);
+      }
+      process.exit(1);
     });
   } catch (error: any) {
     logger.error('❌ Erro ao iniciar servidor', {

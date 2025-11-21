@@ -1,7 +1,8 @@
-import { Outlet, useParams, useSearchParams } from 'react-router-dom';
+import { Outlet, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import api from '../../config/axios';
 import StoreBlocked from '../pages/StoreBlocked';
+import StoreNotFound from '../pages/StoreNotFound';
 import { useEffect, useState } from 'react';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import ShopHeader from '../components/ShopHeader';
@@ -9,37 +10,33 @@ import ShopHeader from '../components/ShopHeader';
 export default function ShopLayout() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   // Priorizar subdomain do path, depois query param (fallback para rotas antigas)
   const storeSubdomain = storeSubdomainParam || searchParams.get('store');
   const [cartCount, setCartCount] = useState(0);
 
-  // Atualizar contador do carrinho
-  useEffect(() => {
-    const updateCartCount = () => {
-      const saved = localStorage.getItem(`cart_${storeSubdomain}`);
-      if (saved) {
-        const cart = JSON.parse(saved);
-        setCartCount(cart.length);
-      } else {
-        setCartCount(0);
-      }
-    };
-
-    updateCartCount();
-    // Atualizar quando o storage mudar
-    const interval = setInterval(updateCartCount, 1000);
-    return () => clearInterval(interval);
-  }, [storeSubdomain]);
-
-  const { data: storeInfo } = useQuery(
+  const { data: storeInfo, isLoading: storeLoading, error: storeError } = useQuery(
     ['shopStore', storeSubdomain],
     async () => {
-      const response = await api.get('/api/public/store');
-      return response.data;
+      try {
+        const response = await api.get('/api/public/store');
+        // Se retornar null ou undefined, considerar como loja não encontrada
+        if (!response.data) {
+          throw new Error('Store not found');
+        }
+        return response.data;
+      } catch (error: any) {
+        // Se for 404 ou loja não encontrada, lançar erro
+        if (error.response?.status === 404 || error.response?.status === 400) {
+          throw new Error('Store not found');
+        }
+        throw error;
+      }
     },
     {
       staleTime: Infinity,
       enabled: !!storeSubdomain,
+      retry: false,
     }
   );
 
@@ -127,25 +124,47 @@ export default function ShopLayout() {
       }
 
       // Aplicar favicon
-      if (theme.favicon_url) {
-        // Remover favicons antigos desta loja e padrão
-        const existingFavicons = document.querySelectorAll(`link[rel="icon"], link[rel="apple-touch-icon"]`);
-        existingFavicons.forEach((el) => {
-          if (el.getAttribute('data-store') === storeSubdomain || !el.getAttribute('data-store')) {
-            el.remove();
-          }
-        });
+      const faviconUrlToUse = theme.favicon_url || storeInfo?.favicon_url;
+      if (faviconUrlToUse) {
+        // Remover todos os favicons existentes primeiro (de qualquer loja)
+        const allFavicons = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]');
+        allFavicons.forEach((el) => el.remove());
 
         // Normalizar URL do favicon
-        const faviconUrl = normalizeImageUrl(theme.favicon_url);
+        const faviconUrl = normalizeImageUrl(faviconUrlToUse);
+
+        // Determinar o tipo MIME baseado na extensão da URL
+        const getFaviconType = (url: string): string => {
+          if (url.includes('.webp') || url.endsWith('.webp')) {
+            return 'image/webp';
+          }
+          if (url.includes('.png') || url.endsWith('.png')) {
+            return 'image/png';
+          }
+          if (url.includes('.ico') || url.endsWith('.ico')) {
+            return 'image/x-icon';
+          }
+          // Padrão para WEBP (já que estamos convertendo tudo para WEBP)
+          return 'image/webp';
+        };
+
+        const faviconType = getFaviconType(faviconUrl);
 
         // Criar novo link de favicon
         const faviconLink = document.createElement('link');
         faviconLink.rel = 'icon';
-        faviconLink.type = 'image/x-icon';
+        faviconLink.type = faviconType;
         faviconLink.href = faviconUrl;
         faviconLink.setAttribute('data-store', storeSubdomain);
         document.head.appendChild(faviconLink);
+
+        // Também adicionar shortcut icon (para compatibilidade)
+        const shortcutIcon = document.createElement('link');
+        shortcutIcon.rel = 'shortcut icon';
+        shortcutIcon.type = faviconType;
+        shortcutIcon.href = faviconUrl;
+        shortcutIcon.setAttribute('data-store', storeSubdomain);
+        document.head.appendChild(shortcutIcon);
 
         // Também adicionar apple-touch-icon
         const appleTouchIcon = document.createElement('link');
@@ -153,6 +172,10 @@ export default function ShopLayout() {
         appleTouchIcon.href = faviconUrl;
         appleTouchIcon.setAttribute('data-store', storeSubdomain);
         document.head.appendChild(appleTouchIcon);
+
+        console.log('[ShopLayout] Favicon aplicado:', faviconUrl, 'Tipo:', faviconType);
+      } else {
+        console.log('[ShopLayout] Nenhum favicon encontrado no tema ou storeInfo');
       }
     }
 
@@ -171,13 +194,62 @@ export default function ShopLayout() {
     };
   }, [theme, storeSubdomain]);
 
+  // Tracking de visitas - depois que storeInfo estiver disponível
+  useEffect(() => {
+    if (storeSubdomain && storeInfo) {
+      api.post('/api/public/visits/track', null, {
+        params: { path: location.pathname },
+        headers: {
+          'X-Store-Subdomain': storeSubdomain,
+        },
+      }).catch(() => {
+        // Silenciar erros de tracking
+      });
+    }
+  }, [storeSubdomain, location.pathname, storeInfo]);
+
+  // Atualizar contador do carrinho
+  useEffect(() => {
+    const updateCartCount = () => {
+      const saved = localStorage.getItem(`cart_${storeSubdomain}`);
+      if (saved) {
+        const cart = JSON.parse(saved);
+        setCartCount(cart.length);
+      } else {
+        setCartCount(0);
+      }
+    };
+
+    updateCartCount();
+    // Atualizar quando o storage mudar
+    const interval = setInterval(updateCartCount, 1000);
+    return () => clearInterval(interval);
+  }, [storeSubdomain]);
+
+  // Verificar se a loja não existe
+  if (storeSubdomain && !storeLoading && (!storeInfo || storeError)) {
+    return <StoreNotFound />;
+  }
+
   // Verificar se a loja está bloqueada ou suspensa
   if (storeInfo && (storeInfo.status === 'blocked' || storeInfo.status === 'suspended')) {
     return <StoreBlocked status={storeInfo.status} storeName={storeInfo.name} />;
   }
 
   return (
-    <div className="min-h-screen bg-white" data-store-theme={storeSubdomain}>
+    <div className="min-h-screen relative" data-store-theme={storeSubdomain}>
+      {/* Background com degradê de baixo para cima e bolinhas azuis destacadas */}
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
+          background: `
+            radial-gradient(circle, rgba(59, 130, 246, 0.25) 1.5px, transparent 1.5px),
+            linear-gradient(to top, #e2e8f0 0%, #f1f5f9 30%, #f8fafc 60%, #ffffff 100%)
+          `,
+          backgroundSize: '30px 30px, 100% 100%',
+        }}
+      />
+
       {/* Header padrão em todas as páginas */}
       <ShopHeader storeInfo={storeInfo} theme={theme} cartCount={cartCount} />
       <Outlet />

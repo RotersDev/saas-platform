@@ -50,7 +50,7 @@ export default function ShopCategories() {
 
   if (storeLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center ">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
@@ -62,14 +62,14 @@ export default function ShopCategories() {
 
   if (categoriesLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center ">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
 
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -82,7 +82,7 @@ export default function ShopCategories() {
           </Link>
 
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Categorias</h1>
+            <h1 className="text-4xl font-semibold text-gray-900 mb-4 tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>Categorias</h1>
             <p className="text-gray-600 text-lg">Explore nossos produtos por categoria</p>
           </div>
 
@@ -93,7 +93,17 @@ export default function ShopCategories() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {categories.map((category: any) => (
+              {[...categories].sort((a: any, b: any) => {
+                // Ordenar por display_order ou created_at
+                if (a.display_order !== undefined && b.display_order !== undefined) {
+                  if (a.display_order !== b.display_order) {
+                    return a.display_order - b.display_order;
+                  }
+                }
+                const dateA = new Date(a.created_at).getTime();
+                const dateB = new Date(b.created_at).getTime();
+                return dateA - dateB;
+              }).map((category: any) => (
                 <Link
                   key={category.id}
                   to={getCategoryUrl(storeSubdomain, category.slug)}
@@ -113,7 +123,7 @@ export default function ShopCategories() {
                     )}
                   </div>
                   <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2 text-center tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
                       {category.name}
                     </h3>
                     <p className="text-sm text-gray-600 text-center">

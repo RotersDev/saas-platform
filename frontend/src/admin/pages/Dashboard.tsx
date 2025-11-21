@@ -6,6 +6,10 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery('adminStats', async () => {
     const response = await api.get('/api/admin/stats');
     return response.data;
+  }, {
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   // Mostrar dados em cache enquanto carrega

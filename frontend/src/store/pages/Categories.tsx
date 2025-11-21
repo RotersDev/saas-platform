@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { Plus, Edit, Trash2, Image as ImageIcon, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Image as ImageIcon, X, GripVertical } from 'lucide-react';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export default function StoreCategories() {
+  const { confirm, Dialog } = useConfirm();
   const [showModal, setShowModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -14,6 +16,11 @@ export default function StoreCategories() {
     is_active: true,
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [categoriesOrder, setCategoriesOrder] = useState<number[]>([]);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchCurrentIndex, setTouchCurrentIndex] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -22,19 +29,163 @@ export default function StoreCategories() {
     return response.data;
   }, {
     staleTime: 2 * 60 * 1000,
+    onSuccess: (data) => {
+      // Inicializar ordem das categorias baseado em display_order ou created_at
+      if (data) {
+        const sorted = [...data].sort((a: any, b: any) => {
+          if (a.display_order !== undefined && b.display_order !== undefined) {
+            if (a.display_order !== b.display_order) {
+              return a.display_order - b.display_order;
+            }
+          }
+          const dateA = new Date(a.created_at).getTime();
+          const dateB = new Date(b.created_at).getTime();
+          return dateA - dateB;
+        });
+        setCategoriesOrder(sorted.map((cat: any) => Number(cat.id)));
+      }
+    },
   });
 
-  const createMutation = useMutation(
-    async (data: any) => {
-      const response = await api.post('/api/categories', data);
-      return response.data;
+  // Ordenar categorias pela ordem salva
+  const sortedCategories = categories && categoriesOrder.length > 0
+    ? [...categories].sort((a: any, b: any) => {
+        const indexA = categoriesOrder.indexOf(a.id);
+        const indexB = categoriesOrder.indexOf(b.id);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      })
+    : categories || [];
+
+  const updateOrderMutation = useMutation(
+    async (newOrder: number[]) => {
+      // Garantir que todos os IDs sejam números
+      const numericOrder = newOrder.map(id => Number(id)).filter(id => !isNaN(id));
+      await api.put('/api/categories/order/update', { categoryIds: numericOrder });
     },
     {
       onSuccess: () => {
         queryClient.invalidateQueries('categories');
+        toast.success('Ordem das categorias atualizada!');
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.error || 'Erro ao atualizar ordem');
+      },
+    }
+  );
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newOrder = [...categoriesOrder].map(id => Number(id));
+    const draggedId = newOrder[draggedIndex];
+    newOrder.splice(draggedIndex, 1);
+    newOrder.splice(index, 0, draggedId);
+    setCategoriesOrder(newOrder);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    if (draggedIndex !== null && categoriesOrder.length > 0) {
+      updateOrderMutation.mutate(categoriesOrder);
+    }
+    setDraggedIndex(null);
+  };
+
+  // Touch events para mobile
+  const handleTouchStart = (e: React.TouchEvent, index: number) => {
+    e.stopPropagation();
+    const touch = e.touches[0];
+    setTouchStartY(touch.clientY);
+    setTouchCurrentIndex(index);
+    setDraggedIndex(index);
+    // Adicionar classe para feedback visual
+    const element = e.currentTarget as HTMLElement;
+    element.style.opacity = '0.5';
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY === null || touchCurrentIndex === null) return;
+
+    e.preventDefault();
+    const touchY = e.touches[0].clientY;
+    const deltaY = touchY - touchStartY;
+
+    // Encontrar qual elemento está sendo tocado agora
+    const elements = document.querySelectorAll('[data-category-index]');
+    let newIndex = touchCurrentIndex;
+
+    elements.forEach((el, idx) => {
+      const rect = el.getBoundingClientRect();
+      const centerY = rect.top + rect.height / 2;
+
+      if (touchY >= rect.top && touchY <= rect.bottom) {
+        if (idx !== touchCurrentIndex) {
+          newIndex = idx;
+        }
+      }
+    });
+
+    // Se mudou de posição, atualizar ordem
+    if (newIndex !== touchCurrentIndex && newIndex >= 0 && newIndex < categoriesOrder.length) {
+      const newOrder = [...categoriesOrder].map(id => Number(id));
+      const draggedId = newOrder[touchCurrentIndex];
+      newOrder.splice(touchCurrentIndex, 1);
+      newOrder.splice(newIndex, 0, draggedId);
+      setCategoriesOrder(newOrder);
+      setTouchCurrentIndex(newIndex);
+      setDraggedIndex(newIndex);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    // Restaurar opacidade de todos os elementos
+    document.querySelectorAll('[data-category-index]').forEach((el) => {
+      (el as HTMLElement).style.opacity = '1';
+    });
+
+    if (touchCurrentIndex !== null && categoriesOrder.length > 0) {
+      updateOrderMutation.mutate(categoriesOrder);
+    }
+    setTouchStartY(null);
+    setTouchCurrentIndex(null);
+    setDraggedIndex(null);
+  };
+
+  const createMutation = useMutation(
+    async (data: FormData | any) => {
+      const isFormData = data instanceof FormData;
+      const config: any = {
+        headers: {},
+      };
+
+      if (!isFormData) {
+        config.headers['Content-Type'] = 'application/json';
+      }
+
+      const response = await api.post('/api/categories', data, config);
+      return response.data;
+    },
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries('categories');
         toast.success('Categoria criada com sucesso!');
         setShowModal(false);
         resetForm();
+        // Atualizar preview se recebeu URL do backend
+        if (data.image_url) {
+          setImagePreview(data.image_url);
+          setFormData((prev) => ({ ...prev, image_url: data.image_url }));
+        }
       },
       onError: (error: any) => {
         toast.error(error.response?.data?.error || 'Erro ao criar categoria');
@@ -43,16 +194,33 @@ export default function StoreCategories() {
   );
 
   const updateMutation = useMutation(
-    async ({ id, data }: { id: number; data: any }) => {
-      const response = await api.put(`/api/categories/${id}`, data);
+    async ({ id, data }: { id: number; data: FormData | any }) => {
+      const isFormData = data instanceof FormData;
+      const config: any = {
+        headers: {},
+      };
+
+      if (!isFormData) {
+        config.headers['Content-Type'] = 'application/json';
+      }
+
+      const response = await api.put(`/api/categories/${id}`, data, config);
       return response.data;
     },
     {
-      onSuccess: () => {
+      onSuccess: (data) => {
         queryClient.invalidateQueries('categories');
         toast.success('Categoria atualizada com sucesso!');
         setShowModal(false);
         resetForm();
+        // Atualizar preview se recebeu URL do backend
+        if (data.image_url) {
+          setImagePreview(data.image_url);
+          setFormData((prev) => ({ ...prev, image_url: data.image_url }));
+        } else if (data.image_url === null || data.image_url === '') {
+          setImagePreview(null);
+          setFormData((prev) => ({ ...prev, image_url: '' }));
+        }
       },
       onError: (error: any) => {
         toast.error(error.response?.data?.error || 'Erro ao atualizar categoria');
@@ -84,6 +252,7 @@ export default function StoreCategories() {
     });
     setSelectedCategory(null);
     setImagePreview(null);
+    setImageFile(null);
   };
 
   const handleEdit = (category: any) => {
@@ -98,17 +267,70 @@ export default function StoreCategories() {
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedCategory) {
-      updateMutation.mutate({ id: selectedCategory.id, data: formData });
-    } else {
-      createMutation.mutate(formData);
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      e.target.value = ''; // Limpar input para permitir selecionar o mesmo arquivo novamente
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Tem certeza que deseja excluir esta categoria?')) {
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setFormData((prev) => ({ ...prev, image_url: '' }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Se há arquivo de imagem, usar FormData
+    if (imageFile) {
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('slug', formData.slug);
+      formDataToSend.append('is_active', formData.is_active.toString());
+      formDataToSend.append('image', imageFile);
+
+      if (selectedCategory) {
+        updateMutation.mutate({ id: selectedCategory.id, data: formDataToSend });
+      } else {
+        createMutation.mutate(formDataToSend);
+      }
+    } else {
+      // Se não há arquivo, enviar como JSON normal
+      const dataToSend: any = {
+        name: formData.name,
+        slug: formData.slug,
+        is_active: formData.is_active,
+      };
+
+      // Se image_url está vazio, enviar como string vazia para remover
+      if (formData.image_url !== undefined) {
+        dataToSend.image_url = formData.image_url || '';
+      }
+
+      if (selectedCategory) {
+        updateMutation.mutate({ id: selectedCategory.id, data: dataToSend });
+      } else {
+        createMutation.mutate(dataToSend);
+      }
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    const confirmed = await confirm({
+      title: 'Excluir categoria',
+      message: 'Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.',
+      type: 'danger',
+      confirmText: 'Excluir',
+    });
+    if (confirmed) {
       deleteMutation.mutate(id);
     }
   };
@@ -116,7 +338,7 @@ export default function StoreCategories() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -150,7 +372,7 @@ export default function StoreCategories() {
                 resetForm();
                 setShowModal(true);
               }}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
             >
               <Plus className="w-4 h-4 mr-2" />
               Nova Categoria
@@ -158,52 +380,109 @@ export default function StoreCategories() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categories.map((category: any) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+          {sortedCategories.map((category: any, index: number) => (
             <div
               key={category.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+              data-category-index={index}
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragEnd={handleDragEnd}
+              onTouchStart={(e) => handleTouchStart(e, index)}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all ${
+                draggedIndex === index ? 'opacity-50 scale-95 z-50' : ''
+              } ${draggedIndex !== null ? 'cursor-move' : ''}`}
+              style={{ touchAction: 'none' }}
             >
-              {category.image_url ? (
-                <div className="h-48 bg-gray-200 relative">
-                  <img
-                    src={category.image_url}
-                    alt={category.name}
-                    className="w-full h-full object-cover"
-                  />
-                  {!category.is_active && (
-                    <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">
-                      Oculto
-                    </div>
-                  )}
+              {/* Imagem - oculta no mobile */}
+              <div className="relative hidden md:block">
+                {/* Handle de arrastar - desktop */}
+                <div className="absolute top-2 left-2 z-10 bg-white/90 backdrop-blur-sm rounded p-1.5 shadow-sm cursor-grab active:cursor-grabbing select-none">
+                  <GripVertical className="w-4 h-4 text-gray-500 pointer-events-none" />
                 </div>
-              ) : (
-                <div className="h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                  <ImageIcon className="w-16 h-16 text-gray-400" />
+                {category.image_url ? (
+                  <div className="h-48 bg-gray-200 relative">
+                    <img
+                      src={category.image_url}
+                      alt={category.name}
+                      className="w-full h-full object-cover"
+                    />
+                    {!category.is_active && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">
+                        Oculto
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-48 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                    <ImageIcon className="w-16 h-16 text-gray-400" />
+                    {!category.is_active && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">
+                        Oculto
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Conteúdo - simplificado no mobile */}
+              <div className="p-3 md:p-4">
+                {/* Mobile: Layout horizontal com handle */}
+                <div className="flex items-center gap-3 md:hidden">
+                  <div className="flex-shrink-0 cursor-grab active:cursor-grabbing">
+                    <GripVertical className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-semibold text-gray-900 truncate">{category.name}</h3>
+                    <p className="text-xs text-gray-500 truncate">/{category.slug}</p>
+                  </div>
                   {!category.is_active && (
-                    <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">
+                    <span className="flex-shrink-0 bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
                       Oculto
-                    </div>
+                    </span>
                   )}
-                </div>
-              )}
-              <div className="p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">{category.name}</h3>
-                <p className="text-sm text-gray-500 mb-4">/{category.slug}</p>
-                <div className="flex space-x-2">
                   <button
-                    onClick={() => handleEdit(category)}
-                    className="flex-1 px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(category);
+                    }}
+                    className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-md"
                   >
-                    <Edit className="w-4 h-4 inline mr-1" />
-                    Editar
+                    <Edit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(category.id)}
-                    className="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(category.id);
+                    }}
+                    className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-md"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
+                </div>
+
+                {/* Desktop: Layout vertical completo */}
+                <div className="hidden md:block">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{category.name}</h3>
+                  <p className="text-sm text-gray-500 mb-4">/{category.slug}</p>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEdit(category)}
+                      className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"
+                    >
+                      <Edit className="w-4 h-4 inline mr-1" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -277,28 +556,42 @@ export default function StoreCategories() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    URL da Imagem
+                    Imagem da Categoria
                   </label>
-                  <input
-                    type="url"
-                    value={formData.image_url}
-                    onChange={(e) => {
-                      setFormData({ ...formData, image_url: e.target.value });
-                      setImagePreview(e.target.value || null);
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="https://exemplo.com/imagem.jpg"
-                  />
                   {imagePreview && (
-                    <div className="mt-4">
+                    <div className="mb-4 relative">
                       <img
                         src={imagePreview}
                         alt="Preview"
                         className="w-full h-48 object-cover rounded-lg border border-gray-300"
                         onError={() => setImagePreview(null)}
                       />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg transition-colors z-10"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
                   )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    id="category-image-upload"
+                  />
+                  <label
+                    htmlFor="category-image-upload"
+                    className="inline-flex items-center px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors w-full justify-center"
+                  >
+                    <ImageIcon className="w-5 h-5 mr-2" />
+                    {imagePreview ? 'Trocar Imagem' : 'Selecionar Imagem'}
+                  </label>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Formatos aceitos: PNG, JPG, WEBP. Tamanho recomendado: 800x600px
+                  </p>
                 </div>
 
                 <div className="flex items-center">
@@ -334,8 +627,9 @@ export default function StoreCategories() {
               </form>
             </div>
           </div>
-        </div>
-      )}
+          </div>
+        )}
+      {Dialog}
     </div>
   );
 }

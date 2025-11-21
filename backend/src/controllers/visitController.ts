@@ -1,0 +1,117 @@
+import { Response } from 'express';
+import { Visit } from '../models';
+import { TenantRequest } from '../middleware/tenant';
+import { Op } from 'sequelize';
+
+export class VisitController {
+  static async trackVisit(req: TenantRequest, res: Response): Promise<void> {
+    try {
+      if (!req.store) {
+        // Se não encontrar a loja, retornar sucesso silenciosamente (não quebrar o frontend)
+        res.status(200).json({ success: true, message: 'Loja não encontrada, visita não registrada' });
+        return;
+      }
+
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || '';
+      const referer = req.headers.referer || req.headers.referrer || '';
+      // Aceitar path de query params ou body
+      const path = (req.query.path as string) || (req.body?.page_url as string) || req.originalUrl || '/';
+
+      await Visit.create({
+        store_id: req.store.id,
+        ip_address: Array.isArray(ipAddress) ? ipAddress[0] : (ipAddress || 'unknown'),
+        user_agent: userAgent,
+        referer: referer,
+        path: path,
+      });
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[VisitController] Error tracking visit:', error);
+      // Retornar sucesso mesmo em caso de erro para não quebrar o frontend
+      res.status(200).json({ success: false, error: 'Erro ao registrar visita' });
+    }
+  }
+
+  static async getVisits(req: TenantRequest, res: Response): Promise<void> {
+    try {
+      if (!req.store) {
+        res.status(404).json({ error: 'Loja não encontrada' });
+        return;
+      }
+
+      const { start, end } = req.query;
+
+      const where: any = { store_id: req.store.id };
+
+      if (start && end) {
+        where.created_at = {
+          [Op.gte]: new Date(start as string),
+          [Op.lte]: new Date(end as string),
+        };
+      }
+
+      const visits = await Visit.findAll({
+        where,
+        order: [['created_at', 'DESC']],
+        limit: 1000,
+      });
+
+      res.json({ visits, count: visits.length });
+    } catch (error: any) {
+      console.error('[VisitController] Error getting visits:', error);
+      res.status(500).json({ error: 'Erro ao buscar visitas' });
+    }
+  }
+
+  static async getVisitStats(req: TenantRequest, res: Response): Promise<void> {
+    try {
+      if (!req.store) {
+        res.status(404).json({ error: 'Loja não encontrada' });
+        return;
+      }
+
+      const { start, end } = req.query;
+
+      const where: any = { store_id: req.store.id };
+
+      if (start && end) {
+        where.created_at = {
+          [Op.gte]: new Date(start as string),
+          [Op.lte]: new Date(end as string),
+        };
+      }
+
+      const totalVisits = await Visit.count({ where });
+
+      // Visitas únicas por IP - usar distinct
+      const allVisits = await Visit.findAll({
+        where,
+        attributes: ['ip_address'],
+        raw: true,
+      });
+
+      // Obter IPs únicos
+      const uniqueIPs = new Set(allVisits.map(v => v.ip_address).filter(Boolean));
+      const uniqueVisitsCount = uniqueIPs.size;
+
+      res.json({
+        totalVisits,
+        uniqueVisits: uniqueVisitsCount,
+      });
+    } catch (error: any) {
+      console.error('[VisitController] Error getting visit stats:', error);
+      // Se a tabela não existir, retornar valores padrão (0) em vez de erro 500
+      if (error.message?.includes('does not exist') || error.code === '42P01') {
+        res.json({
+          totalVisits: 0,
+          uniqueVisits: 0,
+        });
+        return;
+      }
+      res.status(500).json({ error: 'Erro ao buscar estatísticas de visitas' });
+    }
+  }
+}
+

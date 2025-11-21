@@ -23,6 +23,9 @@ export interface ProductAttributes {
   featured: boolean;
   views: number;
   sales_count: number;
+  inventory_type?: 'lines' | 'text' | 'file';
+  inventory_text?: string;
+  inventory_file_url?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -50,6 +53,9 @@ export class Product extends Model<ProductAttributes> implements ProductAttribut
   public featured!: boolean;
   public views!: number;
   public sales_count!: number;
+  public inventory_type?: 'lines' | 'text' | 'file';
+  public inventory_text?: string;
+  public inventory_file_url?: string;
 
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
@@ -154,6 +160,19 @@ export class Product extends Model<ProductAttributes> implements ProductAttribut
           type: DataTypes.INTEGER,
           allowNull: false,
           defaultValue: 0,
+        },
+        inventory_type: {
+          type: DataTypes.ENUM('lines', 'text', 'file'),
+          allowNull: true,
+          defaultValue: 'lines',
+        },
+        inventory_text: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+        },
+        inventory_file_url: {
+          type: DataTypes.STRING(500),
+          allowNull: true,
         },
         created_at: {
           type: DataTypes.DATE,

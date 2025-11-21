@@ -3,11 +3,13 @@ import { DataTypes, Model, Sequelize } from 'sequelize';
 export interface UserAttributes {
   id?: number;
   store_id?: number | null;
-  name: string;
+  name?: string | null;
+  username?: string | null;
   email: string;
   password: string;
   role: 'master_admin' | 'store_admin' | 'store_user';
   is_active: boolean;
+  profile_picture_url?: string | null;
   last_login?: Date;
   reset_token?: string;
   reset_token_expires_at?: Date;
@@ -18,11 +20,13 @@ export interface UserAttributes {
 export class User extends Model<UserAttributes> implements UserAttributes {
   public id!: number;
   public store_id?: number | null;
-  public name!: string;
+  public name?: string | null;
+  public username?: string | null;
   public email!: string;
   public password!: string;
   public role!: 'master_admin' | 'store_admin' | 'store_user';
   public is_active!: boolean;
+  public profile_picture_url?: string | null;
   public last_login?: Date;
   public reset_token?: string;
   public reset_token_expires_at?: Date;
@@ -44,7 +48,16 @@ export class User extends Model<UserAttributes> implements UserAttributes {
         },
         name: {
           type: DataTypes.STRING(255),
-          allowNull: false,
+          allowNull: true, // Tornado opcional para permitir atualização posterior
+        },
+        username: {
+          type: DataTypes.STRING(50),
+          allowNull: true,
+          unique: true,
+        },
+        profile_picture_url: {
+          type: DataTypes.STRING(500),
+          allowNull: true,
         },
         email: {
           type: DataTypes.STRING(255),

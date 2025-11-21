@@ -17,9 +17,9 @@ export class WebhookController {
         return;
       }
 
-      // Buscar pagamento pelo ID da transação
+      // Buscar pagamento pelo ID da transação Pushin Pay
       const payment = await Payment.findOne({
-        where: { mercado_pago_id: id },
+        where: { pushin_pay_id: id },
         include: [{ model: Order, as: 'order' }],
       });
 
@@ -55,6 +55,14 @@ export class WebhookController {
           status: 'paid',
         });
 
+        // Creditar na carteira após pagamento aprovado (Pushin Pay processa o pagamento)
+        try {
+          const { OrderService } = await import('../services/orderService');
+          await OrderService.creditWalletAfterPayment(paymentOrder.id);
+        } catch (walletError) {
+          logger.error('Erro ao creditar carteira após pagamento', { error: walletError, orderId: paymentOrder.id });
+        }
+
         // Entregar pedido automaticamente
         try {
           const { OrderService } = await import('../services/orderService');
@@ -88,8 +96,61 @@ export class WebhookController {
           } catch (emailError) {
             logger.error('Erro ao enviar email de pedido aprovado:', emailError);
           }
-        } catch (error) {
+        } catch (error: any) {
           logger.error('Erro ao entregar pedido após pagamento', { error, orderId: paymentOrder.id });
+
+          // Enviar webhooks de pedido aprovado mesmo se houver erro de entrega (pedido já foi pago)
+          try {
+            const { WebhookService } = await import('../services/webhookService');
+            const orderWithItems = await Order.findByPk(paymentOrder.id, {
+              include: [{ association: 'items' }],
+            });
+
+            if (orderWithItems) {
+              const orderData = orderWithItems.toJSON();
+              // Adicionar chaves aos itens se disponíveis
+              if (orderData.items) {
+                for (const item of orderData.items) {
+                  if (item.product_key) {
+                    item.keys = item.product_key.split('\n').filter((k: string) => k.trim());
+                  }
+                }
+              }
+              await WebhookService.notifyOrderApprovedPrivate(paymentOrder.store_id, orderData);
+              await WebhookService.notifyOrderApprovedPublic(paymentOrder.store_id, orderData);
+            }
+          } catch (webhookError) {
+            logger.error('Erro ao enviar webhook de pedido aprovado após erro de entrega:', webhookError);
+          }
+
+          // Se o erro for de estoque insuficiente, o webhook já foi enviado em deliverOrder
+          // Mas vamos garantir que seja enviado também aqui se necessário
+          if (error?.message?.includes('Estoque insuficiente') || error?.message?.includes('estoque')) {
+            try {
+              const { OrderItem, Product } = await import('../models');
+              const orderItems = await OrderItem.findAll({
+                where: { order_id: paymentOrder.id },
+                include: [{ model: Product, as: 'product' }],
+              });
+
+              for (const item of orderItems) {
+                const product = (item as any).product;
+                if (product && product.inventory_type === 'lines') {
+                  const { ProductKey } = await import('../models');
+                  const remainingKeys = await ProductKey.count({
+                    where: { product_id: product.id },
+                  });
+
+                  if (remainingKeys === 0) {
+                    const { WebhookService } = await import('../services/webhookService');
+                    await WebhookService.notifyProductOutOfStock(paymentOrder.store_id, product.toJSON());
+                  }
+                }
+              }
+            } catch (webhookError) {
+              logger.error('Erro ao enviar webhook de estoque esgotado após erro de entrega:', webhookError);
+            }
+          }
         }
       }
 

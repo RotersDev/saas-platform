@@ -7,13 +7,20 @@ import { MercadoPagoService } from '../services/mercadoPagoService';
 export class OrderController {
   static async create(req: TenantRequest, res: Response): Promise<void> {
     try {
-      if (!req.store) {
+      // VERIFICAÇÃO CRÍTICA
+      if (!req.store || !req.store.id) {
         res.status(400).json({ error: 'Loja não encontrada' });
         return;
       }
 
+      const storeId = Number(req.store.id);
+      if (isNaN(storeId) || storeId <= 0) {
+        res.status(400).json({ error: 'ID da loja inválido' });
+        return;
+      }
+
       const order = await OrderService.createOrder({
-        store_id: req.store.id,
+        store_id: storeId,
         ...req.body,
       });
 
@@ -35,8 +42,15 @@ export class OrderController {
 
   static async list(req: TenantRequest, res: Response): Promise<void> {
     try {
-      if (!req.store) {
+      // VERIFICAÇÃO CRÍTICA: Garantir que req.store existe e tem ID válido
+      if (!req.store || !req.store.id) {
         res.status(400).json({ error: 'Loja não encontrada' });
+        return;
+      }
+
+      const storeId = Number(req.store.id);
+      if (isNaN(storeId) || storeId <= 0) {
+        res.status(400).json({ error: 'ID da loja inválido' });
         return;
       }
 
@@ -44,7 +58,8 @@ export class OrderController {
       const { Op } = await import('sequelize');
       const { OrderItem } = await import('../models');
 
-      const where: any = { store_id: req.store.id };
+      // SEMPRE filtrar por store_id - CRÍTICO para isolamento de dados
+      const where: any = { store_id: storeId };
       if (status) {
         where.status = status;
       }
@@ -63,23 +78,45 @@ export class OrderController {
           searchConditions.push({ id: Number(search) });
         }
 
-        // Buscar pedidos por cliente/ID
+        // Buscar pedidos por cliente/ID - CRÍTICO: sempre filtrar por store_id
         const ordersByCustomer = await Order.findAll({
           where: {
-            store_id: req.store.id,
+            store_id: storeId, // Usar storeId validado
             [Op.or]: searchConditions,
           },
           attributes: ['id'],
         });
 
-        // Buscar pedidos por nome do produto
-        const itemsByProduct = await OrderItem.findAll({
+        // Buscar pedidos por nome do produto - CRÍTICO: filtrar por store_id primeiro
+        const { Product } = await import('../models');
+        const products = await Product.findAll({
           where: {
-            product_name: { [Op.iLike]: searchTerm },
+            store_id: storeId, // Usar storeId validado
+            name: { [Op.iLike]: searchTerm },
+          },
+          attributes: ['id'],
+          raw: true,
+        });
+
+        const productIds = products.map((p: any) => p.id);
+
+        // Buscar order_ids da loja primeiro para garantir isolamento total
+        const storeOrders = await Order.findAll({
+          where: { store_id: storeId }, // Usar storeId validado
+          attributes: ['id'],
+          raw: true,
+        });
+        const storeOrderIds = storeOrders.map((o: any) => o.id);
+
+        // Só buscar OrderItems se houver produtos e pedidos da loja
+        const itemsByProduct = productIds.length > 0 && storeOrderIds.length > 0 ? await OrderItem.findAll({
+          where: {
+            product_id: { [Op.in]: productIds },
+            order_id: { [Op.in]: storeOrderIds } // Garantir que só busca items de pedidos desta loja
           },
           attributes: ['order_id'],
           raw: true,
-        });
+        }) : [];
 
         // Extrair order_ids únicos
         const productOrderIds = [...new Set(itemsByProduct.map((i: any) => i.order_id))];
@@ -118,8 +155,15 @@ export class OrderController {
 
   static async getById(req: TenantRequest, res: Response): Promise<void> {
     try {
-      if (!req.store) {
+      // VERIFICAÇÃO CRÍTICA
+      if (!req.store || !req.store.id) {
         res.status(400).json({ error: 'Loja não encontrada' });
+        return;
+      }
+
+      const storeId = Number(req.store.id);
+      if (isNaN(storeId) || storeId <= 0) {
+        res.status(400).json({ error: 'ID da loja inválido' });
         return;
       }
 
@@ -129,7 +173,7 @@ export class OrderController {
       // Tentar buscar por order_number primeiro, depois por ID numérico
       const order = await Order.findOne({
         where: {
-          store_id: req.store.id,
+          store_id: storeId,
           [Op.or]: [
             { order_number: orderIdentifier },
             { id: isNaN(Number(orderIdentifier)) ? -1 : Number(orderIdentifier) },
@@ -155,8 +199,25 @@ export class OrderController {
 
   static async deliver(req: TenantRequest, res: Response): Promise<void> {
     try {
-      if (!req.store) {
+      // VERIFICAÇÃO CRÍTICA
+      if (!req.store || !req.store.id) {
         res.status(400).json({ error: 'Loja não encontrada' });
+        return;
+      }
+
+      const storeId = Number(req.store.id);
+      if (isNaN(storeId) || storeId <= 0) {
+        res.status(400).json({ error: 'ID da loja inválido' });
+        return;
+      }
+
+      // Verificar se o pedido pertence à loja antes de entregar
+      const order = await Order.findOne({
+        where: { id: req.params.id, store_id: storeId },
+      });
+
+      if (!order) {
+        res.status(404).json({ error: 'Pedido não encontrado ou não pertence a esta loja' });
         return;
       }
 
@@ -170,13 +231,20 @@ export class OrderController {
 
   static async cancel(req: TenantRequest, res: Response): Promise<void> {
     try {
-      if (!req.store) {
+      // VERIFICAÇÃO CRÍTICA
+      if (!req.store || !req.store.id) {
         res.status(400).json({ error: 'Loja não encontrada' });
         return;
       }
 
+      const storeId = Number(req.store.id);
+      if (isNaN(storeId) || storeId <= 0) {
+        res.status(400).json({ error: 'ID da loja inválido' });
+        return;
+      }
+
       const order = await Order.findOne({
-        where: { id: req.params.id, store_id: req.store.id },
+        where: { id: req.params.id, store_id: storeId },
       });
 
       if (!order) {
@@ -202,13 +270,20 @@ export class OrderController {
 
   static async checkPayment(req: TenantRequest, res: Response): Promise<void> {
     try {
-      if (!req.store) {
+      // VERIFICAÇÃO CRÍTICA
+      if (!req.store || !req.store.id) {
         res.status(400).json({ error: 'Loja não encontrada' });
         return;
       }
 
+      const storeId = Number(req.store.id);
+      if (isNaN(storeId) || storeId <= 0) {
+        res.status(400).json({ error: 'ID da loja inválido' });
+        return;
+      }
+
       const order = await Order.findOne({
-        where: { id: req.params.id, store_id: req.store.id },
+        where: { id: req.params.id, store_id: storeId },
         include: [{ association: 'payment' }],
       });
 
@@ -223,72 +298,81 @@ export class OrderController {
         return;
       }
 
-      // Verificar qual provider foi usado
-      const provider = payment.metadata?.provider || 'mercado_pago';
-      const transactionId = provider === 'pushin_pay'
-        ? payment.pushin_pay_id
-        : payment.mercado_pago_id;
-
-      if (!transactionId) {
-        res.status(400).json({ error: 'ID da transação não encontrado' });
+      // Se já está aprovado, retornar direto
+      if (payment.status === 'approved' && order.payment_status === 'paid') {
+        res.json({ paid: true, status: payment.status });
         return;
       }
 
-      // Apenas Pushin Pay suporta consulta manual por enquanto
-      if (provider !== 'pushin_pay') {
-        res.json({ paid: payment.status === 'approved', status: payment.status });
-        return;
-      }
+      // Verificar se é pagamento via Pushin Pay
+      if (payment.pushin_pay_id && payment.metadata?.provider === 'pushin_pay') {
+        // Usar token da plataforma para consultar status
+        const platformToken = process.env.PUSHIN_PAY_TOKEN;
+        const sandbox = process.env.PUSHIN_PAY_SANDBOX === 'true';
 
-      // Buscar método de pagamento configurado
-      const { PaymentMethod } = require('../models');
-      const paymentMethod = await PaymentMethod.findOne({
-        where: {
-          store_id: req.store.id,
-          provider: 'pushin_pay',
-          enabled: true,
-        },
-      });
-
-      if (!paymentMethod || !paymentMethod.token) {
-        res.status(400).json({ error: 'Pushin Pay não configurado' });
-        return;
-      }
-
-      // Consultar status no Pushin Pay
-      const { PushinPayService } = require('../services/pushinPayService');
-      const transaction = await PushinPayService.getTransaction(
-        {
-          token: paymentMethod.token,
-          sandbox: paymentMethod.sandbox,
-        },
-        transactionId
-      );
-
-      if (!transaction) {
-        res.json({ paid: false, message: 'Transação não encontrada' });
-        return;
-      }
-
-      // Atualizar status se necessário
-      if (transaction.status === 'paid' && order.payment_status !== 'paid') {
-        await payment.update({ status: 'approved' });
-        await order.update({
-          status: 'paid',
-          payment_status: 'paid',
-        });
-
-        // Tentar entregar o pedido
-        const { OrderService } = require('../services/orderService');
-        try {
-          await OrderService.deliverOrder(order.id);
-        } catch (error) {
-          // Ignorar erros de entrega
+        if (!platformToken) {
+          res.json({
+            paid: payment.status === 'approved',
+            status: payment.status,
+            message: 'Token da plataforma não configurado'
+          });
+          return;
         }
 
-        res.json({ paid: true, message: 'Pagamento confirmado' });
+        try {
+          const { PushinPayService } = require('../services/pushinPayService');
+          const transaction = await PushinPayService.getTransaction(
+            {
+              token: platformToken,
+              sandbox: sandbox,
+            },
+            payment.pushin_pay_id
+          );
+
+          if (!transaction) {
+            res.json({ paid: false, message: 'Transação não encontrada' });
+            return;
+          }
+
+          // Atualizar status se necessário
+          if (transaction.status === 'paid' && order.payment_status !== 'paid') {
+            await payment.update({ status: 'approved' });
+            await order.update({
+              status: 'paid',
+              payment_status: 'paid',
+            });
+
+            // Creditar na carteira após pagamento aprovado
+            try {
+              const { OrderService } = require('../services/orderService');
+              await OrderService.creditWalletAfterPayment(order.id);
+            } catch (walletError) {
+              console.error('Erro ao creditar carteira:', walletError);
+            }
+
+            // Entregar pedido automaticamente
+            try {
+              const { OrderService } = require('../services/orderService');
+              await OrderService.deliverOrder(order.id);
+            } catch (error) {
+              console.error('Erro ao entregar pedido:', error);
+            }
+
+            res.json({ paid: true, message: 'Pagamento confirmado!' });
+          } else {
+            res.json({ paid: transaction.status === 'paid', status: transaction.status });
+          }
+        } catch (error: any) {
+          console.error('Erro ao consultar Pushin Pay:', error);
+          res.json({
+            paid: payment.status === 'approved',
+            status: payment.status,
+            message: 'Erro ao consultar status'
+          });
+        }
       } else {
-        res.json({ paid: false, status: transaction.status });
+        // Para outros métodos, retornar status atual
+        res.json({ paid: payment.status === 'approved', status: payment.status });
       }
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Erro ao verificar pagamento' });
@@ -297,13 +381,20 @@ export class OrderController {
 
   static async refund(req: TenantRequest, res: Response): Promise<void> {
     try {
-      if (!req.store) {
+      // VERIFICAÇÃO CRÍTICA
+      if (!req.store || !req.store.id) {
         res.status(400).json({ error: 'Loja não encontrada' });
         return;
       }
 
+      const storeId = Number(req.store.id);
+      if (isNaN(storeId) || storeId <= 0) {
+        res.status(400).json({ error: 'ID da loja inválido' });
+        return;
+      }
+
       const order = await Order.findOne({
-        where: { id: req.params.id, store_id: req.store.id },
+        where: { id: req.params.id, store_id: storeId },
         include: [{ association: 'payment' }],
       });
 
@@ -368,9 +459,39 @@ export class OrderController {
             });
 
             // Entregar automaticamente se for entrega instantânea
-            await OrderService.deliverOrder(dbPaymentOrder.id);
+            try {
+              await OrderService.deliverOrder(dbPaymentOrder.id);
+            } catch (deliveryError: any) {
+              // Se houver erro de estoque, verificar e enviar webhook
+              if (deliveryError?.message?.includes('Estoque insuficiente') || deliveryError?.message?.includes('estoque')) {
+                try {
+                  const { OrderItem, Product, ProductKey } = await import('../models');
+                  const orderItems = await OrderItem.findAll({
+                    where: { order_id: dbPaymentOrder.id },
+                    include: [{ model: Product, as: 'product' }],
+                  });
 
-            // Enviar notificações de pedido aprovado
+                  for (const item of orderItems) {
+                    const product = (item as any).product;
+                    if (product && product.inventory_type === 'lines') {
+                      const remainingKeys = await ProductKey.count({
+                        where: { product_id: product.id },
+                      });
+
+                      if (remainingKeys === 0) {
+                        const { WebhookService } = await import('../services/webhookService');
+                        await WebhookService.notifyProductOutOfStock(dbPaymentOrder.store_id, product.toJSON());
+                      }
+                    }
+                  }
+                } catch (webhookError) {
+                  console.error('Erro ao enviar webhook de estoque esgotado:', webhookError);
+                }
+              }
+              // Continuar mesmo com erro de entrega para enviar webhook de pedido aprovado
+            }
+
+            // Enviar notificações de pedido aprovado (mesmo se houve erro de entrega)
             try {
               const { WebhookService } = await import('../services/webhookService');
               const orderWithItems = await dbPaymentOrder.reload({

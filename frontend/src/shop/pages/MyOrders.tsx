@@ -29,7 +29,7 @@ export default function MyOrders() {
     setCustomer(JSON.parse(customerData));
   }, [storeSubdomain, navigate]);
 
-  const { data: orders, isLoading } = useQuery(
+  const { data: ordersData, isLoading } = useQuery(
     ['myOrders', storeSubdomain],
     async () => {
       const token = localStorage.getItem(`customer_token_${storeSubdomain}`);
@@ -48,6 +48,11 @@ export default function MyOrders() {
       staleTime: 1 * 60 * 1000,
     }
   );
+
+  // Filtrar apenas pedidos aprovados (paid ou delivered)
+  const orders = ordersData ? ordersData.filter((order: any) =>
+    order.status === 'paid' || order.status === 'delivered'
+  ) : [];
 
 
   const getStatusBadge = (status: string) => {
@@ -88,20 +93,19 @@ export default function MyOrders() {
     const Icon = badge.icon;
 
     return (
-      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${badge.className}`}>
-        <Icon className="w-4 h-4" />
-        <div className="flex flex-col">
-          <span className="text-sm font-semibold">{badge.label}</span>
-          <span className="text-xs opacity-75">{badge.description}</span>
-        </div>
-      </div>
+      <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border ${badge.className}`}>
+        <Icon className="w-3 h-3" />
+        <span>{badge.label}</span>
+      </span>
     );
   };
 
-  // Calcular estatísticas
+  // Calcular estatísticas - apenas pedidos pagos/entregues contam para total gasto
   const stats = orders ? {
     total: orders.length,
-    totalSpent: orders.reduce((sum: number, order: any) => sum + Number(order.total || 0), 0),
+    totalSpent: orders
+      .filter((o: any) => o.status === 'paid' || o.status === 'delivered')
+      .reduce((sum: number, order: any) => sum + Number(order.total || 0), 0),
     paid: orders.filter((o: any) => o.status === 'paid' || o.status === 'delivered').length,
   } : { total: 0, totalSpent: 0, paid: 0 };
 
@@ -110,18 +114,18 @@ export default function MyOrders() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen flex flex-col">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 flex-1">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Minhas Compras</h1>
-              <p className="text-gray-600">Acompanhe todos os seus pedidos e histórico de compras</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Minhas Compras</h1>
+              <p className="text-sm text-gray-600">Acompanhe todos os seus pedidos</p>
             </div>
             <Link
               to={getShopUrl(storeSubdomain)}
-              className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Voltar para a loja
@@ -130,46 +134,39 @@ export default function MyOrders() {
 
           {/* Estatísticas */}
           {orders && orders.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+              <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">Total de Pedidos</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                    <p className="text-xs font-medium text-gray-600 mb-1">Total de Pedidos</p>
+                    <p className="text-xl font-bold text-gray-900">{stats.total}</p>
                   </div>
-                  <div className="bg-blue-100 rounded-full p-3">
-                    <ShoppingBag className="w-6 h-6 text-blue-600" />
-                  </div>
+                  <ShoppingBag className="w-5 h-5 text-gray-400" />
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">Total Gasto</p>
-                    <p className="text-3xl font-bold text-gray-900">
+                    <p className="text-xs font-medium text-gray-600 mb-1">Total Gasto</p>
+                    <p className="text-xl font-bold text-gray-900">
                       {new Intl.NumberFormat('pt-BR', {
                         style: 'currency',
                         currency: 'BRL',
-                        maximumFractionDigits: 0,
                       }).format(stats.totalSpent)}
                     </p>
                   </div>
-                  <div className="bg-green-100 rounded-full p-3">
-                    <DollarSign className="w-6 h-6 text-green-600" />
-                  </div>
+                  <DollarSign className="w-5 h-5 text-gray-400" />
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">Pedidos Pagos</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.paid}</p>
+                    <p className="text-xs font-medium text-gray-600 mb-1">Pedidos Aprovados</p>
+                    <p className="text-xl font-bold text-gray-900">{stats.paid}</p>
                   </div>
-                  <div className="bg-purple-100 rounded-full p-3">
-                    <TrendingUp className="w-6 h-6 text-purple-600" />
-                  </div>
+                  <CheckCircle2 className="w-5 h-5 text-gray-400" />
                 </div>
               </div>
             </div>
@@ -178,98 +175,101 @@ export default function MyOrders() {
 
         {/* Lista de Pedidos */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         ) : !orders || orders.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg p-16 text-center border border-gray-200">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-              <Package className="w-10 h-10 text-gray-400" />
+          <div className="bg-white rounded-lg shadow-sm p-8 md:p-12 text-center border border-gray-200">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+              <Package className="w-8 h-8 text-gray-400" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Nenhum pedido encontrado</h2>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Você ainda não realizou nenhuma compra. Explore nossos produtos e encontre o que você precisa!
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Nenhum pedido encontrado</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Você ainda não realizou nenhuma compra.
             </p>
             <Link
               to={getShopUrl(storeSubdomain)}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
             >
-              <ShoppingBag className="w-5 h-5" />
+              <ShoppingBag className="w-4 h-4" />
               Ver Produtos
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {orders.map((order: any) => (
               <Link
                 key={order.id}
                 to={`/${storeSubdomain}/my-orders/${order.order_number || order.id}`}
-                className="block bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-indigo-300 transition-all group"
+                className="block bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all"
               >
-                <div className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    {/* Informações do Pedido */}
-                    <div className="flex-1">
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                            <FileText className="w-6 h-6 text-indigo-600" />
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-bold text-gray-900">
-                              Pedido {order.order_number || `#${order.id}`}
-                            </h3>
-                            {getStatusBadge(order.status)}
-                          </div>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <h3 className="text-base font-semibold text-gray-900">
+                          {order.order_number || `#${order.id}`}
+                        </h3>
+                        {getStatusBadge(order.status)}
+                      </div>
 
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="w-4 h-4" />
-                              <span>
-                                {new Date(order.created_at).toLocaleDateString('pt-BR', {
-                                  day: '2-digit',
-                                  month: 'long',
-                                  year: 'numeric',
-                                })}
-                              </span>
+                      {/* Nomes dos produtos */}
+                      {order.items && order.items.length > 0 && (
+                        <div className="mb-2">
+                          {order.items.length === 1 ? (
+                            <p className="text-sm text-gray-700 font-medium">
+                              {order.items[0].product_name}
+                            </p>
+                          ) : (
+                            <div>
+                              <p className="text-sm text-gray-700 font-medium mb-1">
+                                {order.items[0].product_name}
+                                {order.items.length > 1 && (
+                                  <span className="text-gray-500"> +{order.items.length - 1} {order.items.length === 2 ? 'outro' : 'outros'}</span>
+                                )}
+                              </p>
+                              {order.items.length > 1 && order.items.length <= 3 && (
+                                <div className="text-xs text-gray-600 space-y-0.5">
+                                  {order.items.slice(1).map((item: any, idx: number) => (
+                                    <p key={idx}>• {item.product_name}</p>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            {order.items && order.items.length > 0 && (
-                              <div className="flex items-center gap-1.5">
-                                <Package className="w-4 h-4" />
-                                <span>
-                                  {order.items.length} {order.items.length === 1 ? 'item' : 'itens'}
-                                </span>
-                              </div>
-                            )}
-                            {order.payment && (
-                              <div className="flex items-center gap-1.5">
-                                <CreditCard className="w-4 h-4" />
-                                <span className="capitalize">
-                                  {order.payment.payment_method || 'PIX'}
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          )}
                         </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>
+                            {new Date(order.created_at).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })} às {new Date(order.created_at).toLocaleTimeString('pt-BR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                        {order.items && order.items.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            <Package className="w-3 h-3" />
+                            <span>{order.items.length} {order.items.length === 1 ? 'item' : 'itens'}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-
-                    {/* Valor e Ação */}
-                    <div className="flex items-center justify-between md:flex-col md:items-end md:justify-center gap-4">
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500 mb-1">Total</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          }).format(Number(order.total))}
-                        </p>
-                      </div>
-                      <div className="text-indigo-600 group-hover:text-indigo-700 transition-colors">
-                        <ChevronRight className="w-6 h-6" />
-                      </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(Number(order.total))}
+                      </p>
+                      <ChevronRight className="w-4 h-4 text-gray-400 mt-1 ml-auto" />
                     </div>
                   </div>
                 </div>

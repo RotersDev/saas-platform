@@ -47,14 +47,88 @@ export class ThemeController {
 
       const updateData: any = { ...req.body };
 
-      // Processar upload de logo
+      // Processar upload de logo e favicon - agora usando Cloudflare R2
       const files = (req as any).files;
+      console.log('[ThemeController] Content-Type:', req.headers['content-type']);
+      console.log('[ThemeController] Files recebidos:', files ? Object.keys(files) : 'nenhum arquivo');
+      console.log('[ThemeController] Body keys:', Object.keys(req.body || {}));
+
       if (files) {
+        const { uploadToR2 } = await import('../services/r2Service');
+
         if (files.logo && files.logo[0]) {
-          updateData.logo_url = `/uploads/${files.logo[0].filename}`;
+          console.log('[ThemeController] Processando upload de logo:', {
+            originalname: files.logo[0].originalname,
+            mimetype: files.logo[0].mimetype,
+            size: files.logo[0].size,
+            hasBuffer: !!files.logo[0].buffer,
+          });
+          try {
+            const logoUrl = await uploadToR2({
+              storeId: req.store.id,
+              category: 'logos',
+              buffer: files.logo[0].buffer,
+              mimeType: files.logo[0].mimetype,
+              originalName: files.logo[0].originalname,
+            });
+            console.log('[ThemeController] Logo uploadado com sucesso:', logoUrl);
+            updateData.logo_url = logoUrl;
+          } catch (error: any) {
+            console.error('[ThemeController] Erro ao fazer upload do logo para R2:', error);
+            res.status(500).json({ error: 'Erro ao fazer upload do logo', details: error.message });
+            return;
+          }
         }
         if (files.favicon && files.favicon[0]) {
-          updateData.favicon_url = `/uploads/${files.favicon[0].filename}`;
+          console.log('[ThemeController] Processando upload de favicon:', {
+            originalname: files.favicon[0].originalname,
+            mimetype: files.favicon[0].mimetype,
+            size: files.favicon[0].size,
+            hasBuffer: !!files.favicon[0].buffer,
+          });
+          try {
+            const faviconUrl = await uploadToR2({
+              storeId: req.store.id,
+              category: 'favicons',
+              buffer: files.favicon[0].buffer,
+              mimeType: files.favicon[0].mimetype,
+              originalName: files.favicon[0].originalname,
+            });
+            console.log('[ThemeController] Favicon uploadado com sucesso:', faviconUrl);
+            updateData.favicon_url = faviconUrl;
+          } catch (error: any) {
+            console.error('[ThemeController] Erro ao fazer upload do favicon para R2:', error);
+            res.status(500).json({ error: 'Erro ao fazer upload do favicon', details: error.message });
+            return;
+          }
+        }
+      } else {
+        console.log('[ThemeController] Nenhum arquivo recebido. Verificando se é JSON...');
+      }
+
+      // Processar remoção de logo/favicon (quando recebe string vazia ou null)
+      // Só processar se não houve upload de arquivo novo
+      if (!files || !files.logo || !files.logo[0]) {
+        if (req.body.logo_url === '' || req.body.logo_url === null) {
+          updateData.logo_url = null;
+        } else if (req.body.logo_url !== undefined && req.body.logo_url !== '') {
+          // Se foi enviado uma URL (não vazia), usar ela
+          updateData.logo_url = req.body.logo_url;
+        } else if (theme && theme.logo_url) {
+          // Se não foi especificado nada, manter a URL existente
+          updateData.logo_url = theme.logo_url;
+        }
+      }
+
+      if (!files || !files.favicon || !files.favicon[0]) {
+        if (req.body.favicon_url === '' || req.body.favicon_url === null) {
+          updateData.favicon_url = null;
+        } else if (req.body.favicon_url !== undefined && req.body.favicon_url !== '') {
+          // Se foi enviado uma URL (não vazia), usar ela
+          updateData.favicon_url = req.body.favicon_url;
+        } else if (theme && theme.favicon_url) {
+          // Se não foi especificado nada, manter a URL existente
+          updateData.favicon_url = theme.favicon_url;
         }
       }
 
@@ -143,12 +217,28 @@ export class ThemeController {
         });
       } else {
         await theme.update(updateData);
+        // Recarregar para garantir que temos os dados atualizados
+        await theme.reload();
       }
+
+      console.log('[ThemeController] Tema atualizado, retornando:', {
+        logo_url: theme.logo_url,
+        favicon_url: theme.favicon_url,
+      });
 
       res.json(theme);
     } catch (error: any) {
-      console.error('Erro ao atualizar tema:', error);
-      res.status(400).json({ error: error.message || 'Erro ao atualizar tema' });
+      console.error('[ThemeController] Erro ao atualizar tema:', error);
+      console.error('[ThemeController] Stack:', error.stack);
+      console.error('[ThemeController] Error details:', {
+        message: error.message,
+        name: error.name,
+        code: error.code,
+      });
+      res.status(500).json({
+        error: 'Erro ao atualizar tema',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      });
     }
   }
 }

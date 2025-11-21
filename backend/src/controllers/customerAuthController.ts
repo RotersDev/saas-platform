@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { Customer } from '../models';
 import { OAuth2Client } from 'google-auth-library';
 import emailService from '../services/emailService';
+import { getClientIp } from '../utils/deviceParser';
 
 export interface CustomerAuthRequest extends Request {
   customer?: {
@@ -43,10 +44,14 @@ export class CustomerAuthController {
       });
 
       if (existingCustomer) {
-        // Se já existe mas não tem senha, atualizar com senha
+        // Se já existe mas não tem senha, atualizar com senha e IP
         if (!existingCustomer.password && password) {
+          const clientIp = getClientIp(req);
           const hashedPassword = await bcrypt.hash(password, 10);
-          await existingCustomer.update({ password: hashedPassword });
+          await existingCustomer.update({
+            password: hashedPassword,
+            ip_address: clientIp,
+          });
 
           const token = jwt.sign(
             { customer_id: existingCustomer.id, store_id: req.store.id, type: 'customer' },
@@ -69,6 +74,10 @@ export class CustomerAuthController {
         return;
       }
 
+      // Capturar IP do cliente
+      const clientIp = getClientIp(req);
+      console.log('[CustomerAuthController] Registro - IP capturado:', clientIp);
+
       // Criar novo cliente
       const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
       const customer = await Customer.create({
@@ -77,6 +86,7 @@ export class CustomerAuthController {
         name,
         phone,
         password: hashedPassword,
+        ip_address: clientIp,
         is_blocked: false,
         total_orders: 0,
         total_spent: 0,
@@ -153,6 +163,11 @@ export class CustomerAuthController {
         res.status(401).json({ error: 'Credenciais inválidas' });
         return;
       }
+
+      // Atualizar IP do cliente no login
+      const clientIp = getClientIp(req);
+      console.log('[CustomerAuthController] Login - IP capturado:', clientIp);
+      await customer.update({ ip_address: clientIp });
 
       const token = jwt.sign(
         { customer_id: customer.id, store_id: req.store.id, type: 'customer' },
@@ -278,10 +293,15 @@ export class CustomerAuthController {
       });
 
       if (!customer) {
+        // Capturar IP do cliente
+        const clientIp = getClientIp(req);
+        console.log('[CustomerAuthController] Login Google - IP capturado:', clientIp);
+
         // Criar novo cliente sem senha (login apenas com Google)
         customer = await Customer.create({
           store_id: req.store.id,
           email: googleEmail,
+          ip_address: clientIp,
           name: googleName,
           phone: undefined,
           password: undefined, // Sem senha, login apenas com Google
@@ -295,6 +315,11 @@ export class CustomerAuthController {
           res.status(403).json({ error: 'Conta bloqueada' });
           return;
         }
+
+        // Atualizar IP do cliente no login
+        const clientIp = getClientIp(req);
+        console.log('[CustomerAuthController] Login Google (existente) - IP capturado:', clientIp);
+        await customer.update({ ip_address: clientIp });
       }
 
       // Gerar token JWT

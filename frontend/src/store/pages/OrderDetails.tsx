@@ -2,14 +2,34 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Ban, RefreshCw, DollarSign, User, Mail, Phone, Globe, Monitor, Smartphone, Shield } from 'lucide-react';
+import { ArrowLeft, Ban, RefreshCw, DollarSign, User, Mail, Phone, Globe, Monitor, Smartphone, Shield, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export default function OrderDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [blockingBy, setBlockingBy] = useState<'email' | 'ip' | null>(null);
+  const [copiedKeys, setCopiedKeys] = useState<Record<string, string>>({});
+  const { confirm, Dialog } = useConfirm();
+
+  const copyToClipboard = async (text: string, keyId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKeys(prev => ({ ...prev, [keyId]: keyId }));
+      toast.success('Copiado!');
+      setTimeout(() => {
+        setCopiedKeys(prev => {
+          const newState = { ...prev };
+          delete newState[keyId];
+          return newState;
+        });
+      }, 2000);
+    } catch (error) {
+      toast.error('Erro ao copiar');
+    }
+  };
 
   const { data: order, isLoading } = useQuery(
     ['order', id],
@@ -78,7 +98,7 @@ export default function OrderDetails() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -89,7 +109,7 @@ export default function OrderDetails() {
         <p className="text-gray-600">Pedido não encontrado</p>
         <button
           onClick={() => navigate('/store/orders')}
-          className="mt-4 text-indigo-600 hover:text-indigo-700"
+          className="mt-4 text-blue-600 hover:text-blue-700"
         >
           Voltar para pedidos
         </button>
@@ -99,8 +119,10 @@ export default function OrderDetails() {
 
   const metadata = order.metadata || {};
   const payment = order.payment || {};
+  const gatewayFee = 0.70; // Taxa fixa do gateway
   const platformFee = order.total * 0.03; // 3% da plataforma
-  const netTotal = order.total - platformFee;
+  const totalFees = gatewayFee + platformFee;
+  const netTotal = order.total - totalFees;
 
   const getGatewayName = () => {
     if (payment.metadata?.provider === 'pushin_pay') {
@@ -128,26 +150,26 @@ export default function OrderDetails() {
       <div className="mb-6">
         <button
           onClick={() => navigate('/store/orders')}
-          className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4 text-sm"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar para pedidos
         </button>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               Pedido #{order.order_number || order.id}
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-600 mt-1 text-sm">
               Criado em {new Date(order.created_at).toLocaleString('pt-BR')}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             {order.payment_status === 'pending' && (
               <button
                 onClick={() => checkPaymentMutation.mutate()}
                 disabled={checkPaymentMutation.isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-sm font-medium transition-colors"
               >
                 <RefreshCw className={`w-4 h-4 ${checkPaymentMutation.isLoading ? 'animate-spin' : ''}`} />
                 Verificar Pagamento
@@ -155,13 +177,19 @@ export default function OrderDetails() {
             )}
             {order.payment_status === 'paid' && order.status !== 'refunded' && (
               <button
-                onClick={() => {
-                  if (confirm('Tem certeza que deseja reembolsar este pedido?')) {
+                onClick={async () => {
+                  const confirmed = await confirm({
+                    title: 'Reembolsar pedido',
+                    message: 'Tem certeza que deseja reembolsar este pedido? Esta ação não pode ser desfeita.',
+                    type: 'danger',
+                    confirmText: 'Reembolsar',
+                  });
+                  if (confirmed) {
                     refundMutation.mutate();
                   }
                 }}
                 disabled={refundMutation.isLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2 text-sm font-medium transition-colors"
               >
                 <DollarSign className="w-4 h-4" />
                 Reembolsar
@@ -175,45 +203,59 @@ export default function OrderDetails() {
         {/* Coluna Principal */}
         <div className="lg:col-span-2 space-y-6">
           {/* Status */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Status do Pedido</h2>
-            <div className="flex items-center gap-4">
-              <span className={`px-4 py-2 rounded-lg font-medium ${getStatusBadge(order.status)}`}>
-                {order.status === 'pending' && 'Pendente'}
-                {order.status === 'paid' && 'Pago'}
-                {order.status === 'delivered' && 'Entregue'}
-                {order.status === 'cancelled' && 'Cancelado'}
-                {order.status === 'refunded' && 'Reembolsado'}
-              </span>
-              <span className={`px-4 py-2 rounded-lg font-medium ${getStatusBadge(order.payment_status)}`}>
-                Pagamento: {order.payment_status === 'pending' && 'Pendente'}
-                {order.payment_status === 'paid' && 'Pago'}
-                {order.payment_status === 'failed' && 'Falhou'}
-                {order.payment_status === 'refunded' && 'Reembolsado'}
-              </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-gray-500 mb-2">Status do Pedido</p>
+                <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold ${getStatusBadge(order.status)}`}>
+                  {order.status === 'pending' && 'Pendente'}
+                  {order.status === 'paid' && 'Pago'}
+                  {order.status === 'delivered' && 'Entregue'}
+                  {order.status === 'cancelled' && 'Cancelado'}
+                  {order.status === 'refunded' && 'Reembolsado'}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-2">Status do Pagamento</p>
+                <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold ${getStatusBadge(order.payment_status)}`}>
+                  {order.payment_status === 'pending' && 'Pendente'}
+                  {order.payment_status === 'paid' && 'Pago'}
+                  {order.payment_status === 'failed' && 'Falhou'}
+                  {order.payment_status === 'refunded' && 'Reembolsado'}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Itens do Pedido */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Itens do Pedido</h2>
-            <div className="space-y-4">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Itens do Pedido</h2>
+            <div className="space-y-3">
               {order.items && order.items.length > 0 ? (
                 order.items.map((item: any, index: number) => (
-                  <div key={index} className="border-b border-gray-200 pb-4 last:border-0">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{item.product_name}</h3>
-                        <p className="text-sm text-gray-600">Quantidade: {item.quantity}</p>
-                        <p className="text-sm text-gray-600">
-                          Preço unitário: {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          }).format(Number(item.price))}
-                        </p>
+                  <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 mb-2 text-base">{item.product_name}</h3>
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Qtd:</span>
+                            <span>{item.quantity}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Unitário:</span>
+                            <span>
+                              {new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(Number(item.price))}
+                            </span>
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-lg font-bold text-gray-900">
                           {new Intl.NumberFormat('pt-BR', {
                             style: 'currency',
                             currency: 'BRL',
@@ -222,22 +264,72 @@ export default function OrderDetails() {
                       </div>
                     </div>
                     {/* Chave do produto se entregue */}
-                    {item.product_key && (
-                      <div className="mt-3 bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-600 mb-1">Chave do Produto:</p>
-                        <code className="text-sm font-mono text-gray-900 break-all">{item.product_key}</code>
-                      </div>
-                    )}
+                    {item.product_key && (() => {
+                      const keys = item.product_key.split('\n').filter((k: string) => k.trim());
+                      const hasMultipleKeys = keys.length > 1;
+                      const itemKeyId = `item-${index}`;
+
+                      return (
+                        <div className="mt-4 pt-4 border-t border-gray-300">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-sm font-medium text-gray-700">
+                              {hasMultipleKeys ? `Chaves do Produto (${keys.length})` : 'Chave do Produto'}
+                            </p>
+                            {hasMultipleKeys && (
+                              <button
+                                onClick={() => copyToClipboard(item.product_key, `${itemKeyId}-all`)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                              >
+                                {copiedKeys[`${itemKeyId}-all`] ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-green-600" />
+                                    <span>Copiado!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3.5 h-3.5" />
+                                    <span>Copiar todas</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            {keys.map((key: string, keyIndex: number) => {
+                              const keyId = `${itemKeyId}-key-${keyIndex}`;
+                              return (
+                                <div key={keyIndex} className="flex items-center gap-2 bg-white rounded-lg p-3 border border-gray-300">
+                                  <code className="flex-1 text-sm font-mono text-gray-900 break-all">
+                                    {key.trim()}
+                                  </code>
+                                  <button
+                                    onClick={() => copyToClipboard(key.trim(), keyId)}
+                                    className="flex-shrink-0 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                    title="Copiar esta chave"
+                                  >
+                                    {copiedKeys[keyId] ? (
+                                      <Check className="w-4 h-4 text-green-600" />
+                                    ) : (
+                                      <Copy className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500">Nenhum item encontrado</p>
+                <p className="text-gray-500 text-center py-8">Nenhum item encontrado</p>
               )}
             </div>
           </div>
 
           {/* Informações de Pagamento */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Informações de Pagamento</h2>
             <div className="space-y-3">
               <div className="flex justify-between">
@@ -267,7 +359,7 @@ export default function OrderDetails() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Resumo Financeiro */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumo Financeiro</h2>
             <div className="space-y-3">
               <div className="flex justify-between">
@@ -299,8 +391,17 @@ export default function OrderDetails() {
                   }).format(Number(order.total))}
                 </span>
               </div>
-              <div className="border-t border-gray-200 pt-3">
-                <div className="flex justify-between mb-2">
+              <div className="border-t border-gray-200 pt-3 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Taxa do Gateway:</span>
+                  <span className="text-gray-900">
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    }).format(gatewayFee)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-gray-600">Taxa da Plataforma (3%):</span>
                   <span className="text-gray-900">
                     {new Intl.NumberFormat('pt-BR', {
@@ -309,9 +410,18 @@ export default function OrderDetails() {
                     }).format(platformFee)}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between pt-2 border-t border-gray-200">
+                  <span className="text-gray-600 font-medium">Total de Taxas:</span>
+                  <span className="text-gray-900 font-medium">
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    }).format(totalFees)}
+                  </span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-gray-200">
                   <span className="font-semibold text-gray-900">Total Líquido:</span>
-                  <span className="font-bold text-indigo-600">
+                  <span className="font-bold text-blue-600">
                     {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
@@ -323,7 +433,7 @@ export default function OrderDetails() {
           </div>
 
           {/* Informações do Cliente */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Cliente</h2>
             <div className="space-y-3">
               <div className="flex items-start gap-2">
@@ -357,7 +467,7 @@ export default function OrderDetails() {
                 <>
                   <button
                     onClick={() => setBlockingBy('email')}
-                    className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm font-medium transition-colors border border-gray-300"
                   >
                     <Ban className="w-4 h-4" />
                     Bloquear por E-mail
@@ -365,7 +475,7 @@ export default function OrderDetails() {
                   {metadata.ip_address && (
                     <button
                       onClick={() => setBlockingBy('ip')}
-                      className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
+                      className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm font-medium transition-colors border border-gray-300"
                     >
                       <Shield className="w-4 h-4" />
                       Bloquear por IP
@@ -374,7 +484,7 @@ export default function OrderDetails() {
                 </>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-gray-600 mb-3">
                     Confirmar bloqueio por {blockingBy === 'email' ? 'e-mail' : 'IP'}?
                   </p>
                   <div className="flex gap-2">
@@ -387,13 +497,13 @@ export default function OrderDetails() {
                         );
                       }}
                       disabled={blockCustomerMutation.isLoading}
-                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                      className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 text-sm font-medium transition-colors"
                     >
                       Confirmar
                     </button>
                     <button
                       onClick={() => setBlockingBy(null)}
-                      className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                      className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors border border-gray-300"
                     >
                       Cancelar
                     </button>
@@ -405,7 +515,7 @@ export default function OrderDetails() {
 
           {/* Dados do Dispositivo */}
           {metadata.ip_address && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Monitor className="w-5 h-5" />
                 Dados do Dispositivo
@@ -441,6 +551,7 @@ export default function OrderDetails() {
           )}
         </div>
       </div>
+      {Dialog}
     </div>
   );
 }

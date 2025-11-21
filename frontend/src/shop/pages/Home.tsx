@@ -1,7 +1,7 @@
 import { useQuery } from 'react-query';
 import api from '../../config/axios';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { Plus, Package } from 'lucide-react';
+import { Package, ShoppingCart, ArrowDown, XCircle, Zap } from 'lucide-react';
 import StoreBlocked from './StoreBlocked';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
@@ -91,7 +91,7 @@ export default function ShopHome() {
 
   if (storeLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
@@ -105,10 +105,10 @@ export default function ShopHome() {
   // Se há filtro de categoria, mostrar apenas produtos filtrados
   if (categorySlug) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex flex-col">
+      <div className="min-h-screen flex flex-col">
 
         <main className="flex-1">
-          <section className="py-12 bg-white">
+          <section className="py-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <Link
@@ -117,7 +117,7 @@ export default function ShopHome() {
                 >
                   ← Voltar para todas as categorias
                 </Link>
-                <h2 className="text-3xl font-bold text-gray-900 mt-4">
+                <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mt-4 tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
                   {categories?.find((c: any) => c.slug === categorySlug)?.name || 'Categoria'}
                 </h2>
               </div>
@@ -134,82 +134,132 @@ export default function ShopHome() {
               ) : (
                 <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-4">
                   {products.map((product: any) => {
-                    const price = Number(product.promotional_price || product.price);
-                    const originalPrice = product.promotional_price ? Number(product.price) : null;
+                    // Preço real (o que cobra) = price
+                    const realPrice = Number(product.price);
+                    // Preço comparativo (marketing) = promotional_price quando existe
+                    const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
+                    // Calcular porcentagem de desconto: ((comparisonPrice - realPrice) / comparisonPrice) * 100
+                    const discountPercentage = comparisonPrice
+                      ? Math.round(((comparisonPrice - realPrice) / comparisonPrice) * 100)
+                      : null;
+
+                    // Verifica estoque: se stock_limit é null/undefined, estoque ilimitado (tem estoque)
+                    // Se stock_limit existe, verifica se é maior que 0
+                    // Também verifica available_stock ou stock_quantity caso venham da API
+                    const stockLimit = product.stock_limit ?? product.available_stock ?? product.stock_quantity;
+                    const hasStock = stockLimit === null || stockLimit === undefined || stockLimit > 0;
+                    const isAutoDelivery = product.auto_delivery || false;
 
                     return (
-                      <div
+                      <Link
                         key={product.id}
-                        className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group border border-gray-200 flex flex-col"
+                        to={getProductUrl(storeSubdomain, product.slug)}
+                        className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500"
                       >
-                        <div className="relative w-full aspect-video bg-gray-200 overflow-hidden">
-                          {product.images && product.images.length > 0 ? (
-                            <img
-                              src={normalizeImageUrl(product.images[0])}
-                              alt={product.name}
-                              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                              <Package className="w-12 h-12 text-gray-400" />
+                        {/* Tag de desconto */}
+                        {discountPercentage && discountPercentage > 0 && (
+                          <div className="absolute top-3 left-3 z-10 bg-blue-600 text-white font-bold text-sm px-3 py-1 rounded-full shadow-md flex items-center">
+                            <ArrowDown className="w-4 h-4 mr-1" />
+                            {discountPercentage}% OFF
+                          </div>
+                        )}
+
+                        {/* Imagem do produto com overlay */}
+                        <div className="relative overflow-hidden aspect-video">
+                          {!hasStock && (
+                            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 p-4 text-center">
+                              <XCircle className="w-8 h-8 text-red-500 mb-2" />
+                              <span className="font-bold text-white">ESGOTADO</span>
+                              <span className="text-sm text-gray-300 mt-1">Avise-me quando disponível</span>
                             </div>
                           )}
-                          {product.promotional_price && (
-                            <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                              Oferta
-                            </span>
+
+                          {product.images && product.images.length > 0 ? (
+                            <img
+                              alt={product.name}
+                              width="400"
+                              height="200"
+                              className="w-full h-full object-cover"
+                              src={normalizeImageUrl(product.images[0])}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                              <Package className="w-12 h-12 text-gray-500" />
+                            </div>
                           )}
+
                         </div>
 
-                        <div className="p-3 lg:p-4 flex-1 flex flex-col">
-                          <h3 className="text-sm lg:text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[2.5rem] lg:min-h-[3rem]">
-                            {product.name}
-                          </h3>
+                        {/* Conteúdo do card */}
+                        <div className="p-3 lg:p-4 flex flex-col flex-grow gap-2">
+                                {/* Título */}
+                                <div className="mb-1 sm:mb-2">
+                                  <h4 className="text-base lg:text-lg font-bold text-gray-900 line-clamp-2 leading-snug">{product.name}</h4>
+                                </div>
 
-                          <div className="mb-3 lg:mb-4">
-                            {originalPrice ? (
-                              <div className="flex flex-col lg:flex-row lg:items-baseline lg:space-x-2 space-y-1 lg:space-y-0">
-                                <span className="text-lg lg:text-2xl font-bold text-indigo-600">
-                                  {new Intl.NumberFormat('pt-BR', {
-                                    style: 'currency',
-                                    currency: 'BRL',
-                                  }).format(price)}
-                                </span>
-                                <span className="text-xs lg:text-sm text-gray-500 line-through">
-                                  {new Intl.NumberFormat('pt-BR', {
-                                    style: 'currency',
-                                    currency: 'BRL',
-                                  }).format(originalPrice)}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-lg lg:text-2xl font-bold text-indigo-600">
-                                {new Intl.NumberFormat('pt-BR', {
-                                  style: 'currency',
-                                  currency: 'BRL',
-                                }).format(price)}
-                              </span>
-                            )}
-                          </div>
+                                {/* Preços */}
+                                <div className="mt-auto">
+                                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-2 sm:gap-0">
+                                    <div>
+                                      {comparisonPrice && (
+                                        <del className="block text-sm text-gray-400 leading-none mb-0.5">
+                                          {new Intl.NumberFormat('pt-BR', {
+                                            style: 'currency',
+                                            currency: 'BRL',
+                                          }).format(comparisonPrice)}
+                                        </del>
+                                      )}
 
-                          <div className="flex space-x-2 mt-auto">
+                                      <span className="text-2xl font-bold text-gray-900">
+                                        {new Intl.NumberFormat('pt-BR', {
+                                          style: 'currency',
+                                          currency: 'BRL',
+                                        }).format(realPrice)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                          {/* Botões de ação */}
+                          <div className="flex gap-2 mt-2 sm:mt-3">
                             <button
-                              onClick={() => buyNow(product)}
-                              className="flex-1 px-2 lg:px-4 py-1.5 lg:py-2 bg-indigo-600 text-white text-xs lg:text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                buyNow(product);
+                              }}
+                              disabled={!hasStock}
+                              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2 lg:py-2.5 rounded-md flex items-center justify-center gap-2 transition-all hover:shadow-md text-xs sm:text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
                             >
-                              <span className="hidden lg:inline">Comprar Agora</span>
-                              <span className="lg:hidden">Comprar</span>
+                              <ShoppingCart className="hidden sm:block w-4 h-4 flex-shrink-0" />
+                              <span>COMPRAR AGORA</span>
                             </button>
                             <button
-                              onClick={() => addToCart(product)}
-                              className="px-2 lg:px-4 py-1.5 lg:py-2 border border-indigo-600 text-indigo-600 text-sm font-medium rounded-md hover:bg-indigo-50 transition-colors"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                addToCart(product);
+                              }}
+                              disabled={!hasStock}
+                              className="w-9 h-9 lg:w-10 lg:h-10 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Adicionar ao carrinho"
+                              aria-label="Adicionar ao carrinho"
                             >
-                              <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                              <ShoppingCart className="w-4 h-4" />
                             </button>
                           </div>
+
+                                {/* Selos inferiores */}
+                                {isAutoDelivery && (
+                                  <div className="flex flex-col items-center gap-2 mt-3 sm:mt-4">
+                                    <div className="text-xs text-green-400 flex items-center gap-1">
+                                      <Zap className="w-3 h-3" />
+                                      <span>Entrega automática</span>
+                                    </div>
+                                  </div>
+                                )}
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
@@ -232,7 +282,19 @@ export default function ShopHome() {
     categoryMap[0] = { id: 0, name: 'Produtos', slug: 'produtos' };
     productsByCategory[0] = products || [];
   } else {
-    categories.forEach((cat: any) => {
+    // Ordenar categorias por display_order ou created_at
+    const sortedCategories = [...categories].sort((a: any, b: any) => {
+      if (a.display_order !== undefined && b.display_order !== undefined) {
+        if (a.display_order !== b.display_order) {
+          return a.display_order - b.display_order;
+        }
+      }
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return dateA - dateB;
+    });
+
+    sortedCategories.forEach((cat: any) => {
       categoryMap[cat.id] = cat;
       productsByCategory[cat.id] = [];
     });
@@ -255,17 +317,32 @@ export default function ShopHome() {
     }
   }
 
-  // Filtrar categorias que têm produtos
+  // Filtrar categorias que têm produtos e manter ordem
   const categoriesWithProducts = Object.keys(productsByCategory)
     .map(Number)
-    .filter((catId) => productsByCategory[catId] && productsByCategory[catId].length > 0);
+    .filter((catId) => productsByCategory[catId] && productsByCategory[catId].length > 0)
+    .sort((a, b) => {
+      const catA = categoryMap[a];
+      const catB = categoryMap[b];
+      if (!catA || !catB) return 0;
+
+      // Ordenar por display_order ou created_at
+      if (catA.display_order !== undefined && catB.display_order !== undefined) {
+        if (catA.display_order !== catB.display_order) {
+          return catA.display_order - catB.display_order;
+        }
+      }
+      const dateA = new Date(catA.created_at).getTime();
+      const dateB = new Date(catB.created_at).getTime();
+      return dateA - dateB;
+    });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
 
       <main className="flex-1">
         {/* Produtos por Categoria */}
-        <section id="produtos" className="py-12 bg-white">
+        <section id="produtos" className="py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {productsLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -291,12 +368,9 @@ export default function ShopHome() {
                     <div key={categoryId}>
                       <div className="flex items-center justify-between mb-8">
                         <div>
-                          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                          <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2 tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
                             {category.name}
                           </h2>
-                          <p className="text-gray-600">
-                            {categoryProducts.length} produto{categoryProducts.length !== 1 ? 's' : ''} disponível{categoryProducts.length !== 1 ? 'is' : ''}
-                          </p>
                         </div>
                         <Link
                           to={getCategoryUrl(storeSubdomain, category.slug)}
@@ -308,82 +382,134 @@ export default function ShopHome() {
 
                       <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-4">
                         {categoryProducts.map((product: any) => {
-                          const price = Number(product.promotional_price || product.price);
-                          const originalPrice = product.promotional_price ? Number(product.price) : null;
+                          // Preço real (o que cobra) = price
+                          const realPrice = Number(product.price);
+                          // Preço comparativo (marketing) = promotional_price quando existe
+                          const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
+                          // Calcular porcentagem de desconto: ((comparisonPrice - realPrice) / comparisonPrice) * 100
+                          const discountPercentage = comparisonPrice
+                            ? Math.round(((comparisonPrice - realPrice) / comparisonPrice) * 100)
+                            : null;
+
+                          // Verifica estoque: se stock_limit é null/undefined, estoque ilimitado (tem estoque)
+                    // Se stock_limit existe, verifica se é maior que 0
+                    // Também verifica available_stock ou stock_quantity caso venham da API
+                    const stockLimit = product.stock_limit ?? product.available_stock ?? product.stock_quantity;
+                    const hasStock = stockLimit === null || stockLimit === undefined || stockLimit > 0;
+                          const isAutoDelivery = product.auto_delivery || false;
 
                           return (
-                            <div
+                            <Link
                               key={product.id}
-                              className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group border border-gray-200 flex flex-col"
+                              to={getProductUrl(storeSubdomain, product.slug)}
+                              className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500"
                             >
-                              <div className="relative w-full aspect-video bg-gray-200 overflow-hidden">
-                                {product.images && product.images.length > 0 ? (
-                                  <img
-                                    src={normalizeImageUrl(product.images[0])}
-                                    alt={product.name}
-                                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                                    <Package className="w-12 h-12 text-gray-400" />
+                              {/* Tag de desconto */}
+                              {discountPercentage && discountPercentage > 0 && (
+                                <div className="absolute top-3 left-3 z-10 bg-blue-600 text-white font-bold text-sm px-3 py-1 rounded-full shadow-md flex items-center">
+                                  <ArrowDown className="w-4 h-4 mr-1" />
+                                  {discountPercentage}% OFF
+                                </div>
+                              )}
+
+                              {/* Imagem do produto com overlay */}
+                              <div className="relative overflow-hidden aspect-video">
+                                {!hasStock && (
+                                  <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 p-4 text-center">
+                                    <XCircle className="w-8 h-8 text-red-500 mb-2" />
+                                    <span className="font-bold text-white">ESGOTADO</span>
+                                    <span className="text-sm text-gray-300 mt-1">Avise-me quando disponível</span>
                                   </div>
                                 )}
-                                {product.promotional_price && (
-                                  <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                    Oferta
-                                  </span>
+
+                                {product.images && product.images.length > 0 ? (
+                                  <img
+                                    alt={product.name}
+                                    width="400"
+                                    height="200"
+                                    className="w-full h-full object-cover"
+                                    src={normalizeImageUrl(product.images[0])}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                                    <Package className="w-12 h-12 text-gray-500" />
+                                  </div>
                                 )}
+
+                                {/* Overlay de hover */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4"></div>
                               </div>
 
-                              <div className="p-3 lg:p-4 flex-1 flex flex-col">
-                                <h3 className="text-sm lg:text-lg font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[2.5rem] lg:min-h-[3rem]">
-                                  {product.name}
-                                </h3>
+                              {/* Conteúdo do card */}
+                              <div className="p-4 flex flex-col flex-grow gap-2">
+                                {/* Título */}
+                                <div className="mb-2 sm:mb-3">
+                                  <h4 className="text-lg font-bold text-gray-900 line-clamp-2 leading-snug">{product.name}</h4>
+                                </div>
 
-                                <div className="mb-3 lg:mb-4">
-                                  {originalPrice ? (
-                                    <div className="flex flex-col lg:flex-row lg:items-baseline lg:space-x-2 space-y-1 lg:space-y-0">
-                                      <span className="text-lg lg:text-2xl font-bold text-indigo-600">
+                                {/* Preços */}
+                                <div className="mt-auto">
+                                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-2 sm:gap-0">
+                                    <div>
+                                      {comparisonPrice && (
+                                        <del className="block text-sm text-gray-400 leading-none mb-0.5">
+                                          {new Intl.NumberFormat('pt-BR', {
+                                            style: 'currency',
+                                            currency: 'BRL',
+                                          }).format(comparisonPrice)}
+                                        </del>
+                                      )}
+
+                                      <span className="text-2xl font-bold text-gray-900">
                                         {new Intl.NumberFormat('pt-BR', {
                                           style: 'currency',
                                           currency: 'BRL',
-                                        }).format(price)}
-                                      </span>
-                                      <span className="text-xs lg:text-sm text-gray-500 line-through">
-                                        {new Intl.NumberFormat('pt-BR', {
-                                          style: 'currency',
-                                          currency: 'BRL',
-                                        }).format(originalPrice)}
+                                        }).format(realPrice)}
                                       </span>
                                     </div>
-                                  ) : (
-                                    <span className="text-lg lg:text-2xl font-bold text-indigo-600">
-                                      {new Intl.NumberFormat('pt-BR', {
-                                        style: 'currency',
-                                        currency: 'BRL',
-                                      }).format(price)}
-                                    </span>
-                                  )}
+                                  </div>
                                 </div>
 
-                                <div className="flex space-x-2 mt-auto">
+                                {/* Botões de ação */}
+                                <div className="flex gap-2 mt-3 sm:mt-4">
                                   <button
-                                    onClick={() => buyNow(product)}
-                                    className="flex-1 px-2 lg:px-4 py-1.5 lg:py-2 bg-indigo-600 text-white text-xs lg:text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      buyNow(product);
+                                    }}
+                                    disabled={!hasStock}
+                                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2.5 sm:py-3 rounded-md sm:rounded-lg flex items-center justify-center gap-2 transition-all hover:shadow-blue-500/30 hover:shadow-lg text-xs sm:text-base whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
                                   >
-                                    <span className="hidden lg:inline">Comprar Agora</span>
-                                    <span className="lg:hidden">Comprar</span>
+                                    <ShoppingCart className="hidden sm:block w-5 h-5 flex-shrink-0" />
+                                    <span>COMPRAR AGORA</span>
                                   </button>
                                   <button
-                                    onClick={() => addToCart(product)}
-                                    className="px-2 lg:px-4 py-1.5 lg:py-2 border border-indigo-600 text-indigo-600 text-sm font-medium rounded-md hover:bg-indigo-50 transition-colors"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      addToCart(product);
+                                    }}
+                                    disabled={!hasStock}
+                                    className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-blue-600 text-blue-600 rounded-md sm:rounded-lg hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Adicionar ao carrinho"
+                                    aria-label="Adicionar ao carrinho"
                                   >
-                                    <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                                    <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
                                   </button>
                                 </div>
+
+                                {/* Selos inferiores */}
+                                {isAutoDelivery && (
+                                  <div className="flex flex-col items-center gap-2 mt-3 sm:mt-4">
+                                    <div className="text-xs text-green-400 flex items-center gap-1">
+                                      <Zap className="w-3 h-3" />
+                                      <span>Entrega automática</span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                            </div>
+                            </Link>
                           );
                         })}
                       </div>

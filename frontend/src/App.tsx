@@ -9,6 +9,9 @@ import AdminLayout from './admin/layouts/AdminLayout';
 import AdminDashboard from './admin/pages/Dashboard';
 import AdminStores from './admin/pages/Stores';
 import AdminPlans from './admin/pages/Plans';
+import AdminSales from './admin/pages/Sales';
+import AdminWithdrawals from './admin/pages/Withdrawals';
+import AdminAccounts from './admin/pages/Accounts';
 
 // Store Owner
 import StoreLayout from './store/layouts/StoreLayout';
@@ -23,7 +26,8 @@ import StoreCategories from './store/pages/Categories';
 import StoreProductForm from './store/pages/ProductForm';
 import StoreSettings from './store/pages/Settings';
 import StoreDomains from './store/pages/Domains';
-import StorePaymentMethods from './store/pages/PaymentMethods';
+import StoreWallet from './store/pages/Wallet';
+import StoreAccount from './store/pages/Account';
 
 // Shop (Public)
 import ShopLayout from './shop/layouts/ShopLayout';
@@ -36,6 +40,8 @@ import ShopCategories from './shop/pages/Categories';
 import CustomerLogin from './shop/pages/CustomerLogin';
 import MyOrders from './shop/pages/MyOrders';
 import MyOrderDetails from './shop/pages/MyOrderDetails';
+import ShopTerms from './shop/pages/Terms';
+import PageNotFound from './shop/pages/PageNotFound';
 
 // Landing
 import Landing from './pages/Landing';
@@ -50,11 +56,18 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      staleTime: 5 * 60 * 1000, // 5 minutos
-      cacheTime: 10 * 60 * 1000, // 10 minutos
-      retry: 1,
+      refetchOnMount: true, // Sempre buscar dados quando o componente é montado
+      refetchOnReconnect: true, // Buscar dados quando reconectar
+      staleTime: 30 * 1000, // 30 segundos - dados considerados "stale" após 30s
+      cacheTime: 5 * 60 * 1000, // 5 minutos
+      retry: (failureCount, error: any) => {
+        // Não tentar novamente em caso de erro 429 (Too Many Requests)
+        if (error?.response?.status === 429) {
+          return false;
+        }
+        return failureCount < 1;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
   },
 });
@@ -78,6 +91,21 @@ function ProtectedRoute({ children, requiredRole }: { children: JSX.Element; req
 
   // Se requer role específica
   if (requiredRole) {
+    // Para admin, verificar email específico
+    if (requiredRole === 'master_admin') {
+      const ADMIN_EMAIL = 'jprotersiza@gmail.com';
+      if (user.email === ADMIN_EMAIL && user.role === requiredRole) {
+        console.log('Access granted - admin email matches');
+        return children;
+      }
+      // Se não é o email correto, redirecionar
+      console.log('Access denied - not admin email');
+      if (user.store_id) {
+        return <Navigate to="/store" replace />;
+      }
+      return <Navigate to="/create-store" replace />;
+    }
+
     // Se o usuário tem a role necessária, permitir acesso
     if (user.role === requiredRole) {
       console.log('Access granted - role matches');
@@ -86,17 +114,14 @@ function ProtectedRoute({ children, requiredRole }: { children: JSX.Element; req
 
     // Se não tem a role necessária, redirecionar baseado na role dele
     console.log('Role mismatch:', { userRole: user.role, requiredRole });
-    if (user.role === 'master_admin') {
-      console.log('Redirecting master_admin to /admin');
-      return <Navigate to="/admin" replace />;
-    }
-    if (user.role === 'store_admin' || user.role === 'store_user') {
-      console.log('Redirecting store user to /store');
+    // NÃO redirecionar master_admin para /admin automaticamente
+    // Redirecionar para /store se tiver loja, senão para /create-store
+    if (user.store_id) {
+      console.log('Redirecting to /store');
       return <Navigate to="/store" replace />;
     }
-    // Se não tem nenhuma role conhecida, redirecionar para login
-    console.log('Unknown role, redirecting to login');
-    return <Navigate to="/login" replace />;
+    console.log('Redirecting to /create-store');
+    return <Navigate to="/create-store" replace />;
   }
 
   // Se não requer role específica, permitir acesso
@@ -133,9 +158,11 @@ function App() {
             <Route path="payment/:orderId" element={<ShopPayment />} />
             <Route path="order/:orderId" element={<ShopOrderStatus />} />
             <Route path="categories" element={<ShopCategories />} />
+            <Route path="terms" element={<ShopTerms />} />
             <Route path="login" element={<CustomerLogin />} />
             <Route path="my-orders" element={<MyOrders />} />
             <Route path="my-orders/:orderId" element={<MyOrderDetails />} />
+            <Route path="*" element={<PageNotFound />} />
           </Route>
 
           {/* Fallback para rotas antigas com /shop */}
@@ -158,6 +185,9 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="stores" element={<AdminStores />} />
             <Route path="plans" element={<AdminPlans />} />
+            <Route path="sales" element={<AdminSales />} />
+            <Route path="withdrawals" element={<AdminWithdrawals />} />
+            <Route path="accounts" element={<AdminAccounts />} />
           </Route>
 
           {/* Store Owner */}
@@ -181,7 +211,8 @@ function App() {
             <Route path="theme" element={<StoreTheme />} />
             <Route path="settings" element={<StoreSettings />} />
             <Route path="settings/domains" element={<StoreDomains />} />
-            <Route path="payment-methods" element={<StorePaymentMethods />} />
+            <Route path="wallet" element={<StoreWallet />} />
+            <Route path="account" element={<StoreAccount />} />
           </Route>
 
           {/* Landing Page - por último */}

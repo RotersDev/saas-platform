@@ -3,11 +3,13 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useLocation, Link } from 'react-router-dom';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { Globe, Save, Plus, Trash2, CheckCircle2, XCircle, Loader2, AlertCircle, ExternalLink, Code, Bell, Copy } from 'lucide-react';
+import { Globe, Save, Plus, Trash2, CheckCircle2, XCircle, Loader2, AlertCircle, ExternalLink, Code, Bell, Copy, Settings as SettingsIcon, FileText } from 'lucide-react';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export default function DomainsSettings() {
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { confirm, Dialog } = useConfirm();
   const [subdomain, setSubdomain] = useState('');
   const [newDomain, setNewDomain] = useState('');
   const [cloudflareToken, setCloudflareToken] = useState('');
@@ -176,6 +178,8 @@ export default function DomainsSettings() {
   };
 
   const tabs = [
+    { id: 'general', label: 'Geral', icon: SettingsIcon, href: '/store/settings#general' },
+    { id: 'terms', label: 'Termos', icon: FileText, href: '/store/settings#terms' },
     { id: 'advanced', label: 'Avançado', icon: Code, href: '/store/settings#advanced' },
     { id: 'notifications', label: 'Notificações', icon: Bell, href: '/store/settings#notifications' },
     { id: 'domains', label: 'Domínios', icon: Globe, href: '/store/settings/domains' },
@@ -421,8 +425,14 @@ export default function DomainsSettings() {
                           </button>
                         )}
                         <button
-                          onClick={() => {
-                            if (confirm('Tem certeza que deseja remover este domínio?')) {
+                          onClick={async () => {
+                            const confirmed = await confirm({
+                              title: 'Remover domínio',
+                              message: 'Tem certeza que deseja remover este domínio? Esta ação não pode ser desfeita.',
+                              type: 'danger',
+                              confirmText: 'Remover',
+                            });
+                            if (confirmed) {
                               removeDomainMutation.mutate(domain.id);
                             }
                           }}
@@ -559,6 +569,7 @@ export default function DomainsSettings() {
           )}
         </div>
       </div>
+      {Dialog}
     </div>
   );
 }

@@ -1,15 +1,40 @@
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import api from '../../config/axios';
-import { CheckCircle2, XCircle, Clock, Package } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Package, Copy, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { getShopUrl } from '../../utils/urlUtils';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function ShopOrderStatus() {
   const { storeSubdomain: storeSubdomainParam, orderId } = useParams<{ storeSubdomain?: string; orderId?: string }>();
   const [searchParams] = useSearchParams();
   const storeSubdomain = storeSubdomainParam || searchParams.get('store');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [copiedAllKeys, setCopiedAllKeys] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, keyId: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(keyId);
+    toast.success('Copiado para a área de transferência!');
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const copyAllKeys = (allKeys: string, itemIndex: number) => {
+    navigator.clipboard.writeText(allKeys);
+    setCopiedAllKeys(`all-${itemIndex}`);
+    toast.success('Todas as chaves copiadas!');
+    setTimeout(() => setCopiedAllKeys(null), 2000);
+  };
+
+  const copySingleKey = (key: string, keyIndex: number, itemIndex: number) => {
+    navigator.clipboard.writeText(key.trim());
+    setCopiedKey(`item-${itemIndex}-key-${keyIndex}`);
+    toast.success('Chave copiada!');
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   const { data: storeInfo } = useQuery(
     ['shopStore', storeSubdomain],
@@ -54,7 +79,7 @@ export default function ShopOrderStatus() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Carregando informações do pedido...</p>
@@ -65,7 +90,7 @@ export default function ShopOrderStatus() {
 
   if (!orderData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Pedido não encontrado</h1>
           <Link
@@ -113,7 +138,7 @@ export default function ShopOrderStatus() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white border border-gray-200 rounded-xl p-6 md:p-8">
@@ -179,19 +204,85 @@ export default function ShopOrderStatus() {
                 Produtos Entregues
               </h2>
               <div className="space-y-3">
-                {orderData.items.map((item: any, index: number) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-4">
-                    <p className="font-medium text-gray-900 mb-2">{item.product_name}</p>
-                    {item.product_key ? (
-                      <div className="bg-white border border-gray-200 rounded p-3">
-                        <p className="text-sm text-gray-600 mb-1">Chave do Produto:</p>
-                        <code className="text-sm font-mono text-gray-900 break-all">{item.product_key}</code>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-600">Aguardando entrega...</p>
-                    )}
-                  </div>
-                ))}
+                {orderData.items.map((item: any, index: number) => {
+                  const keys = item.product_key ? item.product_key.split('\n').filter((k: string) => k.trim()) : [];
+                  const hasMultipleKeys = keys.length > 1;
+
+                  return (
+                    <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                      <p className="font-medium text-gray-900 mb-3">{item.product_name}</p>
+                      {item.product_key ? (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium text-gray-700">
+                              {hasMultipleKeys ? `Chaves do Produto (${keys.length})` : 'Chave do Produto'}
+                            </p>
+                            {hasMultipleKeys && (
+                              <button
+                                onClick={() => copyAllKeys(item.product_key, index)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                              >
+                                {copiedAllKeys === `all-${index}` ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-green-600" />
+                                    <span>Copiado!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3.5 h-3.5" />
+                                    <span>Copiar todas</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+
+                          {hasMultipleKeys ? (
+                            <div className="space-y-2">
+                              {keys.map((key: string, keyIndex: number) => (
+                                <div key={keyIndex} className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 border border-gray-200">
+                                  <code className="flex-1 text-xs font-mono text-gray-900 break-all px-2 py-1.5 bg-white rounded border border-gray-200">
+                                    {key.trim()}
+                                  </code>
+                                  <button
+                                    onClick={() => copySingleKey(key, keyIndex, index)}
+                                    className="flex-shrink-0 p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                    title="Copiar esta chave"
+                                  >
+                                    {copiedKey === `item-${index}-key-${keyIndex}` ? (
+                                      <Check className="w-4 h-4 text-green-600" />
+                                    ) : (
+                                      <Copy className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 border border-gray-200">
+                              <code className="flex-1 text-sm font-mono text-gray-900 break-all px-2 py-1.5 bg-white rounded border border-gray-200">
+                                {item.product_key.trim()}
+                              </code>
+                              <button
+                                onClick={() => copyToClipboard(item.product_key, `key-${index}`)}
+                                className="flex-shrink-0 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Copiar chave"
+                              >
+                                {copiedKey === `key-${index}` ? (
+                                  <Check className="w-5 h-5 text-green-600" />
+                                ) : (
+                                  <Copy className="w-5 h-5" />
+                                )}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600">Aguardando entrega...</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

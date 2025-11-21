@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Store } from '../models';
 import { AuthRequest } from './auth';
+import sequelize from '../config/database';
 
 export interface TenantRequest extends AuthRequest {
   store?: Store;
@@ -40,11 +41,92 @@ export const resolveTenant = async (
       return;
     }
 
-    // Tentar resolver por subdomain
+    // Se usuário não tem store_id mas está autenticado, tentar encontrar loja pelo email
+    if (req.user && !req.user.store_id) {
+      const { User } = await import('../models');
+      const user = await User.findByPk(req.user.id);
+      if (user && user.email) {
+        // Buscar loja pelo email do usuário
+        const storeByEmail = await Store.findOne({
+          where: { email: user.email.toLowerCase() }
+        });
+        if (storeByEmail) {
+          // Atualizar store_id do usuário
+          await user.update({ store_id: storeByEmail.id }).catch(() => {
+            // Ignorar erro se não conseguir atualizar
+          });
+
+          if (storeByEmail.status === 'blocked' || storeByEmail.status === 'suspended') {
+            res.status(403).json({ error: 'Loja bloqueada ou suspensa' });
+            return;
+          }
+
+          req.store = storeByEmail;
+          next();
+          return;
+        }
+      }
+    }
+
+    // Tentar resolver por header X-Store-Subdomain (para desenvolvimento/frontend)
+    const subdomainHeader = req.headers['x-store-subdomain'] as string;
+    if (subdomainHeader) {
+      const store = await Store.findOne({ where: { subdomain: subdomainHeader } });
+      if (store) {
+        // Verificar se o usuário tem acesso a esta loja
+        if (req.user && req.user.role !== 'master_admin') {
+          // Buscar usuário completo para verificar store_id e email
+          const { User } = await import('../models');
+          const user = await User.findByPk(req.user.id);
+
+          if (user) {
+            // Se o usuário tem store_id, deve ser o mesmo da loja
+            if (user.store_id && user.store_id !== store.id) {
+              res.status(403).json({ error: 'Acesso negado a esta loja' });
+              return;
+            }
+
+            // Se não tem store_id mas o email da loja corresponde ao do usuário, permitir acesso
+            // Isso resolve casos onde o store_id não foi atualizado após criação da loja
+            if (!user.store_id && store.email && store.email.toLowerCase() === user.email.toLowerCase()) {
+              // Atualizar store_id do usuário para facilitar próximas requisições
+              await user.update({ store_id: store.id }).catch(() => {
+                // Ignorar erro se não conseguir atualizar
+              });
+            } else if (!user.store_id) {
+              // Se não tem store_id e email não corresponde, verificar se há outros usuários da loja
+              const storeUsers = await User.findAll({ where: { store_id: store.id } });
+              // Se não há usuários associados à loja e o usuário atual não tem loja, permitir acesso
+              // (caso onde o usuário está criando/configurando a loja)
+              if (storeUsers.length === 0) {
+                // Atualizar store_id do usuário
+                await user.update({ store_id: store.id }).catch(() => {
+                  // Ignorar erro se não conseguir atualizar
+                });
+              } else {
+                res.status(403).json({ error: 'Acesso negado a esta loja' });
+                return;
+              }
+            }
+          }
+        }
+
+        if (store.status === 'blocked' || store.status === 'suspended') {
+          res.status(403).json({ error: 'Loja bloqueada ou suspensa' });
+          return;
+        }
+
+        req.store = store;
+        next();
+        return;
+      }
+    }
+
+    // Tentar resolver por subdomain do host
     const host = req.headers.host || '';
     const subdomain = host.split('.')[0];
 
-    if (subdomain && subdomain !== 'www' && subdomain !== 'admin') {
+    if (subdomain && subdomain !== 'www' && subdomain !== 'admin' && subdomain !== 'localhost' && subdomain !== '127') {
       const store = await Store.findOne({ where: { subdomain } });
       if (store) {
         req.store = store;
@@ -66,14 +148,27 @@ export const resolveTenantPublic = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Verificar se a conexão com o banco está estabelecida
+    try {
+      await sequelize.authenticate();
+    } catch (authError) {
+      console.error('Erro de autenticação do Sequelize no middleware:', authError);
+      // Continuar mesmo com erro de autenticação
+    }
+
     // Primeiro, tentar resolver por header X-Store-Subdomain (para desenvolvimento)
     const subdomainHeader = req.headers['x-store-subdomain'] as string;
     if (subdomainHeader) {
-      const store = await Store.findOne({ where: { subdomain: subdomainHeader } });
-      if (store) {
-        (req as any).store = store;
-        next();
-        return;
+      try {
+        const store = await Store.findOne({ where: { subdomain: subdomainHeader } });
+        if (store) {
+          (req as any).store = store;
+          next();
+          return;
+        }
+      } catch (error: any) {
+        console.error('Erro ao buscar loja por header:', error);
+        // Continuar para tentar outros métodos
       }
     }
 
@@ -81,7 +176,7 @@ export const resolveTenantPublic = async (
     const host = req.headers.host || '';
     const subdomain = host.split('.')[0];
 
-    if (subdomain && subdomain !== 'www' && subdomain !== 'admin' && subdomain !== 'localhost') {
+    if (subdomain && subdomain !== 'www' && subdomain !== 'admin' && subdomain !== 'localhost' && subdomain !== '127') {
       const store = await Store.findOne({ where: { subdomain } });
       if (store) {
         (req as any).store = store;
@@ -108,7 +203,9 @@ export const resolveTenantPublic = async (
 
     // Se não encontrar, permitir continuar (pode ser acesso direto)
     next();
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Erro ao resolver tenant público:', error);
+    // Em caso de erro, permitir continuar sem loja
     next();
   }
 };

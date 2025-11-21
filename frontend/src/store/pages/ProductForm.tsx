@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from 'react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, X, Plus, Trash2, Info, Box, FileText, Cloud, Layers } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Info, Box, FileText, Layers } from 'lucide-react';
+import { useConfirm } from '../../hooks/useConfirm';
 
 type TabType = 'BASIC_INFO' | 'INVENTORY' | 'ADVANCED';
 
@@ -12,6 +13,7 @@ export default function StoreProductForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEditing = !!id;
+  const { confirm, Dialog } = useConfirm();
   const [activeTab, setActiveTab] = useState<TabType>('BASIC_INFO');
 
   const [formData, setFormData] = useState({
@@ -25,20 +27,16 @@ export default function StoreProductForm() {
     min_quantity: '',
     max_quantity: '',
     images: [] as string[],
-    benefits: [] as string[],
-    tags: [] as string[],
     is_active: true,
     featured: false,
   });
 
   const [inventoryType, setInventoryType] = useState<'lines' | 'text' | 'file'>('lines');
   const [inventoryLines, setInventoryLines] = useState<string[]>(['']);
-  const [newImageUrl, setNewImageUrl] = useState('');
+  const [inventoryText, setInventoryText] = useState('');
+  const [inventoryFile, setInventoryFile] = useState<File | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [newBenefit, setNewBenefit] = useState('');
-  const [newTag, setNewTag] = useState('');
   const [loading, setLoading] = useState(false);
-  const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
 
   // Buscar categorias
   const { data: categories } = useQuery('categories', async () => {
@@ -92,19 +90,40 @@ export default function StoreProductForm() {
         min_quantity: product.min_quantity || '',
         max_quantity: product.max_quantity || '',
         images: product.images || [],
-        benefits: product.benefits || [],
-        tags: product.tags || [],
         is_active: product.is_active !== undefined ? product.is_active : true,
         featured: product.featured || false,
       });
+
+      // Carregar tipo de estoque
+      if (product.inventory_type) {
+        setInventoryType(product.inventory_type);
+      }
+
+      if (product.inventory_type === 'text' && product.inventory_text) {
+        setInventoryText(product.inventory_text);
+      }
+
+      if (product.inventory_type === 'file' && product.inventory_file_url) {
+        setInventoryFile(null); // Arquivo precisa ser reenviado
+        // TODO: Mostrar URL do arquivo existente
+      }
+
+      if (product.inventory_type === 'lines') {
+        // Linhas serão carregadas via productKeys
+      }
     }
   }, [product]);
 
   useEffect(() => {
-    if (productKeys && productKeys.length > 0) {
-      setInventoryLines(productKeys.map((pk: any) => pk.key));
+    if (isEditing && inventoryType === 'lines') {
+      if (productKeys && productKeys.length > 0) {
+        // Quando está editando e tipo é linhas, carregar chaves do banco
+        setInventoryLines(productKeys.map((pk: any) => pk.key));
+      } else {
+        setInventoryLines(['']);
+      }
     }
-  }, [productKeys]);
+  }, [productKeys, isEditing, inventoryType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,8 +162,6 @@ export default function StoreProductForm() {
     formDataToSend.append('max_quantity', formData.max_quantity || '');
     formDataToSend.append('is_active', formData.is_active.toString());
     formDataToSend.append('featured', formData.featured.toString());
-    formDataToSend.append('benefits', JSON.stringify(formData.benefits));
-    formDataToSend.append('tags', JSON.stringify(formData.tags));
 
     try {
       let productId = id;
@@ -161,18 +178,46 @@ export default function StoreProductForm() {
         productId = response.data.id;
       }
 
-      // Salvar estoque se houver linhas
-      if (inventoryLines.length > 0 && inventoryLines.some(line => line.trim())) {
-        const keysToSave = inventoryLines.filter(line => line.trim());
-        if (keysToSave.length > 0) {
-          await api.post(`/api/products/${productId}/keys`, {
-            keys: keysToSave
-          });
+      // Salvar tipo de estoque no produto
+      formDataToSend.append('inventory_type', inventoryType);
+
+      if (inventoryType === 'text') {
+        formDataToSend.append('inventory_text', inventoryText);
+        formDataToSend.append('inventory_file_url', '');
+        // Limpar todas as chaves quando muda para texto
+        if (isEditing && productKeys && productKeys.length > 0) {
+          await api.delete(`/api/products/${productId}/keys`);
         }
+      } else if (inventoryType === 'file' && inventoryFile) {
+        formDataToSend.append('inventory_file', inventoryFile);
+        formDataToSend.append('inventory_text', '');
+        // Limpar todas as chaves quando muda para arquivo
+        if (isEditing && productKeys && productKeys.length > 0) {
+          await api.delete(`/api/products/${productId}/keys`);
+        }
+      } else {
+        formDataToSend.append('inventory_text', '');
+        formDataToSend.append('inventory_file_url', '');
       }
 
+      // Salvar estoque baseado no tipo
+      if (!isEditing) {
+        if (inventoryType === 'lines' && inventoryLines.length > 0 && inventoryLines.some(line => line.trim())) {
+          const keysToSave = inventoryLines.filter(line => line.trim());
+          if (keysToSave.length > 0) {
+            await api.post(`/api/products/${productId}/keys`, {
+              keys: keysToSave
+            });
+          }
+        }
+      } else {
+        // Ao editar, se mudou de tipo, já limpamos acima
+        // Se continua sendo linhas, as linhas são gerenciadas via textarea onBlur
+      }
+
+      // Invalidar queries para atualizar a lista de produtos
       queryClient.invalidateQueries('products');
-      queryClient.invalidateQueries(['product', productId]);
+      queryClient.invalidateQueries(['productKeys', productId]);
       toast.success(isEditing ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!');
       navigate('/store/products');
     } catch (error: any) {
@@ -191,75 +236,55 @@ export default function StoreProductForm() {
   };
 
   const removeImageFile = (index: number) => {
-    setImageFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const addImage = () => {
-    if (newImageUrl && !formData.images.includes(newImageUrl)) {
-      setFormData({ ...formData, images: [...formData.images, newImageUrl] });
-      setNewImageUrl('');
-    }
+    setImageFiles((prev) => {
+      const newFiles = prev.filter((_, i) => i !== index);
+      return newFiles;
+    });
   };
 
   const removeImage = (index: number) => {
-    setFormData({
-      ...formData,
-      images: formData.images.filter((_, i) => i !== index),
+    setFormData((prev) => {
+      const newImages = prev.images.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        images: newImages,
+      };
     });
   };
 
-  const addBenefit = () => {
-    if (newBenefit.trim() && !formData.benefits.includes(newBenefit.trim())) {
-      setFormData({ ...formData, benefits: [...formData.benefits, newBenefit.trim()] });
-      setNewBenefit('');
-    }
-  };
 
-  const removeBenefit = (index: number) => {
-    setFormData({
-      ...formData,
-      benefits: formData.benefits.filter((_, i) => i !== index),
+
+  const clearAllInventory = async () => {
+    if (!isEditing || !id) {
+      setInventoryLines([]);
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Remover todo o estoque',
+      message: 'Tem certeza que deseja remover todo o estoque disponível? Esta ação não pode ser desfeita.',
+      type: 'warning',
+      confirmText: 'Remover tudo',
     });
-  };
 
-  const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData({ ...formData, tags: [...formData.tags, newTag.trim()] });
-      setNewTag('');
+    if (confirmed) {
+      try {
+        await api.delete(`/api/products/${id}/keys`);
+        queryClient.invalidateQueries(['productKeys', id]);
+        queryClient.invalidateQueries('products'); // Atualizar lista de produtos
+        setInventoryLines(['']);
+        toast.success('Estoque removido com sucesso!');
+      } catch (error: any) {
+        toast.error(error.response?.data?.error || 'Erro ao remover estoque');
+      }
     }
   };
 
-  const removeTag = (index: number) => {
-    setFormData({
-      ...formData,
-      tags: formData.tags.filter((_, i) => i !== index),
-    });
-  };
-
-  const addInventoryLine = () => {
-    setInventoryLines([...inventoryLines, '']);
-  };
-
-  const removeInventoryLine = (index: number) => {
-    setInventoryLines(inventoryLines.filter((_, i) => i !== index));
-  };
-
-  const updateInventoryLine = (index: number, value: string) => {
-    const newLines = [...inventoryLines];
-    newLines[index] = value;
-    setInventoryLines(newLines);
-  };
-
-  const clearAllInventory = () => {
-    if (confirm('Tem certeza que deseja remover todo o estoque?')) {
-      setInventoryLines(['']);
-    }
-  };
 
   if (productLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -275,7 +300,7 @@ export default function StoreProductForm() {
         </p>
         <button
           onClick={() => navigate('/store/categories')}
-          className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           Ir para Categorias
         </button>
@@ -322,7 +347,7 @@ export default function StoreProductForm() {
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex-1 px-6 py-4 flex items-center justify-center gap-2 text-sm font-medium transition-colors border-b-2 ${
                           activeTab === tab.id
-                            ? 'border-indigo-600 text-indigo-600 bg-indigo-50'
+                            ? 'border-blue-600 text-blue-600 bg-blue-50'
                             : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                         }`}
                       >
@@ -360,7 +385,7 @@ export default function StoreProductForm() {
                               setFormData((prev) => ({ ...prev, slug }));
                             }
                           }}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="Ex: Curso Completo de Marketing"
                         />
                       </div>
@@ -379,7 +404,7 @@ export default function StoreProductForm() {
                               slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
                             })
                           }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="curso-completo-marketing"
                         />
                       </div>
@@ -392,7 +417,7 @@ export default function StoreProductForm() {
                           required
                           value={formData.category_id}
                           onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         >
                           <option value="">Selecione uma categoria</option>
                           {categories.map((cat: any) => (
@@ -412,7 +437,7 @@ export default function StoreProductForm() {
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                           rows={6}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
                           placeholder="Descrição detalhada do produto"
                         />
                       </div>
@@ -430,23 +455,26 @@ export default function StoreProductForm() {
                           required
                           value={formData.price}
                           onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="99.90"
                         />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Preço Promocional (R$)
+                          Preço Comparativo (R$)
                         </label>
                         <input
                           type="number"
                           step="0.01"
                           value={formData.promotional_price}
                           onChange={(e) => setFormData({ ...formData, promotional_price: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="79.90"
                         />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Preço usado para comparação e cálculo de desconto. Deve ser maior que o preço normal.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -455,129 +483,260 @@ export default function StoreProductForm() {
                 {/* Estoque */}
                 {activeTab === 'INVENTORY' && (
                   <div className="space-y-6">
+                    {/* Tipo de estoque */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">Tipo de estoque</h3>
-                      <p className="text-sm text-gray-600 mb-4">Defina quais itens devem ser entregues ao seu cliente.</p>
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                      <p className="text-sm text-gray-600 mb-4">Defina como o estoque será gerenciado.</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <button
                           type="button"
-                          onClick={() => setInventoryType('lines')}
-                          className={`p-5 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                          onClick={async () => {
+                            if (inventoryType !== 'lines' && isEditing && id && productKeys && productKeys.length > 0) {
+                              const confirmed = await confirm({
+                                title: 'Mudar tipo de estoque',
+                                message: 'Ao mudar para linhas, todas as chaves do tipo anterior serão removidas. Deseja continuar?',
+                                type: 'warning',
+                                confirmText: 'Continuar',
+                              });
+                              if (!confirmed) return;
+                              await api.delete(`/api/products/${id}/keys`);
+                              queryClient.invalidateQueries(['productKeys', id]);
+                            }
+                            setInventoryType('lines');
+                            setInventoryText('');
+                            setInventoryFile(null);
+                          }}
+                          className={`p-4 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-colors ${
                             inventoryType === 'lines'
-                              ? 'border-indigo-600 bg-indigo-50'
+                              ? 'border-blue-600 bg-blue-50'
                               : 'border-gray-200 hover:bg-gray-50'
                           }`}
                         >
                           <Layers className="w-6 h-6 mb-2 text-gray-700" />
                           <span className="text-sm font-medium">Linhas</span>
+                          <span className="text-xs text-gray-500 mt-1">Cada linha = 1 estoque</span>
                         </button>
                         <button
                           type="button"
-                          onClick={() => setInventoryType('text')}
-                          className={`p-5 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                          onClick={async () => {
+                            if (inventoryType !== 'text' && isEditing && id && productKeys && productKeys.length > 0) {
+                              const confirmed = await confirm({
+                                title: 'Mudar tipo de estoque',
+                                message: 'Ao mudar para texto/serviço, todas as chaves serão removidas. Deseja continuar?',
+                                type: 'warning',
+                                confirmText: 'Continuar',
+                              });
+                              if (!confirmed) return;
+                              await api.delete(`/api/products/${id}/keys`);
+                              queryClient.invalidateQueries(['productKeys', id]);
+                            }
+                            setInventoryType('text');
+                            setInventoryLines(['']);
+                            setInventoryFile(null);
+                          }}
+                          className={`p-4 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-colors ${
                             inventoryType === 'text'
-                              ? 'border-indigo-600 bg-indigo-50'
+                              ? 'border-blue-600 bg-blue-50'
                               : 'border-gray-200 hover:bg-gray-50'
                           }`}
                         >
                           <FileText className="w-6 h-6 mb-2 text-gray-700" />
                           <span className="text-sm font-medium">Texto/Serviço</span>
+                          <span className="text-xs text-gray-500 mt-1">Mesmo texto para todos</span>
                         </button>
                         <button
                           type="button"
-                          onClick={() => setInventoryType('file')}
-                          className={`p-5 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                          onClick={async () => {
+                            if (inventoryType !== 'file' && isEditing && id && productKeys && productKeys.length > 0) {
+                              const confirmed = await confirm({
+                                title: 'Mudar tipo de estoque',
+                                message: 'Ao mudar para arquivo, todas as chaves serão removidas. Deseja continuar?',
+                                type: 'warning',
+                                confirmText: 'Continuar',
+                              });
+                              if (!confirmed) return;
+                              await api.delete(`/api/products/${id}/keys`);
+                              queryClient.invalidateQueries(['productKeys', id]);
+                            }
+                            setInventoryType('file');
+                            setInventoryLines(['']);
+                            setInventoryText('');
+                          }}
+                          className={`p-4 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-colors ${
                             inventoryType === 'file'
-                              ? 'border-indigo-600 bg-indigo-50'
+                              ? 'border-blue-600 bg-blue-50'
                               : 'border-gray-200 hover:bg-gray-50'
                           }`}
                         >
-                          <Cloud className="w-6 h-6 mb-2 text-gray-700" />
+                          <FileText className="w-6 h-6 mb-2 text-gray-700" />
                           <span className="text-sm font-medium">Arquivo</span>
+                          <span className="text-xs text-gray-500 mt-1">RAR, TXT, etc</span>
                         </button>
                       </div>
                     </div>
 
-                    <div className="pt-6 border-t border-gray-200">
-                      <div className="flex items-center justify-between mb-4">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Estoque
-                        </label>
-                        {inventoryLines.length > 0 && inventoryLines.some(l => l.trim()) && (
-                          <button
-                            type="button"
-                            onClick={clearAllInventory}
-                            className="text-sm text-red-600 hover:text-red-700 hover:underline"
-                          >
-                            Remover tudo
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {inventoryLines.map((line, index) => (
-                          <div key={index} className="flex items-center gap-3">
-                            <div className="flex-shrink-0 w-8 text-xs text-gray-500 text-right">
-                              {index + 1}
+                    {/* Conteúdo baseado no tipo */}
+                    {inventoryType === 'lines' && (
+                      <div className="border bg-white rounded-md shadow-sm">
+                        <div className="flex flex-col space-y-1.5 p-6">
+                          <div className="relative flex justify-between items-center">
+                            <div className="font-semibold leading-none tracking-tight">
+                              Estoque ({isEditing && id && productKeys ? productKeys.length : inventoryLines.filter(l => l.trim()).length})
                             </div>
-                            {editingLineIndex === index ? (
-                              <div className="flex-1 flex items-center gap-2">
-                                <input
-                                  type="text"
-                                  value={line}
-                                  onChange={(e) => updateInventoryLine(index, e.target.value)}
-                                  onBlur={() => setEditingLineIndex(null)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      setEditingLineIndex(null);
-                                    }
-                                  }}
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                  autoFocus
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingLineIndex(null)}
-                                  className="p-2 text-gray-600 hover:text-gray-900"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex-1 flex items-center gap-2 group">
-                                <div
-                                  onClick={() => setEditingLineIndex(index)}
-                                  className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg cursor-text hover:border-gray-300 transition-colors text-sm"
-                                >
-                                  {line || <span className="text-gray-400">Clique para editar</span>}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => removeInventoryLine(index)}
-                                  className="p-2 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
+                            {((isEditing && id && productKeys && productKeys.length > 0) || (!isEditing && inventoryLines.filter(l => l.trim()).length > 0)) && (
+                              <button
+                                type="button"
+                                onClick={clearAllInventory}
+                                className="text-sm text-red-600 hover:text-red-700 hover:underline"
+                              >
+                                Remover tudo
+                              </button>
                             )}
                           </div>
-                        ))}
+                          <div className="text-sm text-gray-600">
+                            Cole múltiplas linhas de uma vez. Cada linha representa um estoque diferente. Se tiver 300 linhas, será 300 em estoque.
+                          </div>
+                        </div>
+                        <div className="p-6 pt-0">
+                          {isEditing && id && productKeys ? (
+                            // Quando está editando, mostrar textarea com chaves do banco
+                            <>
+                              <textarea
+                                value={inventoryLines.join('\n')}
+                                onChange={(e) => {
+                                  const lines = e.target.value.split('\n');
+                                  setInventoryLines(lines);
+                                }}
+                                onBlur={async () => {
+                                  // Ao sair do campo, sincronizar com banco
+                                  const lines = inventoryLines.filter(l => l.trim());
+                                  const currentKeys = productKeys ? productKeys.map((pk: any) => pk.key) : [];
+
+                                  // Se mudou, atualizar
+                                  if (JSON.stringify(lines.sort()) !== JSON.stringify(currentKeys.sort())) {
+                                    // Deletar todas e recriar
+                                    try {
+                                      await api.delete(`/api/products/${id}/keys`);
+                                      if (lines.length > 0) {
+                                        await api.post(`/api/products/${id}/keys`, {
+                                          keys: lines
+                                        });
+                                      }
+                                      queryClient.invalidateQueries(['productKeys', id]);
+                                      queryClient.invalidateQueries('products'); // Atualizar lista de produtos
+                                      toast.success('Estoque atualizado!');
+                                    } catch (error: any) {
+                                      toast.error(error.response?.data?.error || 'Erro ao atualizar estoque');
+                                    }
+                                  }
+                                }}
+                                rows={12}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
+                                placeholder="Cole aqui as chaves/licenças, uma por linha..."
+                              />
+                              <p className="text-xs text-gray-500 mt-2">
+                                {productKeys.length} {productKeys.length === 1 ? 'chave' : 'chaves'} configurada{productKeys.length === 1 ? '' : 's'}
+                              </p>
+                            </>
+                          ) : (
+                            // Quando não está editando, mostrar textarea para colar linhas
+                            <>
+                              <textarea
+                                value={inventoryLines.join('\n')}
+                                onChange={(e) => {
+                                  const lines = e.target.value.split('\n');
+                                  setInventoryLines(lines);
+                                }}
+                                rows={12}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
+                                placeholder="Cole aqui as chaves/licenças, uma por linha..."
+                              />
+                              <p className="text-xs text-gray-500 mt-2">
+                                {inventoryLines.filter(l => l.trim()).length} {inventoryLines.filter(l => l.trim()).length === 1 ? 'chave' : 'chaves'} configurada{inventoryLines.filter(l => l.trim()).length === 1 ? '' : 's'}
+                              </p>
+                            </>
+                          )}
+                        </div>
                       </div>
+                    )}
 
-                      <button
-                        type="button"
-                        onClick={addInventoryLine}
-                        className="mt-4 w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Adicionar linha
-                      </button>
+                    {inventoryType === 'text' && (
+                      <div className="border bg-white rounded-md shadow-sm">
+                        <div className="flex flex-col space-y-1.5 p-6">
+                          <div className="font-semibold leading-none tracking-tight">
+                            Texto/Serviço
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            O mesmo texto será enviado para todos os compradores.
+                          </div>
+                        </div>
+                        <div className="p-6 pt-0">
+                          <textarea
+                            value={inventoryText}
+                            onChange={(e) => setInventoryText(e.target.value)}
+                            rows={6}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            placeholder="Digite o texto/serviço que será enviado para todos os compradores..."
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                      <p className="mt-4 text-sm text-gray-600">
-                        <span className="text-yellow-600 font-medium">(Importante)</span> Cada linha representa um estoque.
-                      </p>
-                    </div>
+                    {inventoryType === 'file' && (
+                      <div className="border bg-white rounded-md shadow-sm">
+                        <div className="flex flex-col space-y-1.5 p-6">
+                          <div className="font-semibold leading-none tracking-tight">
+                            Arquivo
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Faça upload de um arquivo (RAR, ZIP, TXT, etc) que será enviado aos compradores.
+                          </div>
+                        </div>
+                        <div className="p-6 pt-0">
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            <input
+                              type="file"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  setInventoryFile(e.target.files[0]);
+                                }
+                              }}
+                              className="hidden"
+                              id="inventory-file-upload"
+                              accept=".rar,.zip,.txt,.pdf"
+                            />
+                            <label htmlFor="inventory-file-upload" className="cursor-pointer">
+                              {inventoryFile ? (
+                                <div className="space-y-2">
+                                  <FileText className="w-8 h-8 text-blue-600 mx-auto" />
+                                  <p className="font-medium text-gray-900">{inventoryFile.name}</p>
+                                  <p className="text-sm text-gray-500">
+                                    {(inventoryFile.size / 1024 / 1024).toFixed(2)} MB
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setInventoryFile(null);
+                                    }}
+                                    className="text-sm text-red-600 hover:text-red-700"
+                                  >
+                                    Remover arquivo
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  <FileText className="w-8 h-8 text-gray-400 mx-auto" />
+                                  <p className="font-medium text-gray-900">Clique para fazer upload</p>
+                                  <p className="text-sm text-gray-500">ou arraste e solte o arquivo aqui</p>
+                                </div>
+                              )}
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -593,7 +752,7 @@ export default function StoreProductForm() {
                           type="number"
                           value={formData.stock_limit}
                           onChange={(e) => setFormData({ ...formData, stock_limit: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="100"
                         />
                       </div>
@@ -606,7 +765,7 @@ export default function StoreProductForm() {
                           type="number"
                           value={formData.min_quantity}
                           onChange={(e) => setFormData({ ...formData, min_quantity: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="1"
                         />
                       </div>
@@ -619,7 +778,7 @@ export default function StoreProductForm() {
                           type="number"
                           value={formData.max_quantity}
                           onChange={(e) => setFormData({ ...formData, max_quantity: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="10"
                         />
                       </div>
@@ -640,7 +799,7 @@ export default function StoreProductForm() {
                             onChange={(e) => setFormData({ ...formData, is_active: !e.target.checked })}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                       </div>
 
@@ -658,7 +817,7 @@ export default function StoreProductForm() {
                             onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                       </div>
                     </div>
@@ -668,15 +827,15 @@ export default function StoreProductForm() {
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Sidebar - Oculto em mobile */}
+          <div className="hidden lg:block space-y-6">
             {/* Imagem Principal */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="p-6 border-b border-gray-200">
                 <h3 className="font-semibold text-gray-900">Imagem principal</h3>
               </div>
               <div className="p-6 space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-indigo-400 transition-colors cursor-pointer">
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
                   <input
                     type="file"
                     accept="image/*"
@@ -711,7 +870,11 @@ export default function StoreProductForm() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => removeImageFile(index)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeImageFile(index);
+                          }}
                           className="p-2 text-gray-400 hover:text-red-600"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -724,15 +887,19 @@ export default function StoreProductForm() {
                 {formData.images.length > 0 && (
                   <div className="space-y-3">
                     {formData.images.map((image, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div key={`${image}-${index}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                         <img src={image} alt={`Imagem ${index + 1}`} className="w-10 h-10 rounded object-cover" />
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm truncate">Imagem {index + 1}</div>
                         </div>
                         <button
                           type="button"
-                          onClick={() => removeImage(index)}
-                          className="p-2 text-gray-400 hover:text-red-600"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeImage(index);
+                          }}
+                          className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -741,118 +908,9 @@ export default function StoreProductForm() {
                   </div>
                 )}
 
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addImage())}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="URL da imagem"
-                    />
-                    <button
-                      type="button"
-                      onClick={addImage}
-                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-gray-600 mt-4">
                   Resolução recomendada: 1280x720. Também recomendamos que mantenha a proporção 16:9, pois caso contrário, sua imagem pode ficar achatada em seu site.
                 </p>
-              </div>
-            </div>
-
-            {/* Benefícios e Tags */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="font-semibold text-gray-900">Benefícios</h3>
-              </div>
-              <div className="p-6 space-y-3">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newBenefit}
-                    onChange={(e) => setNewBenefit(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Ex: Acesso vitalício"
-                  />
-                  <button
-                    type="button"
-                    onClick={addBenefit}
-                    className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-                {formData.benefits.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.benefits.map((benefit, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm"
-                      >
-                        {benefit}
-                        <button
-                          type="button"
-                          onClick={() => removeBenefit(index)}
-                          className="ml-2 text-indigo-600 hover:text-indigo-800"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="font-semibold text-gray-900">Tags</h3>
-              </div>
-              <div className="p-6 space-y-3">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Ex: marketing, digital"
-                  />
-                  <button
-                    type="button"
-                    onClick={addTag}
-                    className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-                {formData.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {formData.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeTag(index)}
-                          className="ml-2 text-gray-600 hover:text-gray-800"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -870,13 +928,14 @@ export default function StoreProductForm() {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors font-medium"
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
           >
             <Save className="w-5 h-5 mr-2" />
             {loading ? 'Salvando...' : isEditing ? 'Atualizar Produto' : 'Criar Produto'}
           </button>
         </div>
       </form>
+      {Dialog}
     </div>
   );
 }

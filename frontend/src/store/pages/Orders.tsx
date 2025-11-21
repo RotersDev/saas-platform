@@ -1,29 +1,35 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { Search, CheckCircle, XCircle, Package, Filter } from 'lucide-react';
+import { useConfirm } from '../../hooks/useConfirm';
+import { useDebounce } from '../../hooks/useDebounce';
 
 export default function StoreOrders() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { confirm, Dialog } = useConfirm();
 
   const { data, isLoading } = useQuery(
-    ['orders', statusFilter, searchQuery],
+    ['orders', statusFilter, debouncedSearchQuery],
     async () => {
       const params = new URLSearchParams();
       if (statusFilter) params.append('status', statusFilter);
-      if (searchQuery) params.append('search', searchQuery);
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
 
       const url = `/api/orders${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await api.get(url);
       return response.data;
     },
     {
-      staleTime: 1 * 60 * 1000, // 1 minuto
+      staleTime: 2 * 60 * 1000, // 2 minutos
+      keepPreviousData: true, // Manter dados anteriores enquanto carrega
     }
   );
 
@@ -121,16 +127,10 @@ export default function StoreOrders() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
+                ref={searchInputRef}
                 type="text"
                 value={searchQuery}
-                onChange={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setSearchQuery(e.target.value);
-                }}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                }}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar por ID, email, nome do cliente ou produto..."
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
               />
@@ -248,8 +248,14 @@ export default function StoreOrders() {
                       <div className="flex items-center gap-2">
                         {order.status === 'paid' && (
                           <button
-                            onClick={() => {
-                              if (confirm('Entregar este pedido?')) {
+                            onClick={async () => {
+                              const confirmed = await confirm({
+                                title: 'Entregar pedido',
+                                message: 'Tem certeza que deseja marcar este pedido como entregue?',
+                                type: 'success',
+                                confirmText: 'Entregar',
+                              });
+                              if (confirmed) {
                                 deliverMutation.mutate(order.id);
                               }
                             }}
@@ -261,8 +267,14 @@ export default function StoreOrders() {
                         )}
                         {order.status !== 'delivered' && order.status !== 'cancelled' && (
                           <button
-                            onClick={() => {
-                              if (confirm('Cancelar este pedido?')) {
+                            onClick={async () => {
+                              const confirmed = await confirm({
+                                title: 'Cancelar pedido',
+                                message: 'Tem certeza que deseja cancelar este pedido? Esta ação não pode ser desfeita.',
+                                type: 'danger',
+                                confirmText: 'Cancelar',
+                              });
+                              if (confirmed) {
                                 cancelMutation.mutate(order.id);
                               }
                             }}
@@ -291,6 +303,7 @@ export default function StoreOrders() {
           </div>
         )}
       </div>
+      {Dialog}
     </div>
   );
 }

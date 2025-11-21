@@ -42,7 +42,7 @@ export class ApiController {
 
       const products = await Product.findAll({
         where,
-        attributes: ['id', 'name', 'slug', 'price', 'promotional_price', 'images', 'category_id', 'sales_count', 'featured'],
+        attributes: ['id', 'name', 'slug', 'price', 'promotional_price', 'images', 'category_id', 'sales_count', 'featured', 'stock_limit'],
         include: [{ association: 'categoryData', required: false }],
         order: [['created_at', 'DESC']],
       });
@@ -231,72 +231,86 @@ export class ApiController {
         return;
       }
 
-      // Verificar qual provider foi usado
-      const provider = payment.metadata?.provider || 'mercado_pago';
-      const transactionId = provider === 'pushin_pay'
-        ? payment.pushin_pay_id
-        : payment.mercado_pago_id;
-
-      if (!transactionId) {
-        res.json({ paid: false, message: 'ID da transação não encontrado' });
-        return;
-      }
-
-      // Apenas Pushin Pay suporta consulta manual por enquanto
-      if (provider !== 'pushin_pay') {
-        res.json({ paid: payment.status === 'approved', status: payment.status });
-        return;
-      }
-
-      // Buscar método de pagamento configurado
-      const { PaymentMethod } = require('../models');
-      const paymentMethod = await PaymentMethod.findOne({
-        where: {
-          store_id: req.store.id,
-          provider: 'pushin_pay',
-          enabled: true,
-        },
-      });
-
-      if (!paymentMethod || !paymentMethod.token) {
-        res.json({ paid: false, message: 'Pushin Pay não configurado' });
-        return;
-      }
-
-      // Consultar status no Pushin Pay
-      const { PushinPayService } = require('../services/pushinPayService');
-      const transaction = await PushinPayService.getTransaction(
-        {
-          token: paymentMethod.token,
-          sandbox: paymentMethod.sandbox,
-        },
-        transactionId
-      );
-
-      if (!transaction) {
-        res.json({ paid: false, message: 'Transação não encontrada' });
-        return;
-      }
-
-      // Atualizar status se necessário
-      if (transaction.status === 'paid' && order.payment_status !== 'paid') {
-        await payment.update({ status: 'approved' });
-        await order.update({
-          status: 'paid',
-          payment_status: 'paid',
+      // Se já está aprovado, retornar direto
+      if (payment.status === 'approved') {
+        res.json({
+          paid: true,
+          status: payment.status,
         });
+        return;
+      }
 
-        // Tentar entregar o pedido
-        const { OrderService } = require('../services/orderService');
-        try {
-          await OrderService.deliverOrder(order.id);
-        } catch (error) {
-          // Ignorar erros de entrega
+      // Verificar se é pagamento via Pushin Pay
+      if (payment.pushin_pay_id && payment.metadata?.provider === 'pushin_pay') {
+        // Usar token da plataforma para consultar status
+        const platformToken = process.env.PUSHIN_PAY_TOKEN;
+        const sandbox = process.env.PUSHIN_PAY_SANDBOX === 'true';
+
+        if (!platformToken) {
+          res.json({
+            paid: payment.status === 'approved',
+            status: payment.status,
+            message: 'Token da plataforma não configurado'
+          });
+          return;
         }
 
-        res.json({ paid: true, message: 'Pagamento confirmado' });
+        try {
+          const { PushinPayService } = require('../services/pushinPayService');
+          const transaction = await PushinPayService.getTransaction(
+            {
+              token: platformToken,
+              sandbox: sandbox,
+            },
+            payment.pushin_pay_id
+          );
+
+          if (transaction && transaction.status === 'paid' && payment.status !== 'approved') {
+            // Atualizar pagamento e pedido
+            await payment.update({ status: 'approved' });
+            await order.update({
+              payment_status: 'paid',
+              status: 'paid',
+            });
+
+            // Creditar na carteira
+            try {
+              const { OrderService } = require('../services/orderService');
+              await OrderService.creditWalletAfterPayment(order.id);
+            } catch (walletError) {
+              console.error('Erro ao creditar carteira:', walletError);
+            }
+
+            // Entregar pedido automaticamente
+            try {
+              const { OrderService } = require('../services/orderService');
+              await OrderService.deliverOrder(order.id);
+            } catch (deliveryError) {
+              console.error('Erro ao entregar pedido:', deliveryError);
+            }
+
+            res.json({ paid: true, status: 'approved', message: 'Pagamento confirmado!' });
+            return;
+          }
+
+          res.json({
+            paid: transaction?.status === 'paid' || payment.status === 'approved',
+            status: transaction?.status || payment.status
+          });
+        } catch (error: any) {
+          console.error('Erro ao consultar Pushin Pay:', error);
+          // Em caso de erro, retornar status atual
+          res.json({
+            paid: payment.status === 'approved',
+            status: payment.status
+          });
+        }
       } else {
-        res.json({ paid: false, status: transaction.status });
+        // Para outros métodos ou sem pushin_pay_id, retornar status atual
+        res.json({
+          paid: payment.status === 'approved',
+          status: payment.status,
+        });
       }
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Erro ao verificar pagamento' });
@@ -353,8 +367,8 @@ export class ApiController {
         return;
       }
 
-      if (!customer || !customer.email || !customer.name) {
-        res.status(400).json({ error: 'Dados do cliente são obrigatórios' });
+      if (!customer || !customer.email || !customer.email.trim()) {
+        res.status(400).json({ error: 'E-mail do cliente é obrigatório' });
         return;
       }
 
@@ -391,9 +405,9 @@ export class ApiController {
           product_id: item.product_id,
           quantity: item.quantity || 1,
         })),
-        customer_email: customer.email,
-        customer_name: customer.name,
-        customer_phone: customer.phone,
+        customer_email: customer.email.trim(),
+        customer_name: customer.name || '',
+        customer_phone: customer.phone || '',
         coupon_code,
         affiliate_code,
         metadata: {

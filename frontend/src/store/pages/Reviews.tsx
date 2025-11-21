@@ -2,9 +2,11 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { CheckCircle, XCircle, Star } from 'lucide-react';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export default function StoreReviews() {
   const queryClient = useQueryClient();
+  const { confirm, Dialog } = useConfirm();
 
   const { data, isLoading } = useQuery('reviews', async () => {
     const response = await api.get('/api/reviews');
@@ -111,8 +113,14 @@ export default function StoreReviews() {
                       <CheckCircle className="w-6 h-6" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm('Rejeitar esta avaliação?')) {
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: 'Rejeitar avaliação',
+                          message: 'Tem certeza que deseja rejeitar esta avaliação?',
+                          type: 'warning',
+                          confirmText: 'Rejeitar',
+                        });
+                        if (confirmed) {
                           rejectMutation.mutate(review.id);
                         }
                       }}
@@ -172,6 +180,7 @@ export default function StoreReviews() {
           </div>
         )}
       </div>
+      {Dialog}
     </div>
   );
 }

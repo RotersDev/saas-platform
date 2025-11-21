@@ -167,6 +167,7 @@ export class CouponController {
           code: coupon.code,
           type: coupon.type,
           value: coupon.value,
+          max_discount: coupon.max_discount,
         },
       });
     } catch (error) {

@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { LayoutDashboard, Store, CreditCard, LogOut } from 'lucide-react';
+import { LayoutDashboard, Store, CreditCard, LogOut, Wallet, ShoppingCart, User } from 'lucide-react';
 
 export default function AdminLayout() {
   const location = useLocation();
@@ -10,6 +10,9 @@ export default function AdminLayout() {
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Lojas', href: '/admin/stores', icon: Store },
     { name: 'Planos', href: '/admin/plans', icon: CreditCard },
+    { name: 'Vendas', href: '/admin/sales', icon: ShoppingCart },
+    { name: 'Saques', href: '/admin/withdrawals', icon: Wallet },
+    { name: 'Contas', href: '/admin/accounts', icon: User },
   ];
 
   return (

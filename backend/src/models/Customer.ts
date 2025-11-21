@@ -13,6 +13,7 @@ export interface CustomerAttributes {
   last_order_at?: Date;
   reset_token?: string;
   reset_token_expires_at?: Date;
+  ip_address?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -30,6 +31,7 @@ export class Customer extends Model<CustomerAttributes> implements CustomerAttri
   public last_order_at?: Date;
   public reset_token?: string;
   public reset_token_expires_at?: Date;
+  public ip_address?: string;
 
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
@@ -89,6 +91,10 @@ export class Customer extends Model<CustomerAttributes> implements CustomerAttri
           type: DataTypes.DATE,
           allowNull: true,
         },
+        ip_address: {
+          type: DataTypes.STRING(45),
+          allowNull: true,
+        },
         created_at: {
           type: DataTypes.DATE,
           allowNull: false,
@@ -108,6 +114,7 @@ export class Customer extends Model<CustomerAttributes> implements CustomerAttri
         indexes: [
           { fields: ['store_id'] },
           { fields: ['email'] },
+          { fields: ['ip_address'] },
           { unique: true, fields: ['store_id', 'email'] },
         ],
       }

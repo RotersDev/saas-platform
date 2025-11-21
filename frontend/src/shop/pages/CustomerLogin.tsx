@@ -3,7 +3,6 @@ import { useState } from 'react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { Mail, Lock, User } from 'lucide-react';
-import { GoogleLogin } from '@react-oauth/google';
 import Footer from '../components/Footer';
 import { useQuery } from 'react-query';
 
@@ -121,10 +120,20 @@ export default function CustomerLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      className="min-h-screen relative"
+      style={{
+        background: `
+          radial-gradient(circle, rgba(59, 130, 246, 0.25) 1.5px, transparent 1.5px),
+          linear-gradient(to top, #e2e8f0 0%, #f1f5f9 30%, #f8fafc 60%, #ffffff 100%)
+        `,
+        backgroundSize: '30px 30px, 100% 100%',
+        backgroundPosition: '0 0, 0 0',
+      }}
+    >
 
       <main className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
               {isCreatingPassword ? 'Criar Senha' : isLogin ? 'Entrar' : 'Criar Conta'}
@@ -221,48 +230,6 @@ export default function CustomerLogin() {
 
           {!isCreatingPassword && (
             <>
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Ou continue com</span>
-                </div>
-              </div>
-
-              <div className="flex justify-center">
-                <GoogleLogin
-                  onSuccess={async (credentialResponse) => {
-                    try {
-                      const response = await api.post('/api/public/customers/login/google', {
-                        id_token: credentialResponse.credential,
-                      }, {
-                        headers: {
-                          'X-Store-Subdomain': storeSubdomain,
-                        },
-                      });
-
-                      if (response.data.token) {
-                        localStorage.setItem(`customer_token_${storeSubdomain}`, response.data.token);
-                        localStorage.setItem(`customer_${storeSubdomain}`, JSON.stringify(response.data.customer));
-                        toast.success('Login realizado com sucesso!');
-                        navigate(`/${storeSubdomain}/my-orders`);
-                      }
-                    } catch (error: any) {
-                      toast.error(error.response?.data?.error || 'Erro ao fazer login com Google');
-                    }
-                  }}
-                  onError={() => {
-                    toast.error('Erro ao fazer login com Google');
-                  }}
-                  useOneTap={false}
-                  theme="outline"
-                  size="large"
-                  text="signin_with"
-                  shape="rectangular"
-                />
-              </div>
-
               <div className="mt-6 text-center">
                 <button
                   onClick={() => {
