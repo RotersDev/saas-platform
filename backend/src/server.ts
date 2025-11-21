@@ -17,7 +17,8 @@ const PORT = Number(process.env.PORT) || 3000;
 // Trust proxy para capturar IP real quando atrás de proxy/load balancer
 // Confiar apenas no Nginx local (127.0.0.1) para segurança
 // Isso permite que o rate limiting funcione corretamente
-app.set('trust proxy', 1); // Confiar apenas no primeiro proxy (Nginx)
+// Confiar SOMENTE no Nginx local
+app.set('trust proxy', 'loopback');
 
 // Middlewares de segurança
 app.use(helmet());
