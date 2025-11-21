@@ -1,6 +1,6 @@
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { normalizeImageUrl } from '../../utils/imageUtils';
-import { getShopUrl, getCheckoutUrl, getCategoriesUrl } from '../../utils/urlUtils';
+import { getShopUrl, getCheckoutUrl, getCategoriesUrl, getSubdomainFromHostname } from '../../utils/urlUtils';
 import { ExternalLink } from 'lucide-react';
 
 interface FooterProps {
@@ -21,8 +21,9 @@ interface FooterProps {
 export default function Footer({ storeInfo, theme }: FooterProps) {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();
   const [searchParams] = useSearchParams();
-  // Priorizar subdomain do path, depois query param (fallback)
-  const storeSubdomain = storeSubdomainParam || searchParams.get('store');
+  // Priorizar: hostname > path > query param (fallback)
+  const subdomainFromHostname = getSubdomainFromHostname();
+  const storeSubdomain = subdomainFromHostname || storeSubdomainParam || searchParams.get('store');
 
   console.log('[Footer] 🦶 Renderizando Footer:', { storeInfo: storeInfo?.name, theme: !!theme, storeSubdomain });
 

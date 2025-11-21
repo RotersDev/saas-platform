@@ -17,10 +17,6 @@ export default function ShopHome() {
   const storeSubdomain = subdomainFromHostname || storeSubdomainParam || searchParams.get('store');
   const categorySlug = searchParams.get('category');
   const navigate = useNavigate();
-  const [cart, setCart] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`cart_${storeSubdomain}`);
-    return saved ? JSON.parse(saved) : [];
-  });
 
   const { data: storeInfo, isLoading: storeLoading } = useQuery(
     ['shopStore', storeSubdomain, window.location.hostname],
@@ -36,7 +32,7 @@ export default function ShopHome() {
   );
 
   const { data: theme } = useQuery(
-    ['shopTheme', storeSubdomain],
+    ['shopTheme', storeSubdomain, storeInfo?.id],
     async () => {
       const response = await api.get('/api/public/theme');
       return response.data;
@@ -46,6 +42,13 @@ export default function ShopHome() {
       enabled: !!storeInfo && (storeInfo.status === 'active' || storeInfo.status === 'trial'),
     }
   );
+
+  // Usar storeInfo.id como identificador do carrinho quando não há subdomain (domínio customizado)
+  const cartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : 'default');
+  const [cart, setCart] = useState<any[]>(() => {
+    const saved = localStorage.getItem(`cart_${cartKey}`);
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Log para debug
   const productsEnabled = !!storeInfo && (storeInfo.status === 'active' || storeInfo.status === 'trial');
@@ -98,7 +101,7 @@ export default function ShopHome() {
 
     const newCart = [...cart, { ...product, quantity: 1 }];
     setCart(newCart);
-    localStorage.setItem(`cart_${storeSubdomain}`, JSON.stringify(newCart));
+    localStorage.setItem(`cart_${cartKey}`, JSON.stringify(newCart));
     toast.success('Produto adicionado ao carrinho!');
   };
 

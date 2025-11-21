@@ -47,15 +47,18 @@ export function getSubdomainFromHostname(): string | null {
 
 /**
  * Gera URLs limpas para a loja pública
- * Formato: /{subdomain}/... ao invés de /shop?store={subdomain}
+ * Formato: /{subdomain}/... para subdomínios, ou /... para domínios customizados
  */
 export function getShopUrl(subdomain: string | null | undefined, path: string = ''): string {
-  if (!subdomain) return '/';
-
   // Remover barra inicial se houver
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
 
-  // Se não há path, retornar apenas o subdomain
+  // Se não há subdomain (domínio customizado), retornar path direto
+  if (!subdomain) {
+    return cleanPath ? `/${cleanPath}` : '/';
+  }
+
+  // Se há subdomain, incluir no path
   if (!cleanPath) {
     return `/${subdomain}`;
   }

@@ -45,20 +45,23 @@ export default function ShopLayout() {
   );
 
   const { data: theme } = useQuery(
-    ['shopTheme', storeSubdomain],
+    ['shopTheme', storeSubdomain, storeInfo?.id],
     async () => {
       const response = await api.get('/api/public/theme');
       return response.data;
     },
     {
       staleTime: Infinity,
-      enabled: !!storeSubdomain && !!storeInfo,
+      // Habilitar se tiver storeInfo (funciona com subdomain ou domínio customizado)
+      enabled: !!storeInfo,
     }
   );
 
   // Aplicar CSS personalizado, cores do tema, logo e favicon
   useEffect(() => {
-    if (theme && storeSubdomain) {
+    if (theme && storeInfo) {
+      // Usar storeSubdomain se disponível, senão usar storeInfo.id como identificador
+      const storeIdentifier = storeSubdomain || `store-${storeInfo.id}`;
       // Aplicar variáveis CSS e criar estilos dinâmicos para cores do tema
       const root = document.documentElement;
       const primaryColor = theme.primary_color || '#000000';
@@ -70,29 +73,29 @@ export default function ShopLayout() {
       root.style.setProperty('--accent-color', accentColor);
 
       // Criar CSS dinâmico para aplicar cores do tema nas classes Tailwind
-      const existingThemeStyles = document.getElementById(`store-theme-colors-${storeSubdomain}`);
+      const existingThemeStyles = document.getElementById(`store-theme-colors-${storeIdentifier}`);
       if (existingThemeStyles) existingThemeStyles.remove();
 
       const themeStyle = document.createElement('style');
-      themeStyle.id = `store-theme-colors-${storeSubdomain}`;
-      themeStyle.setAttribute('data-store', storeSubdomain);
+      themeStyle.id = `store-theme-colors-${storeIdentifier}`;
+      themeStyle.setAttribute('data-store', storeIdentifier);
       themeStyle.textContent = `
-        [data-store-theme="${storeSubdomain}"] .bg-indigo-600,
-        [data-store-theme="${storeSubdomain}"] .bg-indigo-500 {
+        [data-store-theme="${storeIdentifier}"] .bg-indigo-600,
+        [data-store-theme="${storeIdentifier}"] .bg-indigo-500 {
           background-color: ${accentColor} !important;
         }
-        [data-store-theme="${storeSubdomain}"] .bg-indigo-700,
-        [data-store-theme="${storeSubdomain}"] .hover\\:bg-indigo-700:hover {
+        [data-store-theme="${storeIdentifier}"] .bg-indigo-700,
+        [data-store-theme="${storeIdentifier}"] .hover\\:bg-indigo-700:hover {
           background-color: ${accentColor} !important;
           opacity: 0.9;
         }
-        [data-store-theme="${storeSubdomain}"] .text-indigo-600 {
+        [data-store-theme="${storeIdentifier}"] .text-indigo-600 {
           color: ${accentColor} !important;
         }
-        [data-store-theme="${storeSubdomain}"] .border-indigo-600 {
+        [data-store-theme="${storeIdentifier}"] .border-indigo-600 {
           border-color: ${accentColor} !important;
         }
-        [data-store-theme="${storeSubdomain}"] .ring-indigo-500 {
+        [data-store-theme="${storeIdentifier}"] .ring-indigo-500 {
           --tw-ring-color: ${accentColor} !important;
         }
       `;
@@ -105,8 +108,8 @@ export default function ShopLayout() {
       // Criar novo elemento de estilo para esta loja
       if (theme.custom_css && theme.custom_css.trim()) {
         const styleElement = document.createElement('style');
-        styleElement.id = `store-custom-css-${storeSubdomain}`;
-        styleElement.setAttribute('data-store', storeSubdomain);
+        styleElement.id = `store-custom-css-${storeIdentifier}`;
+        styleElement.setAttribute('data-store', storeIdentifier);
         styleElement.type = 'text/css';
         styleElement.textContent = theme.custom_css;
         document.head.appendChild(styleElement);
@@ -115,13 +118,13 @@ export default function ShopLayout() {
       // Aplicar JavaScript personalizado
       if (theme.custom_js && theme.custom_js.trim()) {
         // Remover scripts antigos desta loja
-        const existingScripts = document.querySelectorAll(`script[data-store="${storeSubdomain}"]`);
+        const existingScripts = document.querySelectorAll(`script[data-store="${storeIdentifier}"]`);
         existingScripts.forEach((el) => el.remove());
 
         // Criar novo script
         const scriptElement = document.createElement('script');
-        scriptElement.id = `store-custom-js-${storeSubdomain}`;
-        scriptElement.setAttribute('data-store', storeSubdomain);
+        scriptElement.id = `store-custom-js-${storeIdentifier}`;
+        scriptElement.setAttribute('data-store', storeIdentifier);
         scriptElement.type = 'text/javascript';
         scriptElement.textContent = theme.custom_js;
         document.head.appendChild(scriptElement);
@@ -159,7 +162,7 @@ export default function ShopLayout() {
         faviconLink.rel = 'icon';
         faviconLink.type = faviconType;
         faviconLink.href = faviconUrl;
-        faviconLink.setAttribute('data-store', storeSubdomain);
+        faviconLink.setAttribute('data-store', storeIdentifier);
         document.head.appendChild(faviconLink);
 
         // Também adicionar shortcut icon (para compatibilidade)
@@ -167,14 +170,14 @@ export default function ShopLayout() {
         shortcutIcon.rel = 'shortcut icon';
         shortcutIcon.type = faviconType;
         shortcutIcon.href = faviconUrl;
-        shortcutIcon.setAttribute('data-store', storeSubdomain);
+        shortcutIcon.setAttribute('data-store', storeIdentifier);
         document.head.appendChild(shortcutIcon);
 
         // Também adicionar apple-touch-icon
         const appleTouchIcon = document.createElement('link');
         appleTouchIcon.rel = 'apple-touch-icon';
         appleTouchIcon.href = faviconUrl;
-        appleTouchIcon.setAttribute('data-store', storeSubdomain);
+        appleTouchIcon.setAttribute('data-store', storeIdentifier);
         document.head.appendChild(appleTouchIcon);
 
         console.log('[ShopLayout] Favicon aplicado:', faviconUrl, 'Tipo:', faviconType);
@@ -185,27 +188,31 @@ export default function ShopLayout() {
 
     // Cleanup
     return () => {
-      if (storeSubdomain) {
-        const styleElement = document.getElementById(`store-custom-css-${storeSubdomain}`);
+      if (storeInfo) {
+        const storeIdentifier = storeSubdomain || `store-${storeInfo.id}`;
+        const styleElement = document.getElementById(`store-custom-css-${storeIdentifier}`);
         if (styleElement) styleElement.remove();
-        const scriptElement = document.getElementById(`store-custom-js-${storeSubdomain}`);
+        const scriptElement = document.getElementById(`store-custom-js-${storeIdentifier}`);
         if (scriptElement) scriptElement.remove();
-        const themeStyle = document.getElementById(`store-theme-colors-${storeSubdomain}`);
+        const themeStyle = document.getElementById(`store-theme-colors-${storeIdentifier}`);
         if (themeStyle) themeStyle.remove();
-        const faviconElements = document.querySelectorAll(`link[data-store="${storeSubdomain}"]`);
+        const faviconElements = document.querySelectorAll(`link[data-store="${storeIdentifier}"]`);
         faviconElements.forEach((el) => el.remove());
       }
     };
-  }, [theme, storeSubdomain]);
+  }, [theme, storeSubdomain, storeInfo]);
 
   // Tracking de visitas - depois que storeInfo estiver disponível
   useEffect(() => {
-    if (storeSubdomain && storeInfo) {
+    if (storeInfo) {
+      // Usar subdomain se disponível, senão não enviar header (backend resolve pelo Host)
+      const headers: any = {};
+      if (storeSubdomain) {
+        headers['X-Store-Subdomain'] = storeSubdomain;
+      }
       api.post('/api/public/visits/track', null, {
         params: { path: location.pathname },
-        headers: {
-          'X-Store-Subdomain': storeSubdomain,
-        },
+        headers,
       }).catch(() => {
         // Silenciar erros de tracking
       });
@@ -230,8 +237,8 @@ export default function ShopLayout() {
     return () => clearInterval(interval);
   }, [storeSubdomain]);
 
-  // Verificar se a loja não existe
-  if (storeSubdomain && !storeLoading && (!storeInfo || storeError)) {
+  // Verificar se a loja não existe (só verificar se não está carregando)
+  if (!storeLoading && (!storeInfo || storeError)) {
     return <StoreNotFound />;
   }
 
@@ -240,8 +247,11 @@ export default function ShopLayout() {
     return <StoreBlocked status={storeInfo.status} storeName={storeInfo.name} />;
   }
 
+  // Usar storeSubdomain se disponível, senão usar storeInfo.id como identificador
+  const storeIdentifier = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+
   return (
-    <div className="min-h-screen relative" data-store-theme={storeSubdomain}>
+    <div className="min-h-screen relative" data-store-theme={storeIdentifier || ''}>
       {/* Background com degradê de baixo para cima e bolinhas azuis destacadas */}
       <div
         className="fixed inset-0 -z-10"
