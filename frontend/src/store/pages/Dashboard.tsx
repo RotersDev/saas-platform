@@ -290,7 +290,7 @@ export default function StoreDashboard() {
     if (isDevelopment) {
       return `http://localhost:${port}/${store.subdomain}`;
     }
-    const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.site';
+    const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
     if (store.primary_domain) {
       return `https://${store.primary_domain}`;
     }

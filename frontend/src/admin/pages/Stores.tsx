@@ -80,7 +80,7 @@ export default function AdminStores() {
   const getStoreUrl = (store: any) => {
     const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const port = window.location.port || '5173';
-    const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.site';
+    const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
 
     if (isDevelopment) {
       return `http://localhost:${port}/${store.subdomain}`;
