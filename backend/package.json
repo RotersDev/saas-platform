@@ -18,6 +18,7 @@
     "set-3percent-split": "tsx src/scripts/set3PercentSplit.ts",
     "update-role": "tsx src/scripts/updateUserRole.ts",
     "diagnose-store": "tsx src/scripts/diagnoseStore.ts",
+    "test-db": "tsx src/scripts/testDatabaseConnection.ts",
     "test": "jest",
     "lint": "eslint src --ext .ts"
   },

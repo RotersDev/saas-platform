@@ -14,11 +14,10 @@ const dbPort = parseInt(process.env.DB_PORT || '5432');
 // Construir string de conexão explícita para forçar IPv4
 const connectionString = `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'postgres'}@${dbHost}:${dbPort}/${process.env.DB_NAME || 'saas_platform'}`;
 
-// Log da connection string (sem senha) para debug
-if (process.env.NODE_ENV === 'development') {
-  const safeConnectionString = connectionString.replace(/:[^:@]+@/, ':****@');
-  console.log(`🔌 Connection string: ${safeConnectionString}`);
-}
+// Log da connection string (sem senha) para debug - sempre logar em produção também para identificar problemas
+const safeConnectionString = connectionString.replace(/:[^:@]+@/, ':****@');
+console.log(`🔌 [Database] Tentando conectar: ${safeConnectionString}`);
+console.log(`🔌 [Database] DB_HOST: ${dbHost} | DB_PORT: ${dbPort} | DB_USER: ${process.env.DB_USER || 'postgres'} | DB_NAME: ${process.env.DB_NAME || 'saas_platform'}`);
 
 const sequelize = new Sequelize(connectionString, {
   dialect: 'postgres',
