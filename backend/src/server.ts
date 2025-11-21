@@ -14,13 +14,9 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-// Trust proxy para capturar IP real quando atrás de proxy/load balancer
-// Confiar apenas no Nginx local (127.0.0.1) para segurança
-// Isso permite que o rate limiting funcione corretamente
-// Confiar SOMENTE no Nginx local
-app.set('trust proxy', 'loopback');
 
-// Middlewares de segurança
+app.set('trust proxy', false);
+
 app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -32,20 +28,16 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Nota: Uploads agora são feitos diretamente para Cloudflare R2
-// Não precisamos mais servir arquivos estáticos localmente
 
-// Rate limiting - mais permissivo em desenvolvimento
-// IMPORTANTE: trust proxy está configurado como 1 (apenas primeiro proxy/Nginx)
-// Isso é seguro e permite que o rate limiting funcione corretamente
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 requests em dev, 100 em produção
   message: 'Too many requests, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  // Usar função customizada para obter IP real do header X-Forwarded-For
-  // Isso garante que sempre retorna uma string válida
+
+
+
   keyGenerator: (req): string => {
     // Pegar IP real do header X-Forwarded-For (primeiro IP da lista)
     const forwardedFor = req.headers['x-forwarded-for'];
