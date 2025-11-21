@@ -381,10 +381,21 @@ export class AuthController {
       const resetToken = crypto.randomBytes(32).toString('hex');
       const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
+      logger.info('Gerando token de reset:', {
+        userId: user.id,
+        email: user.email,
+        expiresAt: resetTokenExpires.toISOString(),
+        expiresInMinutes: 60
+      });
+
       try {
         await user.update({
           reset_token: resetToken,
           reset_token_expires_at: resetTokenExpires,
+        });
+        logger.info('Token de reset salvo com sucesso:', {
+          userId: user.id,
+          expiresAt: resetTokenExpires.toISOString()
         });
       } catch (updateError: any) {
         logger.error('Erro ao atualizar token de reset', { error: updateError, userId: user.id });
@@ -443,7 +454,29 @@ export class AuthController {
         },
       });
 
-      if (!user || !user.reset_token_expires_at || user.reset_token_expires_at < new Date()) {
+      if (!user) {
+        logger.warn('Token de reset não encontrado:', { token: token.substring(0, 10) + '...' });
+        res.status(400).json({ error: 'Token inválido ou expirado' });
+        return;
+      }
+
+      if (!user.reset_token_expires_at) {
+        logger.warn('Token de reset sem data de expiração:', { userId: user.id, email: user.email });
+        res.status(400).json({ error: 'Token inválido ou expirado' });
+        return;
+      }
+
+      const now = new Date();
+      const expiresAt = new Date(user.reset_token_expires_at);
+
+      if (expiresAt < now) {
+        logger.warn('Token de reset expirado:', {
+          userId: user.id,
+          email: user.email,
+          expiresAt: expiresAt.toISOString(),
+          now: now.toISOString(),
+          diffMinutes: Math.round((now.getTime() - expiresAt.getTime()) / 1000 / 60)
+        });
         res.status(400).json({ error: 'Token inválido ou expirado' });
         return;
       }

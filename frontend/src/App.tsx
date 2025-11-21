@@ -104,8 +104,17 @@ function ProtectedRoute({ children, requiredRole }: { children: JSX.Element; req
 
       const userEmailLower = user.email?.toLowerCase();
 
-      if (user.role === requiredRole && ADMIN_EMAILS.includes(userEmailLower)) {
-        console.log('Access granted - admin email matches:', userEmailLower);
+      // Se o email está na lista de admin emails, permitir acesso mesmo que a role não seja exatamente master_admin
+      // (útil para casos onde o usuário ainda não foi atualizado no banco)
+      if (ADMIN_EMAILS.includes(userEmailLower)) {
+        // Se tem role master_admin, permitir diretamente
+        if (user.role === requiredRole) {
+          console.log('Access granted - admin email and role match:', userEmailLower);
+          return children;
+        }
+        // Se o email está na lista mas a role não é master_admin, ainda permitir acesso
+        // (assumindo que é um admin que precisa ter a role atualizada)
+        console.log('Access granted - admin email in list (role may need update):', userEmailLower, 'Current role:', user.role);
         return children;
       }
       // Se não é o email correto, redirecionar
