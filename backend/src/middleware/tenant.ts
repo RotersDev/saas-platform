@@ -197,21 +197,27 @@ export const resolveTenantPublic = async (
         const { Domain } = await import('../models');
         console.log('[resolveTenantPublic] 🔍 Tentando resolver como domínio customizado:', hostWithoutPort);
 
-        // Buscar domínio customizado (aceitar mesmo se não estiver verificado, pois DNS pode estar funcionando)
+        // Buscar domínio customizado no banco
+        // IMPORTANTE: Se o domínio foi removido, não deve ser encontrado aqui
         const customDomain = await Domain.findOne({
           where: { domain: hostWithoutPort },
         });
 
         if (customDomain) {
+          // Verificar se a loja ainda existe
           const store = await Store.findByPk(customDomain.store_id);
           if (store) {
             console.log('[resolveTenantPublic] ✅ Loja encontrada via domínio customizado:', store.name, '| ID:', store.id, '| Domain:', hostWithoutPort, '| Verified:', customDomain.verified);
             (req as any).store = store;
             next();
             return;
+          } else {
+            console.log('[resolveTenantPublic] ⚠️ Domínio customizado encontrado, mas loja não existe:', hostWithoutPort, '| Store ID:', customDomain.store_id);
           }
         } else {
-          console.log('[resolveTenantPublic] ⚠️ Domínio customizado não encontrado no banco:', hostWithoutPort);
+          console.log('[resolveTenantPublic] ⚠️ Domínio customizado não encontrado no banco (pode ter sido removido):', hostWithoutPort);
+          // Se o domínio não foi encontrado, não definir req.store
+          // Isso fará com que a loja não seja encontrada e retorne erro 404
         }
       } catch (error: any) {
         console.error('[resolveTenantPublic] ❌ Erro ao buscar domínio customizado:', error);

@@ -29,7 +29,9 @@ export default function ShopLayout() {
         return response.data;
       } catch (error: any) {
         // Se for 404 ou loja não encontrada, lançar erro
+        // 404 pode ser retornado quando o domínio foi removido
         if (error.response?.status === 404 || error.response?.status === 400) {
+          console.log('[ShopLayout] ❌ Loja não encontrada (domínio pode ter sido removido):', error.response?.status);
           throw new Error('Store not found');
         }
         throw error;

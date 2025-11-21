@@ -214,6 +214,8 @@ function SubdomainShopWrapper() {
   const isSaasDomain = hostname === saasDomain || hostname === `www.${saasDomain}`;
 
   // Se há subdomínio conhecido do domínio base (ex: marcos.nerix.online), renderizar ShopLayout com rotas
+  // IMPORTANTE: Para subdomínios, as rotas são diretas (sem subdomain no path)
+  // O backend resolve a loja baseado no header Host
   if (subdomain) {
     return (
       <Routes>
@@ -236,12 +238,42 @@ function SubdomainShopWrapper() {
 
   // Se é localhost ou domínio base (nerix.online), renderizar Landing
   if (isLocalhost || isBaseDomain) {
-    return <Landing />;
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route
+          path="/create-store"
+          element={
+            <ProtectedRoute>
+              <CreateStore />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Landing />} />
+      </Routes>
+    );
   }
 
-  // Se é o domínio SaaS, renderizar Landing
+  // Se é o domínio SaaS, renderizar Landing com rotas do SaaS
   if (isSaasDomain) {
-    return <Landing />;
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route
+          path="/create-store"
+          element={
+            <ProtectedRoute>
+              <CreateStore />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Landing />} />
+      </Routes>
+    );
   }
 
   // Se não é subdomínio do BASE_DOMAIN, não é SAAS_DOMAIN, não é localhost, pode ser domínio customizado
@@ -255,6 +287,37 @@ function SubdomainShopWrapper() {
   return <Landing />;
 }
 
+// Componente que decide qual rota renderizar baseado no hostname
+function RouteSelector() {
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
+  const saasDomain = import.meta.env.VITE_SAAS_DOMAIN || 'xenaparcerias.online';
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost');
+  const isBaseDomain = hostname === baseDomain || hostname === `www.${baseDomain}`;
+  const isSaasDomain = hostname === saasDomain || hostname === `www.${saasDomain}`;
+  const subdomain = getSubdomainFromHostname();
+  const isSubdomainOfBase = hostname.endsWith(`.${baseDomain}`) && !isBaseDomain;
+
+  // Se é domínio SaaS ou base, renderizar Landing (que tem suas próprias rotas internas)
+  if (isSaasDomain || (isBaseDomain && !subdomain) || (isLocalhost && !subdomain)) {
+    return <SubdomainShopWrapper />;
+  }
+
+  // Se é subdomínio do BASE_DOMAIN (ex: marcos.nerix.online), usar rotas com subdomain no path
+  if (subdomain && isSubdomainOfBase) {
+    return <SubdomainShopWrapper />;
+  }
+
+  // Se não é subdomínio conhecido, pode ser domínio customizado
+  // Usar ShopLayoutWithLandingFallback que renderiza rotas sem subdomain no path
+  if (!isSubdomainOfBase && !isBaseDomain && !isSaasDomain && !isLocalhost) {
+    return <ShopLayoutWithLandingFallback />;
+  }
+
+  // Fallback: usar SubdomainShopWrapper
+  return <SubdomainShopWrapper />;
+}
+
 function App() {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -262,88 +325,60 @@ function App() {
     <GoogleOAuthProvider clientId={googleClientId}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-        <Routes>
-          {/* Auth - deve vir primeiro */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route
-            path="/create-store"
-            element={
-              <ProtectedRoute>
-                <CreateStore />
-              </ProtectedRoute>
-            }
-          />
+          <Routes>
+            {/* Admin Master - sempre disponível */}
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute requiredRole="master_admin">
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<AdminDashboard />} />
+              <Route path="stores" element={<AdminStores />} />
+              <Route path="plans" element={<AdminPlans />} />
+              <Route path="sales" element={<AdminSales />} />
+              <Route path="withdrawals" element={<AdminWithdrawals />} />
+              <Route path="accounts" element={<AdminAccounts />} />
+            </Route>
 
-          {/* Shop (Public) - rotas limpas usando subdomain como path */}
-          <Route path="/:storeSubdomain" element={<ShopLayout />}>
-            <Route index element={<ShopHome />} />
-            <Route path="product/:slug" element={<ShopProduct />} />
-            <Route path="checkout" element={<ShopCheckout />} />
-            <Route path="payment/:orderId" element={<ShopPayment />} />
-            <Route path="order/:orderId" element={<ShopOrderStatus />} />
-            <Route path="categories" element={<ShopCategories />} />
-            <Route path="terms" element={<ShopTerms />} />
-            <Route path="login" element={<CustomerLogin />} />
-            <Route path="my-orders" element={<MyOrders />} />
-            <Route path="my-orders/:orderId" element={<MyOrderDetails />} />
-            <Route path="*" element={<PageNotFound />} />
-          </Route>
+            {/* Store Owner - sempre disponível */}
+            <Route
+              path="/store/*"
+              element={
+                <ProtectedRoute>
+                  <StoreLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<StoreDashboard />} />
+              <Route path="products" element={<StoreProducts />} />
+              <Route path="products/new" element={<StoreProductForm />} />
+              <Route path="products/edit/:id" element={<StoreProductForm />} />
+              <Route path="categories" element={<StoreCategories />} />
+              <Route path="orders" element={<StoreOrders />} />
+              <Route path="orders/:id" element={<StoreOrderDetails />} />
+              <Route path="customers" element={<StoreCustomers />} />
+              <Route path="coupons" element={<StoreCoupons />} />
+              <Route path="theme" element={<StoreTheme />} />
+              <Route path="settings" element={<StoreSettings />} />
+              <Route path="settings/domains" element={<StoreDomains />} />
+              <Route path="wallet" element={<StoreWallet />} />
+              <Route path="account" element={<StoreAccount />} />
+            </Route>
 
-          {/* Fallback para rotas antigas com /shop */}
-          <Route path="/shop/*" element={<ShopLayout />}>
-            <Route index element={<ShopHome />} />
-            <Route path="product/:slug" element={<ShopProduct />} />
-            <Route path="checkout" element={<ShopCheckout />} />
-            <Route path="categories" element={<ShopCategories />} />
-          </Route>
+            {/* Fallback para rotas antigas com /shop */}
+            <Route path="/shop/*" element={<ShopLayout />}>
+              <Route index element={<ShopHome />} />
+              <Route path="product/:slug" element={<ShopProduct />} />
+              <Route path="checkout" element={<ShopCheckout />} />
+              <Route path="categories" element={<ShopCategories />} />
+            </Route>
 
-          {/* Admin Master */}
-          <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute requiredRole="master_admin">
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<AdminDashboard />} />
-            <Route path="stores" element={<AdminStores />} />
-            <Route path="plans" element={<AdminPlans />} />
-            <Route path="sales" element={<AdminSales />} />
-            <Route path="withdrawals" element={<AdminWithdrawals />} />
-            <Route path="accounts" element={<AdminAccounts />} />
-          </Route>
-
-          {/* Store Owner */}
-          <Route
-            path="/store/*"
-            element={
-              <ProtectedRoute>
-                <StoreLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<StoreDashboard />} />
-            <Route path="products" element={<StoreProducts />} />
-            <Route path="products/new" element={<StoreProductForm />} />
-            <Route path="products/edit/:id" element={<StoreProductForm />} />
-            <Route path="categories" element={<StoreCategories />} />
-            <Route path="orders" element={<StoreOrders />} />
-            <Route path="orders/:id" element={<StoreOrderDetails />} />
-            <Route path="customers" element={<StoreCustomers />} />
-            <Route path="coupons" element={<StoreCoupons />} />
-            <Route path="theme" element={<StoreTheme />} />
-            <Route path="settings" element={<StoreSettings />} />
-            <Route path="settings/domains" element={<StoreDomains />} />
-            <Route path="wallet" element={<StoreWallet />} />
-            <Route path="account" element={<StoreAccount />} />
-          </Route>
-
-          {/* Landing Page ou Shop baseado no hostname */}
-          <Route path="/" element={<SubdomainShopWrapper />} />
-        </Routes>
+            {/* Landing Page ou Shop baseado no hostname - deve vir antes das rotas genéricas */}
+            <Route path="*" element={<RouteSelector />} />
+          </Routes>
         </BrowserRouter>
         <Toaster position="top-right" />
       </QueryClientProvider>

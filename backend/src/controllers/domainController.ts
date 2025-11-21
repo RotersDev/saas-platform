@@ -225,7 +225,22 @@ export class DomainController {
         return;
       }
 
+      const domainName = domain.domain;
+
+      // Deletar o domínio do banco
       await domain.destroy();
+
+      logger.info(`✅ Domínio removido: ${domainName} (ID: ${id}) da loja ${req.store.id}`);
+
+      // Verificar se foi realmente deletado
+      const verifyDeleted = await Domain.findByPk(id);
+      if (verifyDeleted) {
+        logger.error(`❌ ERRO: Domínio ${domainName} ainda existe no banco após destroy()!`);
+        res.status(500).json({ error: 'Erro ao remover domínio. Tente novamente.' });
+        return;
+      }
+
+      logger.info(`✅ Confirmação: Domínio ${domainName} foi completamente removido do banco.`);
 
       res.json({ success: true, message: 'Domínio removido com sucesso' });
     } catch (error: any) {

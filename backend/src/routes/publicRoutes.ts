@@ -55,7 +55,11 @@ publicRoutes.get('/categories', async (req: any, res) => {
 });
 publicRoutes.get('/store', async (req: any, res) => {
   try {
+    const host = req.headers.host || '';
+    const hostWithoutPort = host.split(':')[0];
+
     if (req.store) {
+      console.log('[PublicRoutes.getStore] ✅ Loja encontrada:', req.store.name, '| ID:', req.store.id, '| Host:', hostWithoutPort);
       res.json({
         id: req.store.id,
         name: req.store.name,
@@ -67,10 +71,12 @@ publicRoutes.get('/store', async (req: any, res) => {
         settings: req.store.settings || {},
       });
     } else {
-      res.json(null);
+      console.log('[PublicRoutes.getStore] ❌ Loja NÃO encontrada para host:', hostWithoutPort);
+      // Retornar null para que o frontend mostre "Loja não encontrada"
+      res.status(404).json(null);
     }
   } catch (error: any) {
-    console.error('Erro ao buscar loja:', error);
+    console.error('[PublicRoutes.getStore] ❌ Erro ao buscar loja:', error);
     res.status(500).json({ error: 'Erro ao buscar loja', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
   }
 });
