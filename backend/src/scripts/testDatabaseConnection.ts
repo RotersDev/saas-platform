@@ -48,7 +48,7 @@ async function testConnection() {
 
     // Testar query simples
     console.log('🔄 Testando query...');
-    const [results] = await sequelize.query('SELECT version() as version');
+    await sequelize.query('SELECT version() as version');
     console.log('✅ Query executada com sucesso!');
     console.log('');
 

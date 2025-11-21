@@ -158,16 +158,21 @@ export const resolveTenantPublic = async (
 
     // Primeiro, tentar resolver por header X-Store-Subdomain (para desenvolvimento)
     const subdomainHeader = req.headers['x-store-subdomain'] as string;
+    console.log('[resolveTenantPublic] 📨 Header X-Store-Subdomain:', subdomainHeader || 'não enviado');
+
     if (subdomainHeader) {
       try {
         const store = await Store.findOne({ where: { subdomain: subdomainHeader } });
         if (store) {
+          console.log('[resolveTenantPublic] ✅ Loja encontrada via header:', store.name, '| ID:', store.id);
           (req as any).store = store;
           next();
           return;
+        } else {
+          console.log('[resolveTenantPublic] ⚠️ Loja não encontrada via header para subdomain:', subdomainHeader);
         }
       } catch (error: any) {
-        console.error('Erro ao buscar loja por header:', error);
+        console.error('[resolveTenantPublic] ❌ Erro ao buscar loja por header:', error);
         // Continuar para tentar outros métodos
       }
     }
@@ -207,20 +212,24 @@ export const resolveTenantPublic = async (
 
     if (subdomain && subdomain !== 'www' && subdomain !== 'admin' && subdomain !== 'localhost' && subdomain !== '127' && subdomain !== '127.0.0.1') {
       try {
+        console.log('[resolveTenantPublic] 🔍 Buscando loja no banco com subdomain:', subdomain);
         const store = await Store.findOne({ where: { subdomain } });
         if (store) {
-          console.log('[resolveTenantPublic] ✅ Loja encontrada:', store.name, '| ID:', store.id, '| Subdomain:', store.subdomain);
+          console.log('[resolveTenantPublic] ✅ Loja encontrada via hostname:', store.name, '| ID:', store.id, '| Subdomain:', store.subdomain);
           (req as any).store = store;
           next();
           return;
         } else {
-          console.warn('[resolveTenantPublic] ⚠️ Loja NÃO encontrada para subdomain:', subdomain);
+          console.warn('[resolveTenantPublic] ⚠️ Loja NÃO encontrada no banco para subdomain:', subdomain);
+          // Listar subdomains disponíveis para debug
+          const allStores = await Store.findAll({ attributes: ['id', 'name', 'subdomain'], limit: 10 });
+          console.log('[resolveTenantPublic] 📋 Subdomains disponíveis no banco:', allStores.map(s => s.subdomain).join(', '));
         }
       } catch (error: any) {
         console.error('[resolveTenantPublic] ❌ Erro ao buscar loja por subdomain:', error);
       }
     } else {
-      console.log('[resolveTenantPublic] Subdomain inválido ou ignorado:', subdomain);
+      console.log('[resolveTenantPublic] ⚠️ Subdomain inválido ou ignorado:', subdomain);
     }
 
     // Tentar resolver por domínio customizado

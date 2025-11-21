@@ -62,6 +62,10 @@ api.interceptors.request.use(
 
     if (storeParam && storeParam !== 'admin' && storeParam !== 'store' && storeParam !== 'login' && storeParam !== 'create-store' && !config.headers['X-Store-Subdomain']) {
       config.headers['X-Store-Subdomain'] = storeParam;
+      // Log apenas para rotas públicas de produtos/loja
+      if (config.url?.includes('/api/public/')) {
+        console.log('[Axios] 📤 Enviando header X-Store-Subdomain:', storeParam, '| URL:', config.url);
+      }
     }
 
     return config;
