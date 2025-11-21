@@ -241,7 +241,7 @@ export class CloudflareService {
   /**
    * Verifica o registro CNAME do domínio
    * @param domain - Domínio do cliente (ex: rsxdenuncias.site)
-   * @param expectedTarget - Target esperado do CNAME (ex: soumelhor.nerix.online)
+   * @param expectedTarget - Target esperado do CNAME (ex: host.nerix.online)
    * @returns true se o CNAME está configurado corretamente
    */
   static async verifyDomainCname(domain: string, expectedTarget: string): Promise<boolean> {
@@ -249,43 +249,123 @@ export class CloudflareService {
       const dns = await import('dns').then((m) => m.promises);
 
       logger.info(`🔍 Verificando CNAME para ${domain}...`);
+      logger.info(`🔍 Target esperado: ${expectedTarget}`);
 
-      // Resolver CNAME do domínio
-      const records = await dns.resolveCname(domain);
-
-      logger.info(`📋 Registros CNAME encontrados para ${domain}:`, records);
-
-      // Verificar se algum registro CNAME aponta exatamente para o target esperado
-      const isValid = records.some((record) => {
-        // Remover ponto final se houver (DNS pode retornar com ponto final)
-        const cleanRecord = record.replace(/\.$/, '').trim().toLowerCase();
-        const cleanExpected = expectedTarget.trim().toLowerCase();
-
-        // Verificar se o registro é exatamente igual ao esperado
-        const matches = cleanRecord === cleanExpected;
-
-        if (matches) {
-          logger.info(`✅ CNAME encontrado e correto: ${cleanRecord} === ${cleanExpected}`);
-        } else {
-          logger.warn(`❌ CNAME não corresponde: ${cleanRecord} !== ${cleanExpected}`);
-        }
-
-        return matches;
-      });
-
-      if (isValid) {
-        logger.info(`✅ Domínio ${domain} CNAME verificado! Aponta para ${expectedTarget}`);
-      } else {
-        logger.warn(`❌ Domínio ${domain} CNAME NÃO verificado. Esperado: ${expectedTarget}, Encontrado: ${records.join(', ')}`);
+      // Tentar resolver CNAME primeiro
+      let cnameRecords: string[] = [];
+      try {
+        cnameRecords = await dns.resolveCname(domain);
+        logger.info(`📋 Registros CNAME encontrados para ${domain}:`, JSON.stringify(cnameRecords, null, 2));
+      } catch (cnameError: any) {
+        // Se não tem CNAME, pode ser que esteja com proxy do Cloudflare (retorna A record)
+        logger.info(`ℹ️ Não foi possível resolver CNAME diretamente para ${domain}. Tentando outras formas...`);
+        logger.info(`ℹ️ Erro CNAME: ${cnameError.code} - ${cnameError.message}`);
       }
 
-      return isValid;
+      // Se encontrou CNAME, verificar
+      if (cnameRecords.length > 0) {
+        const isValid = cnameRecords.some((record) => {
+          // Remover ponto final se houver (DNS pode retornar com ponto final)
+          const cleanRecord = record.replace(/\.$/, '').trim().toLowerCase();
+          const cleanExpected = expectedTarget.trim().toLowerCase();
+
+          logger.info(`🔍 Comparando: "${cleanRecord}" === "${cleanExpected}"`);
+
+          // Verificar se o registro é exatamente igual ao esperado
+          const matches = cleanRecord === cleanExpected;
+
+          if (matches) {
+            logger.info(`✅ CNAME encontrado e correto: ${cleanRecord} === ${cleanExpected}`);
+          } else {
+            logger.warn(`❌ CNAME não corresponde: "${cleanRecord}" !== "${cleanExpected}"`);
+          }
+
+          return matches;
+        });
+
+        if (isValid) {
+          logger.info(`✅ Domínio ${domain} CNAME verificado! Aponta para ${expectedTarget}`);
+          return true;
+        }
+      }
+
+      // Se não encontrou CNAME ou não bateu, tentar resolver ANY para ver todos os registros
+      try {
+        logger.info(`🔍 Tentando resolver ANY para ${domain}...`);
+        const anyRecords = await dns.resolveAny(domain);
+        logger.info(`📋 Registros ANY encontrados para ${domain}:`, JSON.stringify(anyRecords, null, 2));
+
+        // Procurar por CNAME nos registros ANY
+        for (const record of anyRecords) {
+          if (record.type === 'CNAME' && 'value' in record) {
+            const cnameValue = (record as any).value;
+            const cleanRecord = cnameValue.replace(/\.$/, '').trim().toLowerCase();
+            const cleanExpected = expectedTarget.trim().toLowerCase();
+
+            logger.info(`🔍 Comparando CNAME de ANY: "${cleanRecord}" === "${cleanExpected}"`);
+
+            if (cleanRecord === cleanExpected) {
+              logger.info(`✅ CNAME encontrado via ANY e correto: ${cleanRecord} === ${cleanExpected}`);
+              return true;
+            }
+          }
+        }
+      } catch (anyError: any) {
+        logger.warn(`ℹ️ Não foi possível resolver ANY para ${domain}: ${anyError.code} - ${anyError.message}`);
+      }
+
+      // Última tentativa: verificar se o domínio resolve para o mesmo destino que o expectedTarget
+      // Isso pode funcionar quando o Cloudflare tem proxy ativado
+      try {
+        logger.info(`🔍 Tentando verificar via resolução do destino...`);
+
+        // Resolver o expectedTarget para ver para onde ele aponta
+        let expectedTargetRecords: string[] = [];
+        try {
+          expectedTargetRecords = await dns.resolveCname(expectedTarget);
+          logger.info(`📋 Registros CNAME do target ${expectedTarget}:`, JSON.stringify(expectedTargetRecords, null, 2));
+        } catch (e) {
+          // Se não tem CNAME, pode ter A record
+          try {
+            const aRecords = await dns.resolve4(expectedTarget);
+            expectedTargetRecords = aRecords;
+            logger.info(`📋 Registros A do target ${expectedTarget}:`, JSON.stringify(aRecords, null, 2));
+          } catch (e2) {
+            logger.warn(`ℹ️ Não foi possível resolver ${expectedTarget}`);
+          }
+        }
+
+        // Resolver o domínio do cliente
+        let domainRecords: string[] = [];
+        try {
+          domainRecords = await dns.resolve4(domain);
+          logger.info(`📋 Registros A do domínio ${domain}:`, JSON.stringify(domainRecords, null, 2));
+        } catch (e) {
+          logger.warn(`ℹ️ Não foi possível resolver A record para ${domain}`);
+        }
+
+        // Se ambos resolveram para os mesmos IPs, provavelmente está correto
+        if (expectedTargetRecords.length > 0 && domainRecords.length > 0) {
+          const hasCommonIP = expectedTargetRecords.some(ip => domainRecords.includes(ip));
+          if (hasCommonIP) {
+            logger.info(`✅ Domínio ${domain} resolve para os mesmos IPs que ${expectedTarget} - CNAME provavelmente está correto (proxy ativado)`);
+            return true;
+          }
+        }
+      } catch (finalError: any) {
+        logger.warn(`ℹ️ Erro na verificação final: ${finalError.message}`);
+      }
+
+      // Se chegou aqui, não encontrou CNAME correto
+      logger.warn(`❌ Domínio ${domain} CNAME NÃO verificado. Esperado: ${expectedTarget}, CNAME encontrados: ${cnameRecords.join(', ') || 'nenhum'}`);
+      return false;
     } catch (error: any) {
       // Se não conseguir resolver, pode ser que ainda não esteja configurado ou DNS não propagou
       if (error.code === 'ENOTFOUND' || error.code === 'ENODATA') {
         logger.warn(`❌ Domínio ${domain} não possui registro CNAME ou não foi encontrado. Erro: ${error.code}`);
       } else {
         logger.error(`❌ Erro ao verificar CNAME para ${domain}:`, error.message);
+        logger.error(`❌ Stack trace:`, error.stack);
       }
       return false;
     }
