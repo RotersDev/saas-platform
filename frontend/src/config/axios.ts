@@ -20,7 +20,7 @@ api.interceptors.request.use(
     // Adicionar subdomain do store se estiver na URL atual
     // 1. Primeiro tentar pegar do hostname (ex: asdad.nerix.online -> asdad)
     const subdomainFromHostname = getSubdomainFromHostname();
-    
+
     // 2. Tentar pegar do path (formato: /{subdomain}/...)
     const pathParts = window.location.pathname.split('/').filter(Boolean);
     const subdomainFromPath = pathParts[0];
