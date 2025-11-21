@@ -175,9 +175,25 @@ function SubdomainShopWrapper() {
   const isBaseDomain = hostname === baseDomain || hostname === `www.${baseDomain}`;
   const isSaasDomain = hostname === saasDomain || hostname === `www.${saasDomain}`;
 
-  // Se há subdomínio conhecido do domínio base (ex: marcos.nerix.online), renderizar ShopLayout
+  // Se há subdomínio conhecido do domínio base (ex: marcos.nerix.online), renderizar ShopLayout com rotas
   if (subdomain) {
-    return <ShopLayout />;
+    return (
+      <Routes>
+        <Route element={<ShopLayout />}>
+          <Route index element={<ShopHome />} />
+          <Route path="product/:slug" element={<ShopProduct />} />
+          <Route path="checkout" element={<ShopCheckout />} />
+          <Route path="payment/:orderId" element={<ShopPayment />} />
+          <Route path="order/:orderId" element={<ShopOrderStatus />} />
+          <Route path="categories" element={<ShopCategories />} />
+          <Route path="terms" element={<ShopTerms />} />
+          <Route path="login" element={<CustomerLogin />} />
+          <Route path="my-orders" element={<MyOrders />} />
+          <Route path="my-orders/:orderId" element={<MyOrderDetails />} />
+          <Route path="*" element={<PageNotFound />} />
+        </Route>
+      </Routes>
+    );
   }
 
   // Se é localhost, domínio base das lojas, ou domínio principal do SaaS, renderizar Landing
