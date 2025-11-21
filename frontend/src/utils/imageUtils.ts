@@ -14,10 +14,11 @@ export function normalizeImageUrl(url: string | null | undefined): string {
   // Remover espaços e quebras de linha
   cleanUrl = cleanUrl.replace(/\s+/g, '');
 
-  // Se a URL contém "r2_public_url=" ou está malformada, tentar extrair a URL correta
-  if (cleanUrl.includes('r2_public_url=') || cleanUrl.includes('r2.dev')) {
-    // Remover prefixo "r2_public_url=" se existir
-    cleanUrl = cleanUrl.replace(/^[^=]*r2_public_url=/, '');
+  // Se a URL contém "r2_public_url=" ou "R2_PUBLIC_URL=" ou está malformada, tentar extrair a URL correta
+  if (cleanUrl.includes('r2_public_url=') || cleanUrl.includes('R2_PUBLIC_URL=') || cleanUrl.includes('r2.dev')) {
+    // Remover qualquer ocorrência de "r2_public_url=" ou "R2_PUBLIC_URL=" (case insensitive)
+    cleanUrl = cleanUrl.replace(/[^=]*[rR]2_[pP]ublic_[uU][rR][lL]=/gi, '');
+    
     // Tentar extrair URL válida (começando com http:// ou https://)
     const urlMatch = cleanUrl.match(/https?:\/\/[^\s"']+/);
     if (urlMatch) {
@@ -31,6 +32,21 @@ export function normalizeImageUrl(url: string | null | undefined): string {
           const baseUrl = r2PublicUrl.endsWith('/') ? r2PublicUrl.slice(0, -1) : r2PublicUrl;
           cleanUrl = `${baseUrl}/${pathMatch[0]}`;
         }
+      }
+    }
+    
+    // Remover duplicações da URL base se existirem
+    const r2PublicUrl = import.meta.env.VITE_R2_PUBLIC_URL || '';
+    if (r2PublicUrl && cleanUrl.includes(r2PublicUrl)) {
+      // Se a URL contém a URL base duplicada, extrair apenas a parte correta
+      const index = cleanUrl.indexOf(r2PublicUrl);
+      if (index > 0) {
+        // Se a URL base não está no início, pegar a partir dela
+        cleanUrl = cleanUrl.substring(index);
+      }
+      // Remover duplicações
+      if (cleanUrl.includes(r2PublicUrl + r2PublicUrl)) {
+        cleanUrl = cleanUrl.replace(r2PublicUrl + r2PublicUrl, r2PublicUrl);
       }
     }
   }

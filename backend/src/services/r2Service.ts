@@ -50,11 +50,24 @@ export async function uploadToR2(options: UploadOptions): Promise<string> {
 
   // Validar variáveis de ambiente
   const bucket = process.env.R2_BUCKET;
-  const publicUrl = process.env.R2_PUBLIC_URL;
+  let publicUrl = process.env.R2_PUBLIC_URL;
 
   if (!bucket || !publicUrl) {
     throw new Error('R2_BUCKET ou R2_PUBLIC_URL não configurados no .env');
   }
+
+  // Limpar a URL pública imediatamente para evitar problemas
+  publicUrl = publicUrl.trim();
+  // Remover @ do início se houver
+  if (publicUrl.startsWith('@')) publicUrl = publicUrl.substring(1);
+  // Remover "r2_public_url=" se estiver no início (caso tenha sido salvo incorretamente)
+  publicUrl = publicUrl.replace(/^r2_public_url=/i, '');
+  // Garantir que começa com http:// ou https://
+  if (!publicUrl.startsWith('http://') && !publicUrl.startsWith('https://')) {
+    publicUrl = `https://${publicUrl}`;
+  }
+  // Remover barra final
+  publicUrl = publicUrl.replace(/\/+$/, '');
 
   let finalBuffer = buffer;
   let finalMimeType = mimeType;
@@ -97,19 +110,11 @@ export async function uploadToR2(options: UploadOptions): Promise<string> {
     const client = getR2Client();
     await client.send(command);
 
-    // Retornar URL pública (garantir que não tenha @ no início e remover espaços)
-    // Remover qualquer prefixo indesejado como "r2_public_url=" ou "@"
-    let cleanPublicUrl = publicUrl.trim().replace(/^@+/, ''); // Remove @ do início e espaços
-    // Remover "r2_public_url=" se estiver no início
-    cleanPublicUrl = cleanPublicUrl.replace(/^r2_public_url=/, '');
-    // Remover "https://" ou "http://" duplicados
-    cleanPublicUrl = cleanPublicUrl.replace(/^(https?:\/\/)+/, 'https://');
-    // Garantir que não termina com /
-    cleanPublicUrl = cleanPublicUrl.replace(/\/+$/, '');
     // Garantir que key não começa com /
     const cleanKey = key.startsWith('/') ? key.substring(1) : key;
-    const url = `${cleanPublicUrl}/${cleanKey}`;
-    // Limpar a URL final antes de retornar
+    // Construir URL final (publicUrl já foi limpo acima)
+    const url = `${publicUrl}/${cleanKey}`;
+    // Limpar a URL final antes de retornar (para garantir que não há problemas)
     const finalUrl = cleanR2Url(url);
     console.log('[R2Service] Upload concluído com sucesso:', finalUrl);
     return finalUrl;
@@ -148,21 +153,66 @@ export async function deleteFromR2(key: string): Promise<void> {
  */
 export function cleanR2Url(url: string | null | undefined): string {
   if (!url || typeof url !== 'string') return '';
-
+  
   let cleanUrl = url.trim();
+  
   // Remover @ do início
   if (cleanUrl.startsWith('@')) cleanUrl = cleanUrl.substring(1);
-  // Remover r2_public_url= se existir
-  cleanUrl = cleanUrl.replace(/^[^=]*r2_public_url=/, '');
+  
+  // Remover qualquer ocorrência de "r2_public_url=" ou "R2_PUBLIC_URL=" (case insensitive)
+  cleanUrl = cleanUrl.replace(/[^=]*[rR]2_[pP]ublic_[uU][rR][lL]=/gi, '');
+  
   // Remover espaços
   cleanUrl = cleanUrl.replace(/\s+/g, '');
+  
+  // Se a URL contém "r2.dev" mas não começa com http, pode estar malformada
+  if (cleanUrl.includes('r2.dev') && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+    // Tentar extrair a URL válida usando regex
+    const urlMatch = cleanUrl.match(/https?:\/\/[^\s"']+/);
+    if (urlMatch) {
+      cleanUrl = urlMatch[0];
+    } else {
+      // Se não encontrar, tentar construir a partir do path
+      const r2PublicUrl = process.env.R2_PUBLIC_URL?.trim().replace(/^@+/, '').replace(/\/+$/, '') || '';
+      if (r2PublicUrl && cleanUrl.includes('stores/')) {
+        const pathMatch = cleanUrl.match(/stores\/[^\s"']+/);
+        if (pathMatch) {
+          cleanUrl = `${r2PublicUrl}/${pathMatch[0]}`;
+        }
+      }
+    }
+  }
+  
   // Garantir que começa com http:// ou https://
   if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
     const r2PublicUrl = process.env.R2_PUBLIC_URL?.trim().replace(/^@+/, '').replace(/\/+$/, '') || '';
     if (r2PublicUrl && cleanUrl.includes('stores/')) {
-      cleanUrl = `${r2PublicUrl}/${cleanUrl}`;
+      const pathMatch = cleanUrl.match(/stores\/[^\s"']+/);
+      if (pathMatch) {
+        cleanUrl = `${r2PublicUrl}/${pathMatch[0]}`;
+      } else {
+        cleanUrl = `${r2PublicUrl}/${cleanUrl}`;
+      }
     }
   }
+  
+  // Remover qualquer duplicação da URL base
+  const r2PublicUrl = process.env.R2_PUBLIC_URL?.trim().replace(/^@+/, '').replace(/\/+$/, '') || '';
+  if (r2PublicUrl && cleanUrl.includes(r2PublicUrl)) {
+    // Se a URL contém a URL base duplicada, extrair apenas a parte correta
+    const index = cleanUrl.indexOf(r2PublicUrl);
+    if (index > 0) {
+      // Se a URL base não está no início, pegar a partir dela
+      cleanUrl = cleanUrl.substring(index);
+    }
+    // Remover duplicações da URL base
+    cleanUrl = cleanUrl.replace(new RegExp(r2PublicUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), r2PublicUrl);
+    // Se ainda tiver duplicação, pegar apenas a primeira ocorrência
+    if (cleanUrl.includes(r2PublicUrl + r2PublicUrl)) {
+      cleanUrl = cleanUrl.replace(r2PublicUrl + r2PublicUrl, r2PublicUrl);
+    }
+  }
+  
   return cleanUrl;
 }
 
