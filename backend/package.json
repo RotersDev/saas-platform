@@ -19,6 +19,7 @@
     "update-role": "tsx src/scripts/updateUserRole.ts",
     "diagnose-store": "tsx src/scripts/diagnoseStore.ts",
     "test-db": "tsx src/scripts/testDatabaseConnection.ts",
+    "add-verify-token-fields": "tsx src/scripts/addVerifyTokenToDomains.ts",
     "test": "jest",
     "lint": "eslint src --ext .ts"
   },

@@ -10,6 +10,8 @@ export interface DomainAttributes {
   ssl_key?: string;
   verified: boolean;
   verified_at?: Date;
+  verify_token?: string;
+  verify_token_expires?: Date;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -24,6 +26,8 @@ export class Domain extends Model<DomainAttributes> implements DomainAttributes 
   public ssl_key?: string;
   public verified!: boolean;
   public verified_at?: Date;
+  public verify_token?: string;
+  public verify_token_expires?: Date;
 
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
@@ -69,6 +73,14 @@ export class Domain extends Model<DomainAttributes> implements DomainAttributes 
           defaultValue: false,
         },
         verified_at: {
+          type: DataTypes.DATE,
+          allowNull: true,
+        },
+        verify_token: {
+          type: DataTypes.STRING(255),
+          allowNull: true,
+        },
+        verify_token_expires: {
           type: DataTypes.DATE,
           allowNull: true,
         },

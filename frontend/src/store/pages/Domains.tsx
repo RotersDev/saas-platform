@@ -120,9 +120,15 @@ export default function DomainsSettings() {
       onSuccess: (data) => {
         queryClient.invalidateQueries('domains');
         if (data.verified) {
-          toast.success('Domínio verificado com sucesso!');
+          toast.success('Domínio verificado com sucesso! TXT e CNAME configurados corretamente.');
         } else {
-          toast.error('Domínio ainda não está configurado corretamente. Verifique o DNS.');
+          let message = 'Domínio ainda não está configurado corretamente.';
+          if (data.txt_verified === false) {
+            message = 'TXT record não encontrado ou incorreto. Configure o registro TXT primeiro.';
+          } else if (data.cname_verified === false) {
+            message = 'TXT verificado, mas CNAME não está configurado corretamente.';
+          }
+          toast.error(message);
         }
       },
       onError: (error: any) => {
@@ -475,6 +481,44 @@ export default function DomainsSettings() {
                               </tr>
                             </thead>
                             <tbody>
+                              {/* TXT Record - PRIMEIRO PASSO */}
+                              <tr className="border-b border-gray-100 bg-yellow-50">
+                                <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900 bg-yellow-100">TXT</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <code className="font-mono text-xs text-gray-900 bg-white px-2 py-1 rounded border border-yellow-300">_cf-custom-hostname.{domain.domain}</code>
+                                    <button
+                                      onClick={() => copyDnsInfo(`_cf-custom-hostname.${domain.domain}`, `txt-name-${domain.id}`)}
+                                      className="text-indigo-600 hover:text-indigo-700"
+                                      title="Copiar nome TXT"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <code className="font-mono text-xs text-gray-900 bg-white px-2 py-1 rounded border border-yellow-300">{domain.verify_token || 'Gerando...'}</code>
+                                    <button
+                                      onClick={() => copyDnsInfo(domain.verify_token || '', `txt-value-${domain.id}`)}
+                                      className="text-indigo-600 hover:text-indigo-700"
+                                      title="Copiar token TXT"
+                                      disabled={!domain.verify_token}
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-gray-600">Auto</td>
+                                <td className="px-4 py-3 text-center">
+                                  {copiedDns === `txt-value-${domain.id}` ? (
+                                    <span className="text-xs text-green-600 font-medium">✓ Copiado!</span>
+                                  ) : (
+                                    <span className="text-xs text-yellow-600 font-medium">1º passo</span>
+                                  )}
+                                </td>
+                              </tr>
+                              {/* CNAME Records - SEGUNDO PASSO */}
                               <tr className="border-b border-gray-100">
                                 <td className="px-4 py-3 font-mono text-xs font-medium text-gray-900 bg-gray-50">CNAME</td>
                                 <td className="px-4 py-3">
@@ -507,7 +551,7 @@ export default function DomainsSettings() {
                                   {copiedDns === `dns-target-${domain.id}` ? (
                                     <span className="text-xs text-green-600 font-medium">✓ Copiado!</span>
                                   ) : (
-                                    <span className="text-xs text-gray-400">-</span>
+                                    <span className="text-xs text-gray-400">2º passo</span>
                                   )}
                                 </td>
                               </tr>
@@ -542,7 +586,7 @@ export default function DomainsSettings() {
                                   {copiedDns === `dns-www-target-${domain.id}` ? (
                                     <span className="text-xs text-green-600 font-medium">✓ Copiado!</span>
                                   ) : (
-                                    <span className="text-xs text-gray-400">-</span>
+                                    <span className="text-xs text-gray-400">2º passo</span>
                                   )}
                                 </td>
                               </tr>
@@ -553,12 +597,26 @@ export default function DomainsSettings() {
                           <p className="text-xs text-blue-800 mb-2">
                             <strong>Instruções importantes:</strong>
                           </p>
-                          <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
-                            <li>O símbolo <code className="bg-blue-100 px-1 rounded">@</code> representa o domínio raiz (exemplo.com). Alguns provedores podem exigir que você deixe o campo "Nome" vazio.</li>
-                            <li>O campo "Conteúdo" ou "Destino" deve conter apenas o domínio sem <code className="bg-blue-100 px-1 rounded">https://</code> ou <code className="bg-blue-100 px-1 rounded">http://</code></li>
-                            <li>Copie apenas o valor mostrado na coluna "Conteúdo/Destino": <strong className="font-mono">{dnsTarget}</strong></li>
-                            <li>Após configurar, aguarde alguns minutos (pode levar até 24 horas) e clique em "Verificar" para validar a configuração.</li>
-                          </ul>
+                          <ol className="text-xs text-blue-800 space-y-2 list-decimal list-inside">
+                            <li>
+                              <strong>Primeiro passo - Configure o registro TXT:</strong>
+                              <ul className="ml-4 mt-1 space-y-1 list-disc">
+                                <li>Crie um registro TXT com o nome: <code className="bg-blue-100 px-1 rounded">_cf-custom-hostname.{domain.domain}</code></li>
+                                <li>O valor deve ser exatamente: <code className="bg-blue-100 px-1 rounded font-mono">{domain.verify_token || 'Aguardando geração...'}</code></li>
+                                <li>Este registro é obrigatório para verificação de propriedade do domínio.</li>
+                              </ul>
+                            </li>
+                            <li>
+                              <strong>Segundo passo - Configure os registros CNAME:</strong>
+                              <ul className="ml-4 mt-1 space-y-1 list-disc">
+                                <li>O símbolo <code className="bg-blue-100 px-1 rounded">@</code> representa o domínio raiz. Alguns provedores podem exigir que você deixe o campo "Nome" vazio.</li>
+                                <li>O campo "Conteúdo" ou "Destino" deve conter apenas: <strong className="font-mono">{dnsTarget}</strong> (sem https:// ou http://)</li>
+                                <li>Configure tanto o registro <code className="bg-blue-100 px-1 rounded">@</code> quanto o <code className="bg-blue-100 px-1 rounded">www</code></li>
+                              </ul>
+                            </li>
+                            <li>Após configurar ambos (TXT e CNAME), aguarde alguns minutos (pode levar até 24 horas) e clique em "Verificar" para validar a configuração.</li>
+                            <li>A verificação só será bem-sucedida quando <strong>ambos</strong> os registros (TXT e CNAME) estiverem configurados corretamente.</li>
+                          </ol>
                         </div>
                       </div>
                     )}

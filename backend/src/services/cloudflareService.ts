@@ -185,44 +185,98 @@ export class CloudflareService {
    * Verifica se um domínio aponta para nosso servidor
    */
   /**
-   * Verifica REALMENTE se o domínio está configurado corretamente
+   * Verifica o registro TXT para verificação de domínio
+   * @param domain - Domínio do cliente (ex: rsxdenuncias.site)
+   * @param expectedToken - Token esperado no TXT record
+   * @returns true se o TXT record contém o token esperado
+   */
+  static async verifyDomainTxt(domain: string, expectedToken: string): Promise<boolean> {
+    const txtRecordName = `_cf-custom-hostname.${domain}`;
+
+    try {
+      const dns = await import('dns').then((m) => m.promises);
+
+      logger.info(`🔍 Verificando TXT record para ${txtRecordName}...`);
+
+      // Resolver TXT record
+      const records = await dns.resolveTxt(txtRecordName);
+
+      // TXT records retornam arrays de strings, então precisamos "achatar" o array
+      const txtValues = records.flat();
+
+      logger.info(`📋 Registros TXT encontrados para ${txtRecordName}:`, txtValues);
+
+      // Verificar se algum registro TXT contém o token esperado
+      const isValid = txtValues.some((record) => {
+        const cleanRecord = record.trim();
+        const matches = cleanRecord === expectedToken;
+
+        if (matches) {
+          logger.info(`✅ TXT record encontrado e correto: ${cleanRecord} === ${expectedToken}`);
+        } else {
+          logger.warn(`❌ TXT record não corresponde: ${cleanRecord} !== ${expectedToken}`);
+        }
+
+        return matches;
+      });
+
+      if (isValid) {
+        logger.info(`✅ Domínio ${domain} TXT record verificado! Token encontrado.`);
+      } else {
+        logger.warn(`❌ Domínio ${domain} TXT record NÃO verificado. Esperado: ${expectedToken}, Encontrado: ${txtValues.join(', ')}`);
+      }
+
+      return isValid;
+    } catch (error: any) {
+      // Se não conseguir resolver, pode ser que ainda não esteja configurado ou DNS não propagou
+      if (error.code === 'ENOTFOUND' || error.code === 'ENODATA') {
+        logger.warn(`❌ TXT record ${txtRecordName} não encontrado. Erro: ${error.code}`);
+      } else {
+        logger.error(`❌ Erro ao verificar TXT record para ${domain}:`, error.message);
+      }
+      return false;
+    }
+  }
+
+  /**
+   * Verifica o registro CNAME do domínio
    * @param domain - Domínio do cliente (ex: rsxdenuncias.site)
    * @param expectedTarget - Target esperado do CNAME (ex: soumelhor.nerix.online)
    * @returns true se o CNAME está configurado corretamente
    */
-  static async verifyDomain(domain: string, expectedTarget: string): Promise<boolean> {
+  static async verifyDomainCname(domain: string, expectedTarget: string): Promise<boolean> {
     try {
       const dns = await import('dns').then((m) => m.promises);
-      
-      logger.info(`🔍 Verificando DNS para ${domain}...`);
-      
+
+      logger.info(`🔍 Verificando CNAME para ${domain}...`);
+
       // Resolver CNAME do domínio
       const records = await dns.resolveCname(domain);
-      
+
       logger.info(`📋 Registros CNAME encontrados para ${domain}:`, records);
-      
+
       // Verificar se algum registro CNAME aponta exatamente para o target esperado
       const isValid = records.some((record) => {
         // Remover ponto final se houver (DNS pode retornar com ponto final)
         const cleanRecord = record.replace(/\.$/, '').toLowerCase();
         const cleanExpected = expectedTarget.toLowerCase();
-        
+
         // Verificar se o registro é exatamente igual ao esperado
         const matches = cleanRecord === cleanExpected;
-        
+
         if (matches) {
           logger.info(`✅ CNAME encontrado e correto: ${cleanRecord} === ${cleanExpected}`);
         } else {
           logger.warn(`❌ CNAME não corresponde: ${cleanRecord} !== ${cleanExpected}`);
         }
-        
+
         return matches;
       });
 
       if (isValid) {
-        logger.info(`✅ Domínio ${domain} está configurado corretamente! CNAME aponta para ${expectedTarget}`);
+        logger.info(`✅ Domínio ${domain} CNAME verificado! Aponta para ${expectedTarget}`);
       } else {
-        logger.warn(`❌ Domínio ${domain} NÃO está configurado corretamente. Esperado: ${expectedTarget}, Encontrado: ${records.join(', ')}`);
+        logger.warn(`❌ Domínio ${domain} CNAME NÃO verificado. Esperado: ${expectedTarget}, Encontrado: ${records.join(', ')}`);
       }
 
       return isValid;
@@ -231,7 +285,7 @@ export class CloudflareService {
       if (error.code === 'ENOTFOUND' || error.code === 'ENODATA') {
         logger.warn(`❌ Domínio ${domain} não possui registro CNAME ou não foi encontrado. Erro: ${error.code}`);
       } else {
-        logger.error(`❌ Erro ao verificar DNS para ${domain}:`, error.message);
+        logger.error(`❌ Erro ao verificar CNAME para ${domain}:`, error.message);
       }
       return false;
     }

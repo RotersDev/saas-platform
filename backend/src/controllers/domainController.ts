@@ -3,6 +3,7 @@ import { Store, Domain } from '../models';
 import { TenantRequest } from '../middleware/tenant';
 import { CloudflareService } from '../services/cloudflareService';
 import logger from '../config/logger';
+import crypto from 'crypto';
 
 export class DomainController {
   /**
@@ -111,6 +112,9 @@ export class DomainController {
         }
       }
 
+      // Gerar token de verificação único
+      const verifyToken = crypto.randomUUID();
+
       // Criar ou atualizar domínio
       const [domainRecord, created] = await Domain.findOrCreate({
         where: {
@@ -123,14 +127,21 @@ export class DomainController {
           is_primary: false,
           ssl_enabled: false,
           verified: false,
+          verify_token: verifyToken,
         },
       });
 
+      // Se não foi criado, atualizar o token de verificação e resetar verified
       if (!created) {
         await domainRecord.update({
           verified: false,
+          verify_token: verifyToken,
         });
+        // Limpar verified_at usando update direto
+        await domainRecord.update({ verified_at: undefined });
       }
+
+      logger.info(`Token de verificação gerado para ${domain}: ${verifyToken}`);
 
       // Se tem token do Cloudflare, criar registro DNS
       if (cloudflare_token && zoneId) {
@@ -160,6 +171,7 @@ export class DomainController {
         success: true,
         message: 'Domínio adicionado com sucesso. Configure o DNS conforme as instruções.',
         domain: domainRecord,
+        verify_token: verifyToken, // Retornar token para o frontend mostrar nas instruções
       });
     } catch (error: any) {
       logger.error('Erro ao adicionar domínio:', error);
@@ -297,33 +309,83 @@ export class DomainController {
         return;
       }
 
+      // Verificar se tem token de verificação
+      if (!domain.verify_token) {
+        // Se não tem token, gerar um novo
+        const verifyToken = crypto.randomUUID();
+        await domain.update({ verify_token: verifyToken });
+        // Recarregar o domínio para ter o token atualizado
+        await domain.reload();
+        logger.info(`Token de verificação gerado para ${domain.domain}: ${verifyToken}`);
+      }
+
+      // Garantir que temos o token
+      if (!domain.verify_token) {
+        res.status(400).json({ error: 'Token de verificação não encontrado. Tente adicionar o domínio novamente.' });
+        return;
+      }
+
       // Calcular o target esperado: subdomain.nerix.online
       const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
       const expectedTarget = `${store.subdomain}.${baseDomain}`;
 
-      logger.info(`Verificando DNS para ${domain.domain}: esperado CNAME -> ${expectedTarget}`);
+      logger.info(`Verificando DNS para ${domain.domain}: TXT -> ${domain.verify_token}, CNAME -> ${expectedTarget}`);
 
-      // Verificar REALMENTE o DNS
-      const isVerified = await CloudflareService.verifyDomain(domain.domain, expectedTarget);
+      // 1. Primeiro verificar TXT record
+      const txtVerified = await CloudflareService.verifyDomainTxt(domain.domain, domain.verify_token);
 
-      if (isVerified) {
-        await domain.update({
-          verified: true,
-          verified_at: new Date(),
-        });
-        logger.info(`✅ Domínio ${domain.domain} verificado com sucesso!`);
-      } else {
-        // Se não está verificado, garantir que o campo está como false
-        await domain.update({
+      if (!txtVerified) {
+        logger.warn(`❌ Domínio ${domain.domain} TXT record não verificado. Esperado: _cf-custom-hostname.${domain.domain} = ${domain.verify_token}`);
+        await domain.update({ verified: false });
+        res.json({
           verified: false,
+          domain: domain.toJSON(),
+          txt_verified: false,
+          cname_verified: false,
+          verify_token: domain.verify_token,
+          expectedTarget,
+          message: 'TXT record não encontrado ou incorreto. Configure o registro TXT primeiro.',
         });
-        logger.warn(`❌ Domínio ${domain.domain} NÃO está configurado corretamente. CNAME deve apontar para ${expectedTarget}`);
+        return;
       }
 
+      logger.info(`✅ TXT record verificado para ${domain.domain}`);
+
+      // 2. Se TXT está correto, verificar CNAME
+      const cnameVerified = await CloudflareService.verifyDomainCname(domain.domain, expectedTarget);
+
+      if (!cnameVerified) {
+        logger.warn(`❌ Domínio ${domain.domain} CNAME não verificado. Esperado: ${domain.domain} -> ${expectedTarget}`);
+        await domain.update({ verified: false });
+        res.json({
+          verified: false,
+          domain: domain.toJSON(),
+          txt_verified: true,
+          cname_verified: false,
+          verify_token: domain.verify_token,
+          expectedTarget,
+          message: 'TXT record verificado, mas CNAME não está configurado corretamente.',
+        });
+        return;
+      }
+
+      logger.info(`✅ CNAME verificado para ${domain.domain}`);
+
+      // 3. Se ambos estão corretos, marcar como verificado
+      await domain.update({
+        verified: true,
+        verified_at: new Date(),
+      });
+
+      logger.info(`✅ Domínio ${domain.domain} totalmente verificado! TXT e CNAME corretos.`);
+
       res.json({
-        verified: isVerified,
+        verified: true,
         domain: domain.toJSON(),
-        expectedTarget, // Retornar o target esperado para debug
+        txt_verified: true,
+        cname_verified: true,
+        verify_token: domain.verify_token,
+        expectedTarget,
       });
     } catch (error: any) {
       logger.error('Erro ao verificar domínio:', error);
