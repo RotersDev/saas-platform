@@ -8,6 +8,196 @@ class EmailService {
     this.initializeTransporter();
   }
 
+  /**
+   * Template base de email (baseado no template de recuperação de senha)
+   */
+  private getEmailTemplate(options: {
+    title: string;
+    subtitle: string;
+    content: string;
+    buttonText?: string;
+    buttonUrl?: string;
+    footerText?: string;
+  }): string {
+    const buttonHtml = options.buttonText && options.buttonUrl ? `
+      <div class="button-container">
+        <a href="${options.buttonUrl}" class="button" style="color: #ffffff !important; text-decoration: none;">${options.buttonText}</a>
+      </div>
+    ` : '';
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              font-family: Arial, Helvetica, sans-serif;
+              line-height: 1.6;
+              color: #000000;
+              background-color: #f5f5f5;
+              padding: 20px;
+            }
+            .container {
+              max-width: 600px;
+              margin: 0 auto;
+              background: #ffffff;
+              border-radius: 0;
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+              background: #2563eb;
+              color: #ffffff;
+              padding: 32px 30px;
+              text-align: center;
+              border-bottom: 3px solid #1e40af;
+            }
+            .header h1 {
+              font-size: 28px;
+              font-weight: bold;
+              margin-bottom: 6px;
+              color: #ffffff;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            .header p {
+              font-size: 15px;
+              font-weight: normal;
+              color: #ffffff;
+              opacity: 0.95;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            .content {
+              background: #ffffff;
+              padding: 35px 30px;
+            }
+            .content p {
+              font-size: 16px;
+              line-height: 1.6;
+              color: #000000;
+              margin-bottom: 18px;
+              font-weight: normal;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            .content p strong {
+              font-weight: bold;
+              color: #000000;
+            }
+            .content h3 {
+              font-size: 18px;
+              font-weight: bold;
+              color: #000000;
+              margin: 20px 0 10px 0;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            .content table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 20px 0;
+            }
+            .content table th {
+              background: #2563eb;
+              color: #ffffff;
+              padding: 12px;
+              text-align: left;
+              font-weight: bold;
+              font-size: 14px;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            .content table td {
+              padding: 10px;
+              border-bottom: 1px solid #e5e7eb;
+              color: #000000;
+              font-size: 14px;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            .content .info-box {
+              background: #f8f9fa;
+              padding: 20px;
+              border-radius: 5px;
+              margin: 20px 0;
+              border-left: 4px solid #2563eb;
+            }
+            .content .keys-box {
+              background: #f8f9fa;
+              padding: 15px;
+              border-radius: 5px;
+              margin: 20px 0;
+            }
+            .content .keys-box p {
+              font-family: monospace;
+              background: #ffffff;
+              padding: 10px;
+              margin: 5px 0;
+              border-radius: 3px;
+              font-size: 14px;
+            }
+            .content .feature {
+              margin: 15px 0;
+              padding: 15px;
+              background: #f8f9fa;
+              border-radius: 5px;
+            }
+            .content .feature strong {
+              display: block;
+              margin-bottom: 5px;
+            }
+            .button-container {
+              text-align: center;
+              margin: 30px 0;
+            }
+            .button {
+              display: inline-block;
+              padding: 14px 35px;
+              background: #2563eb;
+              color: #ffffff !important;
+              text-decoration: none;
+              border-radius: 5px;
+              font-weight: bold;
+              font-size: 16px;
+              font-family: Arial, Helvetica, sans-serif;
+              border: 2px solid #1e40af;
+            }
+            .button:hover {
+              background: #1e40af;
+              border-color: #1e3a8a;
+            }
+            .footer {
+              text-align: center;
+              padding: 25px 30px;
+              background: #f8f9fa;
+              border-top: 2px solid #e5e7eb;
+            }
+            .footer p {
+              margin: 0;
+              color: #000000;
+              font-size: 13px;
+              font-weight: normal;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>${options.title}</h1>
+              <p>${options.subtitle}</p>
+            </div>
+            <div class="content">
+              ${options.content}
+              ${buttonHtml}
+            </div>
+            <div class="footer">
+              <p>${options.footerText || `© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.`}</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
   private initializeTransporter() {
     const emailUser = process.env.EMAIL_USER;
     const emailPass = process.env.EMAIL_PASS;
@@ -70,122 +260,19 @@ class EmailService {
 
     logger.info('Gerando link de reset de senha:', { baseUrl, resetUrl: resetUrl.substring(0, 50) + '...' });
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-              font-family: Arial, Helvetica, sans-serif;
-              line-height: 1.6;
-              color: #000000;
-              background-color: #f5f5f5;
-              padding: 20px;
-            }
-            .container {
-              max-width: 600px;
-              margin: 0 auto;
-              background: #ffffff;
-              border-radius: 0;
-              overflow: hidden;
-              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            }
-            .header {
-              background: #2563eb;
-              color: #ffffff;
-              padding: 32px 30px;
-              text-align: center;
-              border-bottom: 3px solid #1e40af;
-            }
-            .header h1 {
-              font-size: 28px;
-              font-weight: bold;
-              margin-bottom: 6px;
-              color: #ffffff;
-              font-family: Arial, Helvetica, sans-serif;
-            }
-            .header p {
-              font-size: 15px;
-              font-weight: normal;
-              color: #ffffff;
-              opacity: 0.95;
-              font-family: Arial, Helvetica, sans-serif;
-            }
-            .content {
-              background: #ffffff;
-              padding: 35px 30px;
-            }
-            .content p {
-              font-size: 16px;
-              line-height: 1.6;
-              color: #000000;
-              margin-bottom: 18px;
-              font-weight: normal;
-              font-family: Arial, Helvetica, sans-serif;
-            }
-            .content p strong {
-              font-weight: bold;
-              color: #000000;
-            }
-            .button-container {
-              text-align: center;
-              margin: 30px 0;
-            }
-            .button {
-              display: inline-block;
-              padding: 14px 35px;
-              background: #2563eb;
-              color: #ffffff !important;
-              text-decoration: none;
-              border-radius: 5px;
-              font-weight: bold;
-              font-size: 16px;
-              font-family: Arial, Helvetica, sans-serif;
-              border: 2px solid #1e40af;
-            }
-            .button:hover {
-              background: #1e40af;
-              border-color: #1e3a8a;
-            }
-            .footer {
-              text-align: center;
-              padding: 25px 30px;
-              background: #f8f9fa;
-              border-top: 2px solid #e5e7eb;
-            }
-            .footer p {
-              margin: 0;
-              color: #000000;
-              font-size: 13px;
-              font-weight: normal;
-              font-family: Arial, Helvetica, sans-serif;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Nerix</h1>
-              <p>Recuperação de Senha</p>
-            </div>
-            <div class="content">
-              <p>Olá,</p>
-              <p>Recebemos uma solicitação para redefinir a senha da sua conta na plataforma <strong>Nerix</strong>.</p>
-              <p>Clique no botão abaixo para criar uma nova senha:</p>
-              <div class="button-container">
-                <a href="${resetUrl}" class="button" style="color: #ffffff !important; text-decoration: none;">Redefinir Senha</a>
-              </div>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.</p>
-            </div>
-          </div>
-        </body>
-      </html>
+    const content = `
+      <p>Olá,</p>
+      <p>Recebemos uma solicitação para redefinir a senha da sua conta na plataforma <strong>Nerix</strong>.</p>
+      <p>Clique no botão abaixo para criar uma nova senha:</p>
     `;
+
+    const html = this.getEmailTemplate({
+      title: 'Nerix',
+      subtitle: 'Recuperação de Senha',
+      content,
+      buttonText: 'Redefinir Senha',
+      buttonUrl: resetUrl,
+    });
 
     return this.sendEmail({
       to: email,
@@ -205,122 +292,19 @@ class EmailService {
     const baseUrl = isLocalhost ? `https://${saasDomain}` : (appUrl || `https://${saasDomain}`);
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-              font-family: Arial, Helvetica, sans-serif;
-              line-height: 1.6;
-              color: #000000;
-              background-color: #f5f5f5;
-              padding: 20px;
-            }
-            .container {
-              max-width: 600px;
-              margin: 0 auto;
-              background: #ffffff;
-              border-radius: 0;
-              overflow: hidden;
-              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            }
-            .header {
-              background: #2563eb;
-              color: #ffffff;
-              padding: 32px 30px;
-              text-align: center;
-              border-bottom: 3px solid #1e40af;
-            }
-            .header h1 {
-              font-size: 28px;
-              font-weight: bold;
-              margin-bottom: 6px;
-              color: #ffffff;
-              font-family: Arial, Helvetica, sans-serif;
-            }
-            .header p {
-              font-size: 15px;
-              font-weight: normal;
-              color: #ffffff;
-              opacity: 0.95;
-              font-family: Arial, Helvetica, sans-serif;
-            }
-            .content {
-              background: #ffffff;
-              padding: 35px 30px;
-            }
-            .content p {
-              font-size: 16px;
-              line-height: 1.6;
-              color: #000000;
-              margin-bottom: 18px;
-              font-weight: normal;
-              font-family: Arial, Helvetica, sans-serif;
-            }
-            .content p strong {
-              font-weight: bold;
-              color: #000000;
-            }
-            .button-container {
-              text-align: center;
-              margin: 30px 0;
-            }
-            .button {
-              display: inline-block;
-              padding: 14px 35px;
-              background: #2563eb;
-              color: #ffffff !important;
-              text-decoration: none;
-              border-radius: 5px;
-              font-weight: bold;
-              font-size: 16px;
-              font-family: Arial, Helvetica, sans-serif;
-              border: 2px solid #1e40af;
-            }
-            .button:hover {
-              background: #1e40af;
-              border-color: #1e3a8a;
-            }
-            .footer {
-              text-align: center;
-              padding: 25px 30px;
-              background: #f8f9fa;
-              border-top: 2px solid #e5e7eb;
-            }
-            .footer p {
-              margin: 0;
-              color: #000000;
-              font-size: 13px;
-              font-weight: normal;
-              font-family: Arial, Helvetica, sans-serif;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>${storeName}</h1>
-              <p>Recuperação de Senha</p>
-            </div>
-            <div class="content">
-              <p>Olá,</p>
-              <p>Recebemos uma solicitação para redefinir a senha da sua conta na loja <strong>${storeName}</strong>.</p>
-              <p>Clique no botão abaixo para criar uma nova senha:</p>
-              <div class="button-container">
-                <a href="${resetUrl}" class="button" style="color: #ffffff !important; text-decoration: none;">Redefinir Senha</a>
-              </div>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.</p>
-            </div>
-          </div>
-        </body>
-      </html>
+    const content = `
+      <p>Olá,</p>
+      <p>Recebemos uma solicitação para redefinir a senha da sua conta na loja <strong>${storeName}</strong>.</p>
+      <p>Clique no botão abaixo para criar uma nova senha:</p>
     `;
+
+    const html = this.getEmailTemplate({
+      title: storeName,
+      subtitle: 'Recuperação de Senha',
+      content,
+      buttonText: 'Redefinir Senha',
+      buttonUrl: resetUrl,
+    });
 
     return this.sendEmail({
       to: email,
@@ -341,68 +325,44 @@ class EmailService {
 
     const itemsList = order.items?.map((item: any) => `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.product_name}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${new Intl.NumberFormat('pt-BR', {
+        <td>${item.product_name}</td>
+        <td style="text-align: center;">${item.quantity}</td>
+        <td style="text-align: right;">${new Intl.NumberFormat('pt-BR', {
           style: 'currency',
           currency: 'BRL',
         }).format(Number(item.total))}</td>
       </tr>
     `).join('') || '';
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #0070F3 0%, #0051CC 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 12px 30px; background: #0070F3; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th { background: #0070F3; color: white; padding: 10px; text-align: left; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>${storeName}</h1>
-              <p>Pedido Criado com Sucesso!</p>
-            </div>
-            <div class="content">
-              <p>Olá,</p>
-              <p>Seu pedido foi criado com sucesso na loja <strong>${storeName}</strong>.</p>
-              <p><strong>Número do Pedido:</strong> ${order.order_number || order.id}</p>
-              <p><strong>Total:</strong> ${totalFormatted}</p>
-              <h3>Itens do Pedido:</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Produto</th>
-                    <th style="text-align: center;">Quantidade</th>
-                    <th style="text-align: right;">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${itemsList}
-                </tbody>
-              </table>
-              <p style="text-align: center;">
-                <a href="${orderUrl}" class="button">Realizar Pagamento</a>
-              </p>
-              <p>Ou copie e cole este link no seu navegador:</p>
-              <p style="word-break: break-all; color: #0070F3;">${orderUrl}</p>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.</p>
-            </div>
-          </div>
-        </body>
-      </html>
+    const content = `
+      <p>Olá,</p>
+      <p>Seu pedido foi criado com sucesso na loja <strong>${storeName}</strong>.</p>
+      <p><strong>Número do Pedido:</strong> ${order.order_number || order.id}</p>
+      <p><strong>Total:</strong> ${totalFormatted}</p>
+      <h3>Itens do Pedido:</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th style="text-align: center;">Quantidade</th>
+            <th style="text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsList}
+        </tbody>
+      </table>
+      <p>Ou copie e cole este link no seu navegador:</p>
+      <p style="word-break: break-all; color: #2563eb;">${orderUrl}</p>
     `;
+
+    const html = this.getEmailTemplate({
+      title: storeName,
+      subtitle: 'Pedido Criado com Sucesso!',
+      content,
+      buttonText: 'Realizar Pagamento',
+      buttonUrl: orderUrl,
+    });
 
     return this.sendEmail({
       to: customerEmail,
@@ -423,48 +383,26 @@ class EmailService {
 
     const keysHtml = productKeys && productKeys.length > 0 ? `
       <h3>Chaves dos Produtos:</h3>
-      <div style="background: #fff; padding: 15px; border-radius: 5px; margin: 20px 0;">
-        ${productKeys.map(key => `<p style="font-family: monospace; background: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 3px;">${key}</p>`).join('')}
+      <div class="keys-box">
+        ${productKeys.map(key => `<p>${key}</p>`).join('')}
       </div>
     ` : '';
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 12px 30px; background: #10B981; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>${storeName}</h1>
-              <p>✅ Pagamento Aprovado!</p>
-            </div>
-            <div class="content">
-              <p>Olá,</p>
-              <p>Ótimas notícias! O pagamento do seu pedido foi aprovado.</p>
-              <p><strong>Número do Pedido:</strong> ${order.order_number || order.id}</p>
-              <p><strong>Total Pago:</strong> ${totalFormatted}</p>
-              ${keysHtml}
-              <p style="text-align: center;">
-                <a href="${orderUrl}" class="button">Ver Detalhes do Pedido</a>
-              </p>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.</p>
-            </div>
-          </div>
-        </body>
-      </html>
+    const content = `
+      <p>Olá,</p>
+      <p>Ótimas notícias! O pagamento do seu pedido foi aprovado.</p>
+      <p><strong>Número do Pedido:</strong> ${order.order_number || order.id}</p>
+      <p><strong>Total Pago:</strong> ${totalFormatted}</p>
+      ${keysHtml}
     `;
+
+    const html = this.getEmailTemplate({
+      title: storeName,
+      subtitle: '✅ Pagamento Aprovado!',
+      content,
+      buttonText: 'Ver Detalhes do Pedido',
+      buttonUrl: orderUrl,
+    });
 
     return this.sendEmail({
       to: customerEmail,
@@ -480,61 +418,38 @@ class EmailService {
     const storeUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/${subdomain}`;
     const adminUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/store`;
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #0070F3 0%, #0051CC 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 12px 30px; background: #0070F3; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-            .feature { margin: 15px 0; padding: 15px; background: white; border-radius: 5px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Bem-vindo à Nerix!</h1>
-              <p>Sua loja foi criada com sucesso</p>
-            </div>
-            <div class="content">
-              <p>Olá,</p>
-              <p>Parabéns! Sua loja <strong>${storeName}</strong> foi criada com sucesso na plataforma Nerix.</p>
-              <p><strong>URL da sua loja:</strong> <a href="${storeUrl}">${storeUrl}</a></p>
-              <p><strong>Painel administrativo:</strong> <a href="${adminUrl}">${adminUrl}</a></p>
-              <h3>Próximos passos:</h3>
-              <div class="feature">
-                <strong>1. Personalize sua loja</strong><br>
-                Acesse o painel administrativo e configure cores, logo e favicon.
-              </div>
-              <div class="feature">
-                <strong>2. Adicione produtos</strong><br>
-                Comece a adicionar seus produtos digitais e configure o estoque.
-              </div>
-              <div class="feature">
-                <strong>3. Configure pagamentos</strong><br>
-                Configure seus métodos de pagamento (PIX, Mercado Pago, Pushin Pay).
-              </div>
-              <div class="feature">
-                <strong>4. Comece a vender</strong><br>
-                Sua loja está pronta! Compartilhe o link e comece a receber pedidos.
-              </div>
-              <p style="text-align: center;">
-                <a href="${adminUrl}" class="button">Acessar Painel Administrativo</a>
-              </p>
-              <p>Se tiver alguma dúvida, nossa equipe está pronta para ajudar!</p>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.</p>
-            </div>
-          </div>
-        </body>
-      </html>
+    const content = `
+      <p>Olá,</p>
+      <p>Parabéns! Sua loja <strong>${storeName}</strong> foi criada com sucesso na plataforma Nerix.</p>
+      <p><strong>URL da sua loja:</strong> <a href="${storeUrl}" style="color: #2563eb;">${storeUrl}</a></p>
+      <p><strong>Painel administrativo:</strong> <a href="${adminUrl}" style="color: #2563eb;">${adminUrl}</a></p>
+      <h3>Próximos passos:</h3>
+      <div class="feature">
+        <strong>1. Personalize sua loja</strong><br>
+        Acesse o painel administrativo e configure cores, logo e favicon.
+      </div>
+      <div class="feature">
+        <strong>2. Adicione produtos</strong><br>
+        Comece a adicionar seus produtos digitais e configure o estoque.
+      </div>
+      <div class="feature">
+        <strong>3. Configure pagamentos</strong><br>
+        Configure seus métodos de pagamento (PIX, Mercado Pago, Pushin Pay).
+      </div>
+      <div class="feature">
+        <strong>4. Comece a vender</strong><br>
+        Sua loja está pronta! Compartilhe o link e comece a receber pedidos.
+      </div>
+      <p>Se tiver alguma dúvida, nossa equipe está pronta para ajudar!</p>
     `;
+
+    const html = this.getEmailTemplate({
+      title: 'Bem-vindo à Nerix!',
+      subtitle: 'Sua loja foi criada com sucesso',
+      content,
+      buttonText: 'Acessar Painel Administrativo',
+      buttonUrl: adminUrl,
+    });
 
     return this.sendEmail({
       to: ownerEmail,
@@ -557,43 +472,23 @@ class EmailService {
       currency: 'BRL',
     }).format(amount);
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10B981; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>✅ Saque Aprovado!</h1>
-            </div>
-            <div class="content">
-              <p>Olá, <strong>${fullName}</strong>,</p>
-              <p>Ótimas notícias! Seu saque foi aprovado e está sendo processado.</p>
-              <div class="info-box">
-                <p><strong>ID do Saque:</strong> ${withdrawalId}</p>
-                <p><strong>Valor:</strong> ${amountFormatted}</p>
-                <p><strong>Prazo de entrega:</strong> 1 a 3 dias úteis</p>
-              </div>
-              <p>O valor será transferido para a chave PIX informada no prazo de 1 a 3 dias úteis.</p>
-              <p>Se tiver alguma dúvida, entre em contato conosco.</p>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.</p>
-            </div>
-          </div>
-        </body>
-      </html>
+    const content = `
+      <p>Olá, <strong>${fullName}</strong>,</p>
+      <p>Ótimas notícias! Seu saque foi aprovado e está sendo processado.</p>
+      <div class="info-box">
+        <p><strong>ID do Saque:</strong> ${withdrawalId}</p>
+        <p><strong>Valor:</strong> ${amountFormatted}</p>
+        <p><strong>Prazo de entrega:</strong> 1 a 3 dias úteis</p>
+      </div>
+      <p>O valor será transferido para a chave PIX informada no prazo de 1 a 3 dias úteis.</p>
+      <p>Se tiver alguma dúvida, entre em contato conosco.</p>
     `;
+
+    const html = this.getEmailTemplate({
+      title: 'Nerix',
+      subtitle: '✅ Saque Aprovado!',
+      content,
+    });
 
     return this.sendEmail({
       to: email,
@@ -617,47 +512,26 @@ class EmailService {
       currency: 'BRL',
     }).format(amount);
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #EF4444; }
-            .reason-box { background: #FEE2E2; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #FECACA; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>❌ Saque Cancelado</h1>
-            </div>
-            <div class="content">
-              <p>Olá, <strong>${fullName}</strong>,</p>
-              <p>Infelizmente, seu saque foi cancelado.</p>
-              <div class="info-box">
-                <p><strong>ID do Saque:</strong> ${withdrawalId}</p>
-                <p><strong>Valor:</strong> ${amountFormatted}</p>
-              </div>
-              <div class="reason-box">
-                <p><strong>Motivo do cancelamento:</strong></p>
-                <p>${reason}</p>
-              </div>
-              <p>O valor foi devolvido para o saldo disponível da sua carteira.</p>
-              <p>Se tiver alguma dúvida ou quiser solicitar um novo saque, entre em contato conosco.</p>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Nerix. Todos os direitos reservados.</p>
-            </div>
-          </div>
-        </body>
-      </html>
+    const content = `
+      <p>Olá, <strong>${fullName}</strong>,</p>
+      <p>Infelizmente, seu saque foi cancelado.</p>
+      <div class="info-box">
+        <p><strong>ID do Saque:</strong> ${withdrawalId}</p>
+        <p><strong>Valor:</strong> ${amountFormatted}</p>
+      </div>
+      <div class="info-box" style="border-left-color: #EF4444; background: #FEE2E2;">
+        <p><strong>Motivo do cancelamento:</strong></p>
+        <p>${reason}</p>
+      </div>
+      <p>O valor foi devolvido para o saldo disponível da sua carteira.</p>
+      <p>Se tiver alguma dúvida ou quiser solicitar um novo saque, entre em contato conosco.</p>
     `;
+
+    const html = this.getEmailTemplate({
+      title: 'Nerix',
+      subtitle: '❌ Saque Cancelado',
+      content,
+    });
 
     return this.sendEmail({
       to: email,

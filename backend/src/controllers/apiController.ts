@@ -233,17 +233,14 @@ export class ApiController {
         return;
       }
 
-      const { Op } = require('sequelize');
       const orderIdentifier = decodeURIComponent(req.params.id);
 
-      // Tentar buscar por order_number primeiro, depois por ID numérico
+      // SEGURANÇA: Apenas buscar por order_number (não permitir ID numérico sequencial)
+      // Isso previne enumeração de pedidos
       const order = await Order.findOne({
         where: {
           store_id: req.store.id,
-          [Op.or]: [
-            { order_number: orderIdentifier },
-            { id: isNaN(Number(orderIdentifier)) ? -1 : Number(orderIdentifier) },
-          ],
+          order_number: orderIdentifier, // Apenas order_number, não ID numérico
         },
         include: [
           { association: 'items' },
@@ -259,8 +256,31 @@ export class ApiController {
         return;
       }
 
+      // SEGURANÇA: Validação opcional de email para acessar pedidos
+      // Se email for fornecido, verificar se corresponde ao pedido
+      const providedEmail = req.query.email as string;
+      if (providedEmail && providedEmail.trim()) {
+        if (order.customer_email.toLowerCase() !== providedEmail.toLowerCase().trim()) {
+          res.status(403).json({ error: 'Acesso negado. Email não corresponde ao pedido.' });
+          return;
+        }
+      }
+
       // Formatar resposta para incluir dados do pagamento
       const orderData = order.toJSON() as any;
+
+      // SEGURANÇA: Não expor chaves/licenças se o pedido não estiver entregue
+      // Remover product_key dos items se status não for 'delivered'
+      if (orderData.items && orderData.items.length > 0) {
+        if (order.status !== 'delivered') {
+          // Remover chaves de produtos não entregues
+          orderData.items = orderData.items.map((item: any) => {
+            const { product_key, ...itemWithoutKey } = item;
+            return itemWithoutKey;
+          });
+        }
+      }
+
       if (orderData.payment) {
         // Manter todos os campos do pagamento para compatibilidade
         orderData.payment = {
@@ -286,17 +306,13 @@ export class ApiController {
         return;
       }
 
-      const { Op } = require('sequelize');
       const orderIdentifier = decodeURIComponent(req.params.id);
 
-      // Tentar buscar por order_number primeiro, depois por ID numérico
+      // SEGURANÇA: Apenas buscar por order_number (não permitir ID numérico sequencial)
       const order = await Order.findOne({
         where: {
           store_id: req.store.id,
-          [Op.or]: [
-            { order_number: orderIdentifier },
-            { id: isNaN(Number(orderIdentifier)) ? -1 : Number(orderIdentifier) },
-          ],
+          order_number: orderIdentifier, // Apenas order_number, não ID numérico
         },
         include: [{ association: 'payment' }],
       });

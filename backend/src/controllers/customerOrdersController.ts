@@ -50,18 +50,14 @@ export class CustomerOrdersController {
         return;
       }
 
-      const { Op } = require('sequelize');
       const orderIdentifier = decodeURIComponent(req.params.id);
 
-      // Buscar pedido por order_number ou ID
+      // SEGURANÇA: Apenas buscar por order_number (não permitir ID numérico sequencial)
       const order = await Order.findOne({
         where: {
           store_id: req.store.id,
           customer_id: req.customer.id,
-          [Op.or]: [
-            { order_number: orderIdentifier },
-            { id: isNaN(Number(orderIdentifier)) ? -1 : Number(orderIdentifier) },
-          ],
+          order_number: orderIdentifier, // Apenas order_number, não ID numérico
         },
         include: [
           { association: 'items' },
