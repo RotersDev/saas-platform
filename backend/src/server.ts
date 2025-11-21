@@ -42,14 +42,14 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   // Usar função customizada para obter IP real do header X-Forwarded-For
-  keyGenerator: (req) => {
+  keyGenerator: (req): string => {
     // Pegar IP real do header X-Forwarded-For (primeiro IP da lista)
     const forwardedFor = req.headers['x-forwarded-for'];
     if (forwardedFor) {
       const ips = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor.split(',')[0].trim();
-      return ips || req.ip;
+      return ips || req.ip || req.socket?.remoteAddress || 'unknown';
     }
-    return req.ip || req.socket.remoteAddress || 'unknown';
+    return req.ip || req.socket?.remoteAddress || 'unknown';
   },
   skip: (req) => {
     // Pular rate limiting para requisições locais em desenvolvimento
