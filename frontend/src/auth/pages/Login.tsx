@@ -19,14 +19,14 @@ export default function Login() {
       await login(email, password);
       const user = useAuthStore.getState().user;
 
-      // Redirecionar para o domínio base se estiver em domínio customizado
-      const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
-      if (window.location.hostname !== baseDomain && !window.location.hostname.includes('localhost')) {
+      // Redirecionar para o domínio principal do SaaS se estiver em domínio customizado
+      const saasDomain = import.meta.env.VITE_SAAS_DOMAIN || 'xenaparcerias.online';
+      if (window.location.hostname !== saasDomain && !window.location.hostname.includes('localhost')) {
         // Redirecionar baseado no tipo de usuário
         if (user?.store_id) {
-          window.location.href = `https://${baseDomain}/store`;
+          window.location.href = `https://${saasDomain}/store`;
         } else {
-          window.location.href = `https://${baseDomain}/create-store`;
+          window.location.href = `https://${saasDomain}/create-store`;
         }
         return;
       }

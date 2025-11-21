@@ -59,11 +59,11 @@ export default function CreateStore() {
 
       toast.success('Loja criada com sucesso!');
 
-      // Redirecionar para o domínio base se estiver em domínio customizado
-      const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
-      if (window.location.hostname !== baseDomain && !window.location.hostname.includes('localhost')) {
+      // Redirecionar para o domínio principal do SaaS se estiver em domínio customizado
+      const saasDomain = import.meta.env.VITE_SAAS_DOMAIN || 'xenaparcerias.online';
+      if (window.location.hostname !== saasDomain && !window.location.hostname.includes('localhost')) {
         setTimeout(() => {
-          window.location.href = `https://${baseDomain}/store`;
+          window.location.href = `https://${saasDomain}/store`;
         }, 300);
         return;
       }

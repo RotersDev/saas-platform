@@ -152,10 +152,10 @@ function ShopLayoutWithLandingFallback() {
 
   // Se não está carregando e não encontrou loja, redirecionar para Landing
   if (!isLoading && !storeInfo) {
-    // Redirecionar para o domínio base
-    const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
-    if (typeof window !== 'undefined' && window.location.hostname !== baseDomain) {
-      window.location.href = `https://${baseDomain}/`;
+    // Redirecionar para o domínio principal do SaaS
+    const saasDomain = import.meta.env.VITE_SAAS_DOMAIN || 'xenaparcerias.online';
+    if (typeof window !== 'undefined' && window.location.hostname !== saasDomain) {
+      window.location.href = `https://${saasDomain}/`;
       return null;
     }
     return <Landing />;
@@ -170,20 +170,22 @@ function SubdomainShopWrapper() {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   const subdomain = getSubdomainFromHostname();
   const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
+  const saasDomain = import.meta.env.VITE_SAAS_DOMAIN || 'xenaparcerias.online';
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost');
   const isBaseDomain = hostname === baseDomain || hostname === `www.${baseDomain}`;
+  const isSaasDomain = hostname === saasDomain || hostname === `www.${saasDomain}`;
 
   // Se há subdomínio conhecido do domínio base (ex: marcos.nerix.online), renderizar ShopLayout
   if (subdomain) {
     return <ShopLayout />;
   }
 
-  // Se é localhost ou domínio base, renderizar Landing
-  if (isLocalhost || isBaseDomain) {
+  // Se é localhost, domínio base das lojas, ou domínio principal do SaaS, renderizar Landing
+  if (isLocalhost || isBaseDomain || isSaasDomain) {
     return <Landing />;
   }
 
-  // Se não é subdomínio conhecido nem domínio base, pode ser domínio customizado
+  // Se não é subdomínio conhecido nem domínio base, pode ser domínio customizado de loja
   // Tentar carregar loja e redirecionar para Landing se não encontrar
   return <ShopLayoutWithLandingFallback />;
 }
