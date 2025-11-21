@@ -47,7 +47,7 @@ export function normalizeImageUrl(url: string | null | undefined): string {
     return cleanUrl;
   }
 
-  // Se não começa com http e temos R2_PUBLIC_URL, construir URL completa
+  // Se não começa com http e temos R2_PUBLIC_URL (opcional), construir URL completa
   const r2PublicUrl = import.meta.env.VITE_R2_PUBLIC_URL || '';
   if (r2PublicUrl && !cleanUrl.startsWith('http')) {
     // Remover barra inicial se houver

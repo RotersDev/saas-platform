@@ -24,6 +24,8 @@ export default function Footer({ storeInfo, theme }: FooterProps) {
   // Priorizar subdomain do path, depois query param (fallback)
   const storeSubdomain = storeSubdomainParam || searchParams.get('store');
 
+  console.log('[Footer] 🦶 Renderizando Footer:', { storeInfo: storeInfo?.name, theme: !!theme, storeSubdomain });
+
   return (
     <footer className="text-gray-800 mt-16 relative border-t border-gray-300 bg-white/80 backdrop-blur-sm">
       {/* Background com degradê de baixo para cima e bolinhas azuis destacadas - combinando com a página */}
