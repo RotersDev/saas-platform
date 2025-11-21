@@ -78,6 +78,18 @@ export default function Landing() {
       // Limpar os dados do formulário
       setLoginData({ email: '', password: '' });
 
+      // Redirecionar para o domínio base se estiver em domínio customizado
+      const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
+      if (window.location.hostname !== baseDomain && !window.location.hostname.includes('localhost')) {
+        // Redirecionar baseado no tipo de usuário
+        if (currentUser?.store_id) {
+          window.location.href = `https://${baseDomain}/store`;
+        } else {
+          window.location.href = `https://${baseDomain}/create-store`;
+        }
+        return;
+      }
+
       // Redirecionar baseado no tipo de usuário
       // NÃO redirecionar master_admin para /admin automaticamente
       // O acesso ao /admin deve ser manual (digitando a URL)
@@ -104,6 +116,14 @@ export default function Landing() {
       await register(registerData.username, registerData.email, registerData.password);
       toast.success('Conta criada com sucesso!');
       setShowRegister(false);
+
+      // Redirecionar para o domínio base se estiver em domínio customizado
+      const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
+      if (window.location.hostname !== baseDomain && !window.location.hostname.includes('localhost')) {
+        window.location.href = `https://${baseDomain}/create-store`;
+        return;
+      }
+
       navigate('/create-store');
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Erro ao criar conta');

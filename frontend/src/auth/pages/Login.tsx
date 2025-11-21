@@ -19,6 +19,18 @@ export default function Login() {
       await login(email, password);
       const user = useAuthStore.getState().user;
 
+      // Redirecionar para o domínio base se estiver em domínio customizado
+      const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
+      if (window.location.hostname !== baseDomain && !window.location.hostname.includes('localhost')) {
+        // Redirecionar baseado no tipo de usuário
+        if (user?.store_id) {
+          window.location.href = `https://${baseDomain}/store`;
+        } else {
+          window.location.href = `https://${baseDomain}/create-store`;
+        }
+        return;
+      }
+
       // NÃO redirecionar master_admin para /admin automaticamente
       // O acesso ao /admin deve ser manual (digitando a URL)
       if (user?.store_id) {

@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
 import { getSubdomainFromHostname } from './utils/urlUtils';
+import api from './config/axios';
 
 // Admin Master
 import AdminLayout from './admin/layouts/AdminLayout';
@@ -130,29 +131,61 @@ function ProtectedRoute({ children, requiredRole }: { children: JSX.Element; req
   return children;
 }
 
-// Componente que detecta subdomínio no hostname e renderiza ShopLayout
+// Componente que tenta carregar loja e redireciona para Landing se não encontrar
+function ShopLayoutWithLandingFallback() {
+  const { data: storeInfo, isLoading } = useQuery(
+    ['shopStoreCheck', typeof window !== 'undefined' ? window.location.hostname : ''],
+    async () => {
+      try {
+        const response = await api.get('/api/public/store');
+        return response.data;
+      } catch (error: any) {
+        return null;
+      }
+    },
+    {
+      staleTime: Infinity,
+      enabled: true,
+      retry: false,
+    }
+  );
+
+  // Se não está carregando e não encontrou loja, redirecionar para Landing
+  if (!isLoading && !storeInfo) {
+    // Redirecionar para o domínio base
+    const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
+    if (typeof window !== 'undefined' && window.location.hostname !== baseDomain) {
+      window.location.href = `https://${baseDomain}/`;
+      return null;
+    }
+    return <Landing />;
+  }
+
+  // Se encontrou loja ou ainda está carregando, renderizar ShopLayout
+  return <ShopLayout />;
+}
+
+// Componente que detecta subdomínio no hostname e renderiza ShopLayout ou Landing
 function SubdomainShopWrapper() {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   const subdomain = getSubdomainFromHostname();
-
-  // Se há subdomínio conhecido no hostname, renderizar ShopLayout
-  if (subdomain) {
-    return <ShopLayout />;
-  }
-
-  // Se o hostname não é localhost e não é o domínio base, pode ser um domínio customizado
-  // Nesse caso, tentar renderizar ShopLayout e deixar o backend decidir
   const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost');
   const isBaseDomain = hostname === baseDomain || hostname === `www.${baseDomain}`;
 
-  // Se não é localhost nem domínio base, pode ser domínio customizado - tentar ShopLayout
-  if (!isLocalhost && !isBaseDomain) {
+  // Se há subdomínio conhecido do domínio base (ex: marcos.nerix.online), renderizar ShopLayout
+  if (subdomain) {
     return <ShopLayout />;
   }
 
-  // Caso contrário (localhost ou domínio base), renderizar Landing
-  return <Landing />;
+  // Se é localhost ou domínio base, renderizar Landing
+  if (isLocalhost || isBaseDomain) {
+    return <Landing />;
+  }
+
+  // Se não é subdomínio conhecido nem domínio base, pode ser domínio customizado
+  // Tentar carregar loja e redirecionar para Landing se não encontrar
+  return <ShopLayoutWithLandingFallback />;
 }
 
 function App() {

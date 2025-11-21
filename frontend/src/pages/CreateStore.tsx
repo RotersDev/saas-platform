@@ -59,6 +59,15 @@ export default function CreateStore() {
 
       toast.success('Loja criada com sucesso!');
 
+      // Redirecionar para o domínio base se estiver em domínio customizado
+      const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
+      if (window.location.hostname !== baseDomain && !window.location.hostname.includes('localhost')) {
+        setTimeout(() => {
+          window.location.href = `https://${baseDomain}/store`;
+        }, 300);
+        return;
+      }
+
       // Aguardar um pouco antes de navegar para garantir que tudo foi salvo
       setTimeout(() => {
         navigate('/store');
