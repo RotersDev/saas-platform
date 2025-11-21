@@ -174,15 +174,53 @@ export const resolveTenantPublic = async (
 
     // Tentar resolver por subdomain do host
     const host = req.headers.host || '';
-    const subdomain = host.split('.')[0];
+    // Remover porta se houver (ex: marcos.nerix.online:443 -> marcos.nerix.online)
+    const hostWithoutPort = host.split(':')[0];
 
-    if (subdomain && subdomain !== 'www' && subdomain !== 'admin' && subdomain !== 'localhost' && subdomain !== '127') {
-      const store = await Store.findOne({ where: { subdomain } });
-      if (store) {
-        (req as any).store = store;
-        next();
-        return;
+    // Extrair subdomínio: marcos.nerix.online -> marcos
+    const hostParts = hostWithoutPort.split('.');
+    let subdomain: string | null = null;
+
+    // Se tem mais de 2 partes (ex: marcos.nerix.online), pegar a primeira parte como subdomínio
+    if (hostParts.length > 2) {
+      subdomain = hostParts[0];
+    } else if (hostParts.length === 2) {
+      // Se tem 2 partes, verificar se é subdomain.domain
+      const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
+      // Se o host termina com o domínio base, a primeira parte é o subdomínio
+      if (hostWithoutPort.endsWith(`.${baseDomain}`) || hostWithoutPort === baseDomain) {
+        // Se for exatamente o domínio base, não há subdomínio
+        if (hostWithoutPort !== baseDomain) {
+          subdomain = hostParts[0];
+        }
+      } else {
+        // Pode ser um domínio customizado ou subdomain curto
+        subdomain = hostParts[0];
       }
+    } else if (hostParts.length === 1 && hostParts[0] !== 'localhost' && hostParts[0] !== '127.0.0.1' && !hostParts[0].match(/^\d+\.\d+\.\d+\.\d+$/)) {
+      // Se tem apenas 1 parte e não é localhost ou IP, pode ser subdomínio direto
+      subdomain = hostParts[0];
+    }
+
+    // Log para debug (sempre logar para identificar problemas)
+    console.log('[resolveTenantPublic] Host:', host, '| Host sem porta:', hostWithoutPort, '| Subdomain extraído:', subdomain);
+
+    if (subdomain && subdomain !== 'www' && subdomain !== 'admin' && subdomain !== 'localhost' && subdomain !== '127' && subdomain !== '127.0.0.1') {
+      try {
+        const store = await Store.findOne({ where: { subdomain } });
+        if (store) {
+          console.log('[resolveTenantPublic] ✅ Loja encontrada:', store.name, '| ID:', store.id, '| Subdomain:', store.subdomain);
+          (req as any).store = store;
+          next();
+          return;
+        } else {
+          console.warn('[resolveTenantPublic] ⚠️ Loja NÃO encontrada para subdomain:', subdomain);
+        }
+      } catch (error: any) {
+        console.error('[resolveTenantPublic] ❌ Erro ao buscar loja por subdomain:', error);
+      }
+    } else {
+      console.log('[resolveTenantPublic] Subdomain inválido ou ignorado:', subdomain);
     }
 
     // Tentar resolver por domínio customizado

@@ -6,7 +6,14 @@ import { OrderService } from '../services/orderService';
 export class ApiController {
   static async listProducts(req: any, res: Response): Promise<void> {
     try {
+      // Log para debug
+      if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production') {
+        console.log('[ApiController.listProducts] Host:', req.headers.host);
+        console.log('[ApiController.listProducts] Store encontrada:', req.store ? `Sim - ${req.store.name} (ID: ${req.store.id})` : 'Não');
+      }
+
       if (!req.store) {
+        console.warn('[ApiController.listProducts] Loja não encontrada - retornando array vazio');
         res.json([]);
         return;
       }
@@ -22,6 +29,11 @@ export class ApiController {
 
       const { category_id, category_slug } = req.query;
       const where: any = { store_id: req.store.id, is_active: true };
+
+      // Log para debug
+      if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production') {
+        console.log('[ApiController.listProducts] Buscando produtos para store_id:', req.store.id);
+      }
 
       if (category_slug) {
         // Buscar categoria por slug
@@ -46,6 +58,17 @@ export class ApiController {
         include: [{ association: 'categoryData', required: false }],
         order: [['created_at', 'DESC']],
       });
+
+      // Log para debug
+      console.log('[ApiController.listProducts] ✅ Produtos encontrados:', products.length, '| Store ID:', req.store.id, '| Store Name:', req.store.name);
+
+      if (products.length === 0) {
+        console.warn('[ApiController.listProducts] ⚠️ Nenhum produto encontrado para a loja. Verificando produtos no banco...');
+        // Verificar se há produtos no banco (mesmo inativos) para debug
+        const allProducts = await Product.count({ where: { store_id: req.store.id } });
+        const activeProducts = await Product.count({ where: { store_id: req.store.id, is_active: true } });
+        console.log('[ApiController.listProducts] Total de produtos no banco:', allProducts, '| Produtos ativos:', activeProducts);
+      }
 
       res.json(products);
     } catch (error) {

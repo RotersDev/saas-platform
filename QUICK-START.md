@@ -83,24 +83,116 @@ Acesse: `http://72.61.56.208`
 
 ## 🏠 Desenvolvimento Local
 
+### 1. Iniciar PostgreSQL com Docker
+
 ```bash
-# Instalar dependências
-cd backend && npm install
-cd ../frontend && npm install
-
-# Configurar .env
-cd backend
-cp env.example .env
-# Edite o .env
-
-# Iniciar PostgreSQL (Docker)
+# Na raiz do projeto
 docker-compose up -d postgres
-
-# Rodar em dev
-npm run dev  # Na raiz do projeto
 ```
 
-Acesse: `http://localhost:5173`
+Isso inicia o PostgreSQL na porta 5432 com:
+
+- **Usuário:** `postgres`
+- **Senha:** `postgres`
+- **Database:** `saas_platform`
+
+### 2. Configurar variáveis de ambiente
+
+```bash
+cd backend
+# Crie um arquivo .env (se não existir)
+```
+
+**Arquivo `.env` para desenvolvimento local:**
+
+```env
+NODE_ENV=development
+PORT=3000
+APP_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5173
+
+# Banco de dados (Docker)
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=saas_platform
+
+# JWT
+JWT_SECRET=seu_jwt_secret_super_seguro_aqui_para_dev
+JWT_EXPIRES_IN=7d
+
+# Outras configurações
+BASE_DOMAIN=nerix.online
+```
+
+### 3. Instalar dependências
+
+```bash
+# Backend
+cd backend
+npm install
+
+# Frontend (em outro terminal ou depois)
+cd frontend
+npm install
+```
+
+### 4. Rodar em desenvolvimento
+
+**Opção 1: Rodar tudo junto (raiz do projeto)**
+
+```bash
+# Na raiz do projeto
+npm run dev
+```
+
+**Opção 2: Rodar separadamente**
+
+```bash
+# Terminal 1 - Backend
+cd backend
+npm run dev
+
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
+```
+
+### 5. Acessar
+
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:3000
+- **Health Check:** http://localhost:3000/health
+
+### 6. Parar serviços
+
+```bash
+# Parar PostgreSQL
+docker-compose down
+
+# Parar e remover volumes (CUIDADO: apaga dados)
+docker-compose down -v
+```
+
+### 🔧 Troubleshooting Local
+
+**PostgreSQL não conecta:**
+
+```bash
+# Verificar se o container está rodando
+docker ps
+
+# Ver logs
+docker-compose logs postgres
+
+# Reiniciar
+docker-compose restart postgres
+```
+
+**Porta 5432 já está em uso:**
+
+- Pare o PostgreSQL local ou mude a porta no `docker-compose.yml`
 
 ---
 
