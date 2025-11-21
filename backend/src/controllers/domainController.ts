@@ -134,7 +134,7 @@ export class DomainController {
 
       // Se tem token do Cloudflare, criar registro DNS
       if (cloudflare_token && zoneId) {
-        const baseDomain = process.env.BASE_DOMAIN || 'nerix.site';
+        const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
         const recordName = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
         const subdomain = req.store.subdomain;
 

@@ -189,7 +189,7 @@ export class CloudflareService {
       const dns = await import('dns').then((m) => m.promises);
       const records = await dns.resolveCname(domain);
       // Verificar se aponta para nosso domínio base
-      const baseDomain = process.env.BASE_DOMAIN || 'nerix.site';
+      const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
       return records.some((record) => record.includes(baseDomain));
     } catch (error) {
       // Se não conseguir resolver, pode ser que ainda não esteja configurado
