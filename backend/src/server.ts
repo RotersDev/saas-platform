@@ -1,4 +1,14 @@
 import express from 'express';
+
+// ❗ PRIMEIRA LINHA: Criar app ANTES de qualquer importação de middleware
+const app = express();
+
+// ❗ SEGUNDA LINHA: Configurar trust proxy IMEDIATAMENTE
+// Confiar apenas no primeiro proxy (Nginx) para segurança
+// Isso DEVE ser configurado ANTES de qualquer middleware ser importado
+app.set('trust proxy', 1); // Confiar apenas no primeiro proxy (Nginx)
+
+// Agora importar os middlewares
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -11,11 +21,7 @@ import { startBillingCron } from './cron/billingCron';
 
 dotenv.config();
 
-const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-
-
-app.set('trust proxy', () => false);
 
 app.use(helmet());
 app.use(cors({
