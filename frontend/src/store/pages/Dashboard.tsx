@@ -325,6 +325,7 @@ export default function StoreDashboard() {
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Visão geral das suas vendas e métricas</p>
           </div>
 
           {/* Botão único para ir ao site - bem posicionado */}
