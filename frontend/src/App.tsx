@@ -178,7 +178,28 @@ function ShopLayoutWithLandingFallback() {
     return <Landing />;
   }
 
-  // Se encontrou loja ou ainda está carregando, renderizar ShopLayout
+  // Se encontrou loja ou ainda está carregando, renderizar ShopLayout com rotas
+  if (storeInfo || isLoading) {
+    return (
+      <Routes>
+        <Route element={<ShopLayout />}>
+          <Route index element={<ShopHome />} />
+          <Route path="product/:slug" element={<ShopProduct />} />
+          <Route path="checkout" element={<ShopCheckout />} />
+          <Route path="payment/:orderId" element={<ShopPayment />} />
+          <Route path="order/:orderId" element={<ShopOrderStatus />} />
+          <Route path="categories" element={<ShopCategories />} />
+          <Route path="terms" element={<ShopTerms />} />
+          <Route path="login" element={<CustomerLogin />} />
+          <Route path="my-orders" element={<MyOrders />} />
+          <Route path="my-orders/:orderId" element={<MyOrderDetails />} />
+          <Route path="*" element={<PageNotFound />} />
+        </Route>
+      </Routes>
+    );
+  }
+
+  // Fallback: renderizar ShopLayout vazio (será tratado pelo ShopLayout)
   return <ShopLayout />;
 }
 
@@ -213,14 +234,25 @@ function SubdomainShopWrapper() {
     );
   }
 
-  // Se é localhost, domínio base das lojas, ou domínio principal do SaaS, renderizar Landing
-  if (isLocalhost || isBaseDomain || isSaasDomain) {
+  // Se é localhost ou domínio base (nerix.online), renderizar Landing
+  if (isLocalhost || isBaseDomain) {
     return <Landing />;
   }
 
-  // Se não é subdomínio conhecido nem domínio base, pode ser domínio customizado de loja
-  // Tentar carregar loja e redirecionar para Landing se não encontrar
-  return <ShopLayoutWithLandingFallback />;
+  // Se é o domínio SaaS, renderizar Landing
+  if (isSaasDomain) {
+    return <Landing />;
+  }
+
+  // Se não é subdomínio do BASE_DOMAIN, não é SAAS_DOMAIN, não é localhost, pode ser domínio customizado
+  // Tentar carregar loja e renderizar ShopLayout se encontrar, senão redirecionar para Landing
+  const isSubdomainOfBase = hostname.endsWith(`.${baseDomain}`) && !isBaseDomain;
+  if (!isSubdomainOfBase && !isBaseDomain && !isSaasDomain && !isLocalhost) {
+    return <ShopLayoutWithLandingFallback />;
+  }
+
+  // Fallback: renderizar Landing
+  return <Landing />;
 }
 
 function App() {

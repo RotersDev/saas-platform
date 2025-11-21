@@ -177,76 +177,72 @@ export const resolveTenantPublic = async (
       }
     }
 
-    // Tentar resolver por subdomain do host
+    // Tentar resolver por host
     const host = req.headers.host || '';
     // Remover porta se houver (ex: marcos.nerix.online:443 -> marcos.nerix.online)
     const hostWithoutPort = host.split(':')[0];
+    const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
+    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
 
-    // Extrair subdomínio: marcos.nerix.online -> marcos
-    const hostParts = hostWithoutPort.split('.');
-    let subdomain: string | null = null;
+    // Primeiro, verificar se é um domínio customizado (não é subdomínio do BASE_DOMAIN nem SAAS_DOMAIN)
+    const isBaseDomain = hostWithoutPort === baseDomain || hostWithoutPort === `www.${baseDomain}`;
+    const isSaasDomain = hostWithoutPort === saasDomain || hostWithoutPort === `www.${saasDomain}`;
+    const isSubdomainOfBase = hostWithoutPort.endsWith(`.${baseDomain}`) && !isBaseDomain;
+    const isLocalhost = hostWithoutPort === 'localhost' || hostWithoutPort === '127.0.0.1' || hostWithoutPort.includes('localhost');
+    const isIP = hostWithoutPort.match(/^\d+\.\d+\.\d+\.\d+$/);
 
-    // Se tem mais de 2 partes (ex: marcos.nerix.online), pegar a primeira parte como subdomínio
-    if (hostParts.length > 2) {
-      subdomain = hostParts[0];
-    } else if (hostParts.length === 2) {
-      // Se tem 2 partes, verificar se é subdomain.domain
-      const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
-      // Se o host termina com o domínio base, a primeira parte é o subdomínio
-      if (hostWithoutPort.endsWith(`.${baseDomain}`) || hostWithoutPort === baseDomain) {
-        // Se for exatamente o domínio base, não há subdomínio
-        if (hostWithoutPort !== baseDomain) {
-          subdomain = hostParts[0];
-        }
-      } else {
-        // Pode ser um domínio customizado ou subdomain curto
-        subdomain = hostParts[0];
-      }
-    } else if (hostParts.length === 1 && hostParts[0] !== 'localhost' && hostParts[0] !== '127.0.0.1' && !hostParts[0].match(/^\d+\.\d+\.\d+\.\d+$/)) {
-      // Se tem apenas 1 parte e não é localhost ou IP, pode ser subdomínio direto
-      subdomain = hostParts[0];
-    }
-
-    // Log para debug (sempre logar para identificar problemas)
-    console.log('[resolveTenantPublic] 🔍 Host:', host, '| Host sem porta:', hostWithoutPort, '| Subdomain extraído:', subdomain, '| HostParts:', hostParts);
-
-    if (subdomain && subdomain !== 'www' && subdomain !== 'admin' && subdomain !== 'localhost' && subdomain !== '127' && subdomain !== '127.0.0.1') {
+    // Se não é subdomínio do BASE_DOMAIN, não é SAAS_DOMAIN, não é localhost e não é IP, pode ser domínio customizado
+    if (!isSubdomainOfBase && !isBaseDomain && !isSaasDomain && !isLocalhost && !isIP) {
       try {
-        console.log('[resolveTenantPublic] 🔍 Buscando loja no banco com subdomain:', subdomain);
-        const store = await Store.findOne({ where: { subdomain } });
-        if (store) {
-          console.log('[resolveTenantPublic] ✅ Loja encontrada via hostname:', store.name, '| ID:', store.id, '| Subdomain:', store.subdomain);
-          (req as any).store = store;
-          next();
-          return;
+        const { Domain } = await import('../models');
+        console.log('[resolveTenantPublic] 🔍 Tentando resolver como domínio customizado:', hostWithoutPort);
+
+        // Buscar domínio customizado (aceitar mesmo se não estiver verificado, pois DNS pode estar funcionando)
+        const customDomain = await Domain.findOne({
+          where: { domain: hostWithoutPort },
+        });
+
+        if (customDomain) {
+          const store = await Store.findByPk(customDomain.store_id);
+          if (store) {
+            console.log('[resolveTenantPublic] ✅ Loja encontrada via domínio customizado:', store.name, '| ID:', store.id, '| Domain:', hostWithoutPort, '| Verified:', customDomain.verified);
+            (req as any).store = store;
+            next();
+            return;
+          }
         } else {
-          console.warn('[resolveTenantPublic] ⚠️ Loja NÃO encontrada no banco para subdomain:', subdomain);
-          // Listar subdomains disponíveis para debug
-          const allStores = await Store.findAll({ attributes: ['id', 'name', 'subdomain'], limit: 10 });
-          console.log('[resolveTenantPublic] 📋 Subdomains disponíveis no banco:', allStores.map(s => s.subdomain).join(', '));
+          console.log('[resolveTenantPublic] ⚠️ Domínio customizado não encontrado no banco:', hostWithoutPort);
         }
       } catch (error: any) {
-        console.error('[resolveTenantPublic] ❌ Erro ao buscar loja por subdomain:', error);
-      }
-    } else {
-      console.log('[resolveTenantPublic] ⚠️ Subdomain inválido ou ignorado:', subdomain);
-    }
-
-    // Tentar resolver por domínio customizado
-    const domain = host.split(':')[0];
-    const { Domain } = await import('../models');
-    const customDomain = await Domain.findOne({
-      where: { domain, verified: true },
-    });
-
-    if (customDomain) {
-      const store = await Store.findByPk(customDomain.store_id);
-      if (store) {
-        (req as any).store = store;
-        next();
-        return;
+        console.error('[resolveTenantPublic] ❌ Erro ao buscar domínio customizado:', error);
       }
     }
+
+    // Se é subdomínio do BASE_DOMAIN, tentar resolver por subdomain
+    if (isSubdomainOfBase) {
+      const hostParts = hostWithoutPort.split('.');
+      const subdomain = hostParts[0]; // Primeira parte é o subdomínio
+
+      if (subdomain && subdomain !== 'www' && subdomain !== 'admin') {
+        try {
+          console.log('[resolveTenantPublic] 🔍 Buscando loja no banco com subdomain:', subdomain);
+          const store = await Store.findOne({ where: { subdomain } });
+          if (store) {
+            console.log('[resolveTenantPublic] ✅ Loja encontrada via subdomain:', store.name, '| ID:', store.id, '| Subdomain:', store.subdomain);
+            (req as any).store = store;
+            next();
+            return;
+          } else {
+            console.warn('[resolveTenantPublic] ⚠️ Loja NÃO encontrada no banco para subdomain:', subdomain);
+          }
+        } catch (error: any) {
+          console.error('[resolveTenantPublic] ❌ Erro ao buscar loja por subdomain:', error);
+        }
+      }
+    }
+
+    // Log para debug
+    console.log('[resolveTenantPublic] 🔍 Host:', host, '| Host sem porta:', hostWithoutPort, '| isSubdomainOfBase:', isSubdomainOfBase, '| isBaseDomain:', isBaseDomain, '| isSaasDomain:', isSaasDomain);
 
     // Se não encontrar, permitir continuar (pode ser acesso direto)
     next();

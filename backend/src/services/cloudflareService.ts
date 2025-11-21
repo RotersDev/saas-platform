@@ -188,11 +188,21 @@ export class CloudflareService {
     try {
       const dns = await import('dns').then((m) => m.promises);
       const records = await dns.resolveCname(domain);
-      // Verificar se aponta para nosso domínio base
+      // Verificar se aponta para nosso domínio base ou qualquer subdomínio dele
       const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
-      return records.some((record) => record.includes(baseDomain));
-    } catch (error) {
-      // Se não conseguir resolver, pode ser que ainda não esteja configurado
+      // Verificar se algum registro CNAME contém o domínio base
+      const isValid = records.some((record) => {
+        // Remover ponto final se houver
+        const cleanRecord = record.replace(/\.$/, '');
+        // Verificar se contém o domínio base (ex: soumelhor.nerix.online contém nerix.online)
+        return cleanRecord.includes(baseDomain);
+      });
+
+      logger.info(`Verificação DNS para ${domain}:`, { records, isValid, baseDomain });
+      return isValid;
+    } catch (error: any) {
+      // Se não conseguir resolver, pode ser que ainda não esteja configurado ou DNS não propagou
+      logger.warn(`Erro ao verificar DNS para ${domain}:`, error.message);
       return false;
     }
   }

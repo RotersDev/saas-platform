@@ -79,7 +79,7 @@ class EmailService {
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              font-family: Arial, Helvetica, sans-serif;
               line-height: 1.6;
               color: #000000;
               background-color: #f5f5f5;
@@ -96,114 +96,72 @@ class EmailService {
             .header {
               background: #2563eb;
               color: #ffffff;
-              padding: 36px 32px;
+              padding: 32px 30px;
               text-align: center;
               border-bottom: 3px solid #1e40af;
             }
             .header h1 {
-              font-size: 32px;
-              font-weight: 800;
-              margin-bottom: 8px;
-              letter-spacing: -0.5px;
+              font-size: 28px;
+              font-weight: bold;
+              margin-bottom: 6px;
               color: #ffffff;
+              font-family: Arial, Helvetica, sans-serif;
             }
             .header p {
-              font-size: 16px;
-              font-weight: 500;
+              font-size: 15px;
+              font-weight: normal;
               color: #ffffff;
               opacity: 0.95;
+              font-family: Arial, Helvetica, sans-serif;
             }
             .content {
               background: #ffffff;
-              padding: 40px 32px;
+              padding: 35px 30px;
             }
             .content p {
-              font-size: 17px;
-              line-height: 1.8;
+              font-size: 16px;
+              line-height: 1.6;
               color: #000000;
-              margin-bottom: 20px;
-              font-weight: 400;
+              margin-bottom: 18px;
+              font-weight: normal;
+              font-family: Arial, Helvetica, sans-serif;
             }
             .content p strong {
-              font-weight: 700;
+              font-weight: bold;
               color: #000000;
             }
             .button-container {
               text-align: center;
-              margin: 36px 0;
+              margin: 30px 0;
             }
             .button {
               display: inline-block;
-              padding: 16px 40px;
+              padding: 14px 35px;
               background: #2563eb;
-              color: #ffffff;
+              color: #ffffff !important;
               text-decoration: none;
-              border-radius: 6px;
-              font-weight: 700;
-              font-size: 17px;
-              letter-spacing: 0.3px;
+              border-radius: 5px;
+              font-weight: bold;
+              font-size: 16px;
+              font-family: Arial, Helvetica, sans-serif;
               border: 2px solid #1e40af;
             }
             .button:hover {
               background: #1e40af;
               border-color: #1e3a8a;
             }
-            .link-box {
-              background: #f8f9fa;
-              border: 2px solid #e5e7eb;
-              border-radius: 6px;
-              padding: 18px;
-              margin: 28px 0;
-              word-break: break-all;
-            }
-            .link-box a {
-              color: #2563eb;
-              text-decoration: none;
-              font-size: 14px;
-              font-family: 'Courier New', monospace;
-              font-weight: 500;
-            }
-            .link-label {
-              font-size: 15px;
-              color: #000000;
-              font-weight: 600;
-              margin-bottom: 10px;
-              display: block;
-            }
-            .warning {
-              background: #fff7ed;
-              border: 2px solid #fb923c;
-              border-left: 4px solid #f97316;
-              padding: 18px;
-              border-radius: 6px;
-              margin: 28px 0;
-            }
-            .warning p {
-              color: #9a3412;
-              font-size: 15px;
-              margin: 0;
-              font-weight: 500;
-            }
-            .warning strong {
-              font-weight: 700;
-              color: #7c2d12;
-            }
             .footer {
               text-align: center;
-              padding: 28px 32px;
+              padding: 25px 30px;
               background: #f8f9fa;
               border-top: 2px solid #e5e7eb;
             }
             .footer p {
               margin: 0;
               color: #000000;
-              font-size: 14px;
-              font-weight: 500;
-            }
-            .divider {
-              height: 1px;
-              background: #e5e7eb;
-              margin: 28px 0;
+              font-size: 13px;
+              font-weight: normal;
+              font-family: Arial, Helvetica, sans-serif;
             }
           </style>
         </head>
@@ -218,15 +176,7 @@ class EmailService {
               <p>Recebemos uma solicitação para redefinir a senha da sua conta na plataforma <strong>Nerix</strong>.</p>
               <p>Clique no botão abaixo para criar uma nova senha:</p>
               <div class="button-container">
-                <a href="${resetUrl}" class="button">Redefinir Senha</a>
-              </div>
-              <div class="divider"></div>
-              <span class="link-label">Ou copie e cole este link no seu navegador:</span>
-              <div class="link-box">
-                <a href="${resetUrl}">${resetUrl}</a>
-              </div>
-              <div class="warning">
-                <p><strong>⚠️ Importante:</strong> Este link expira em 1 hora. Se você não solicitou esta alteração, ignore este email.</p>
+                <a href="${resetUrl}" class="button" style="color: #ffffff !important; text-decoration: none;">Redefinir Senha</a>
               </div>
             </div>
             <div class="footer">
@@ -264,7 +214,7 @@ class EmailService {
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              font-family: Arial, Helvetica, sans-serif;
               line-height: 1.6;
               color: #000000;
               background-color: #f5f5f5;
@@ -281,114 +231,72 @@ class EmailService {
             .header {
               background: #2563eb;
               color: #ffffff;
-              padding: 36px 32px;
+              padding: 32px 30px;
               text-align: center;
               border-bottom: 3px solid #1e40af;
             }
             .header h1 {
-              font-size: 32px;
-              font-weight: 800;
-              margin-bottom: 8px;
-              letter-spacing: -0.5px;
+              font-size: 28px;
+              font-weight: bold;
+              margin-bottom: 6px;
               color: #ffffff;
+              font-family: Arial, Helvetica, sans-serif;
             }
             .header p {
-              font-size: 16px;
-              font-weight: 500;
+              font-size: 15px;
+              font-weight: normal;
               color: #ffffff;
               opacity: 0.95;
+              font-family: Arial, Helvetica, sans-serif;
             }
             .content {
               background: #ffffff;
-              padding: 40px 32px;
+              padding: 35px 30px;
             }
             .content p {
-              font-size: 17px;
-              line-height: 1.8;
+              font-size: 16px;
+              line-height: 1.6;
               color: #000000;
-              margin-bottom: 20px;
-              font-weight: 400;
+              margin-bottom: 18px;
+              font-weight: normal;
+              font-family: Arial, Helvetica, sans-serif;
             }
             .content p strong {
-              font-weight: 700;
+              font-weight: bold;
               color: #000000;
             }
             .button-container {
               text-align: center;
-              margin: 36px 0;
+              margin: 30px 0;
             }
             .button {
               display: inline-block;
-              padding: 16px 40px;
+              padding: 14px 35px;
               background: #2563eb;
-              color: #ffffff;
+              color: #ffffff !important;
               text-decoration: none;
-              border-radius: 6px;
-              font-weight: 700;
-              font-size: 17px;
-              letter-spacing: 0.3px;
+              border-radius: 5px;
+              font-weight: bold;
+              font-size: 16px;
+              font-family: Arial, Helvetica, sans-serif;
               border: 2px solid #1e40af;
             }
             .button:hover {
               background: #1e40af;
               border-color: #1e3a8a;
             }
-            .link-box {
-              background: #f8f9fa;
-              border: 2px solid #e5e7eb;
-              border-radius: 6px;
-              padding: 18px;
-              margin: 28px 0;
-              word-break: break-all;
-            }
-            .link-box a {
-              color: #2563eb;
-              text-decoration: none;
-              font-size: 14px;
-              font-family: 'Courier New', monospace;
-              font-weight: 500;
-            }
-            .link-label {
-              font-size: 15px;
-              color: #000000;
-              font-weight: 600;
-              margin-bottom: 10px;
-              display: block;
-            }
-            .warning {
-              background: #fff7ed;
-              border: 2px solid #fb923c;
-              border-left: 4px solid #f97316;
-              padding: 18px;
-              border-radius: 6px;
-              margin: 28px 0;
-            }
-            .warning p {
-              color: #9a3412;
-              font-size: 15px;
-              margin: 0;
-              font-weight: 500;
-            }
-            .warning strong {
-              font-weight: 700;
-              color: #7c2d12;
-            }
             .footer {
               text-align: center;
-              padding: 28px 32px;
+              padding: 25px 30px;
               background: #f8f9fa;
               border-top: 2px solid #e5e7eb;
             }
             .footer p {
               margin: 0;
               color: #000000;
-              font-size: 14px;
-              font-weight: 500;
-            }
-            .divider {
-              height: 1px;
-              background: #e5e7eb;
-              margin: 28px 0;
+              font-size: 13px;
+              font-weight: normal;
+              font-family: Arial, Helvetica, sans-serif;
             }
           </style>
         </head>
@@ -403,15 +311,7 @@ class EmailService {
               <p>Recebemos uma solicitação para redefinir a senha da sua conta na loja <strong>${storeName}</strong>.</p>
               <p>Clique no botão abaixo para criar uma nova senha:</p>
               <div class="button-container">
-                <a href="${resetUrl}" class="button">Redefinir Senha</a>
-              </div>
-              <div class="divider"></div>
-              <span class="link-label">Ou copie e cole este link no seu navegador:</span>
-              <div class="link-box">
-                <a href="${resetUrl}">${resetUrl}</a>
-              </div>
-              <div class="warning">
-                <p><strong>⚠️ Importante:</strong> Este link expira em 1 hora. Se você não solicitou esta alteração, ignore este email.</p>
+                <a href="${resetUrl}" class="button" style="color: #ffffff !important; text-decoration: none;">Redefinir Senha</a>
               </div>
             </div>
             <div class="footer">
