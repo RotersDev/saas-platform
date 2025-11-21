@@ -9,7 +9,7 @@ import { Theme, Category } from '../models';
 export const publicRoutes = Router();
 
 // Middleware de log para debug
-publicRoutes.use((req, res, next) => {
+publicRoutes.use((req, _res, next) => {
   console.log('[PublicRoutes] 📥 Requisição recebida:', req.method, req.path, '| Host:', req.headers.host);
   next();
 });
