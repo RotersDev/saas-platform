@@ -133,13 +133,10 @@ JWT_SECRET=seu_jwt_secret_super_seguro_aqui
 
 ```bash
 # Copiar configuração
-cp /var/www/saas-platform/nginx.conf.example /etc/nginx/sites-available/saas-platform
-
-# Editar com seu domínio
-nano /etc/nginx/sites-available/saas-platform
+cp /var/www/saas-platform/nerix-wildcard.conf /etc/nginx/sites-available/
 
 # Criar symlink
-ln -s /etc/nginx/sites-available/saas-platform /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/nerix-wildcard.conf /etc/nginx/sites-enabled/
 
 # Testar configuração
 nginx -t
@@ -148,10 +145,14 @@ nginx -t
 systemctl reload nginx
 ```
 
-**Se não tiver domínio ainda**, você pode usar o IP diretamente:
+**Nota:** O arquivo `nerix-wildcard.conf` já está configurado para:
 
-- Altere `server_name` para `_` (aceita qualquer domínio)
-- Ou use `server_name 72.61.56.208;`
+- Aceitar `nerix.online` e `*.nerix.online` (wildcard)
+- Redirecionar HTTP para HTTPS
+- Servir o frontend compilado
+- Fazer proxy do `/api/` para o backend na porta 3000
+
+**Se não tiver SSL ainda**, você pode temporariamente comentar as linhas SSL e usar apenas HTTP, ou configurar SSL com Certbot (veja seção SSL abaixo).
 
 ### 3. Executar deploy
 

@@ -53,12 +53,14 @@ JWT_SECRET=seu_secret_super_seguro
 ### 5. Configurar Nginx
 
 ```bash
-cp nginx.conf.example /etc/nginx/sites-available/saas-platform
-nano /etc/nginx/sites-available/saas-platform  # Ajuste o server_name
-ln -s /etc/nginx/sites-available/saas-platform /etc/nginx/sites-enabled/
+cd /var/www/saas-platform
+cp nerix-wildcard.conf /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/nerix-wildcard.conf /etc/nginx/sites-enabled/
 nginx -t
 systemctl reload nginx
 ```
+
+**Nota:** O arquivo `nerix-wildcard.conf` já está configurado para wildcard (`*.nerix.online`). Se ainda não tiver SSL configurado, você precisará ajustar temporariamente ou configurar SSL com Certbot.
 
 ### 6. Deploy
 
