@@ -149,7 +149,7 @@ export default function ShopHome() {
                   <p className="text-gray-500 text-lg">Nenhum produto disponível nesta categoria.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4 xl:grid-cols-5">
                   {products.map((product: any) => {
                     // Preço real (o que cobra) = price
                     const realPrice = Number(product.price);
@@ -171,7 +171,7 @@ export default function ShopHome() {
                       <Link
                         key={product.id}
                         to={getProductUrl(storeSubdomain, product.slug)}
-                        className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500"
+                        className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
                       >
                         {/* Tag de desconto */}
                         {discountPercentage && discountPercentage > 0 && (
@@ -246,7 +246,7 @@ export default function ShopHome() {
                                 buyNow(product);
                               }}
                               disabled={!hasStock}
-                              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2 lg:py-2.5 rounded-md flex items-center justify-center gap-2 transition-all hover:shadow-md text-xs sm:text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
+                              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-all hover:shadow-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
                             >
                               <ShoppingCart className="hidden sm:block w-4 h-4 flex-shrink-0" />
                               <span>COMPRAR AGORA</span>
@@ -388,7 +388,7 @@ export default function ShopHome() {
               </div>
             ) : categoriesWithProducts.length === 0 && products && products.length > 0 ? (
               // Se há produtos mas não há categorias com produtos, mostrar todos os produtos sem agrupar
-              <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4 xl:grid-cols-5">
                 {products.map((product: any) => {
                   const realPrice = Number(product.price);
                   const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
@@ -403,11 +403,11 @@ export default function ShopHome() {
                     <Link
                       key={product.id}
                       to={getProductUrl(storeSubdomain, product.slug)}
-                      className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500"
+                      className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
                     >
                       {discountPercentage && discountPercentage > 0 && (
-                        <div className="absolute top-3 left-3 z-10 bg-blue-600 text-white font-bold text-sm px-3 py-1 rounded-full shadow-md flex items-center">
-                          <ArrowDown className="w-4 h-4 mr-1" />
+                        <div className="absolute top-2 left-2 z-10 bg-blue-600 text-white font-bold text-xs px-2 py-0.5 rounded-full shadow-md flex items-center">
+                          <ArrowDown className="w-3 h-3 mr-1" />
                           {discountPercentage}% OFF
                         </div>
                       )}
@@ -430,22 +430,22 @@ export default function ShopHome() {
                           </div>
                         )}
                       </div>
-                      <div className="p-3 lg:p-4 flex flex-col flex-grow gap-2">
-                        <div className="mb-1 sm:mb-2">
-                          <h4 className="text-base lg:text-lg font-bold text-gray-900 line-clamp-2 leading-snug">{product.name}</h4>
+                      <div className="p-3 lg:p-3 flex flex-col flex-grow gap-2">
+                        <div className="mb-1">
+                          <h4 className="text-sm lg:text-base font-semibold text-gray-900 line-clamp-2 leading-tight">{product.name}</h4>
                         </div>
                         <div className="mt-auto">
-                          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-2 sm:gap-0">
+                          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-1 sm:gap-0">
                             <div>
                               {comparisonPrice && (
-                                <del className="block text-sm text-gray-400 leading-none mb-0.5">
+                                <del className="block text-xs text-gray-400 leading-none mb-0.5">
                                   {new Intl.NumberFormat('pt-BR', {
                                     style: 'currency',
                                     currency: 'BRL',
                                   }).format(comparisonPrice)}
                                 </del>
                               )}
-                              <span className="text-2xl font-bold text-gray-900">
+                              <span className="text-lg lg:text-xl font-bold text-gray-900">
                                 {new Intl.NumberFormat('pt-BR', {
                                   style: 'currency',
                                   currency: 'BRL',
@@ -454,7 +454,7 @@ export default function ShopHome() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2 mt-2 sm:mt-3">
+                        <div className="flex gap-2 mt-2">
                           <button
                             onClick={(e) => {
                               e.preventDefault();
@@ -462,9 +462,8 @@ export default function ShopHome() {
                               buyNow(product);
                             }}
                             disabled={!hasStock}
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2 lg:py-2.5 rounded-md flex items-center justify-center gap-2 transition-all hover:shadow-md text-xs sm:text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
+                            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-all hover:shadow-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
                           >
-                            <ShoppingCart className="hidden sm:block w-4 h-4 flex-shrink-0" />
                             <span>COMPRAR AGORA</span>
                           </button>
                           <button
@@ -474,11 +473,11 @@ export default function ShopHome() {
                               addToCart(product);
                             }}
                             disabled={!hasStock}
-                            className="w-9 h-9 lg:w-10 lg:h-10 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-8 h-8 lg:w-9 lg:h-9 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Adicionar ao carrinho"
                             aria-label="Adicionar ao carrinho"
                           >
-                            <ShoppingCart className="w-4 h-4" />
+                            <ShoppingCart className="w-3.5 h-3.5" />
                           </button>
                         </div>
                         {isAutoDelivery && (
@@ -516,7 +515,7 @@ export default function ShopHome() {
                         </Link>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-4">
+                      <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4 xl:grid-cols-5">
                         {categoryProducts.map((product: any) => {
                           // Preço real (o que cobra) = price
                           const realPrice = Number(product.price);
@@ -538,7 +537,7 @@ export default function ShopHome() {
                             <Link
                               key={product.id}
                               to={getProductUrl(storeSubdomain, product.slug)}
-                              className="group relative bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500"
+                              className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
                             >
                               {/* Tag de desconto */}
                               {discountPercentage && discountPercentage > 0 && (
@@ -577,18 +576,18 @@ export default function ShopHome() {
                               </div>
 
                               {/* Conteúdo do card */}
-                              <div className="p-4 flex flex-col flex-grow gap-2">
+                              <div className="p-3 lg:p-3 flex flex-col flex-grow gap-2">
                                 {/* Título */}
-                                <div className="mb-2 sm:mb-3">
-                                  <h4 className="text-lg font-bold text-gray-900 line-clamp-2 leading-snug">{product.name}</h4>
+                                <div className="mb-1">
+                                  <h4 className="text-sm lg:text-base font-semibold text-gray-900 line-clamp-2 leading-tight">{product.name}</h4>
                                 </div>
 
                                 {/* Preços */}
                                 <div className="mt-auto">
-                                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-2 sm:gap-0">
+                                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-1 sm:gap-0">
                                     <div>
                                       {comparisonPrice && (
-                                        <del className="block text-sm text-gray-400 leading-none mb-0.5">
+                                        <del className="block text-xs text-gray-400 leading-none mb-0.5">
                                           {new Intl.NumberFormat('pt-BR', {
                                             style: 'currency',
                                             currency: 'BRL',
@@ -596,7 +595,7 @@ export default function ShopHome() {
                                         </del>
                                       )}
 
-                                      <span className="text-2xl font-bold text-gray-900">
+                                      <span className="text-lg lg:text-xl font-bold text-gray-900">
                                         {new Intl.NumberFormat('pt-BR', {
                                           style: 'currency',
                                           currency: 'BRL',
@@ -607,7 +606,7 @@ export default function ShopHome() {
                                 </div>
 
                                 {/* Botões de ação */}
-                                <div className="flex gap-2 mt-3 sm:mt-4">
+                                <div className="flex gap-2 mt-2">
                                   <button
                                     onClick={(e) => {
                                       e.preventDefault();
@@ -615,9 +614,8 @@ export default function ShopHome() {
                                       buyNow(product);
                                     }}
                                     disabled={!hasStock}
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2.5 sm:py-3 rounded-md sm:rounded-lg flex items-center justify-center gap-2 transition-all hover:shadow-blue-500/30 hover:shadow-lg text-xs sm:text-base whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
+                                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-all hover:shadow-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
                                   >
-                                    <ShoppingCart className="hidden sm:block w-5 h-5 flex-shrink-0" />
                                     <span>COMPRAR AGORA</span>
                                   </button>
                                   <button
@@ -627,11 +625,11 @@ export default function ShopHome() {
                                       addToCart(product);
                                     }}
                                     disabled={!hasStock}
-                                    className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-blue-600 text-blue-600 rounded-md sm:rounded-lg hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-8 h-8 lg:w-9 lg:h-9 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Adicionar ao carrinho"
                                     aria-label="Adicionar ao carrinho"
                                   >
-                                    <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <ShoppingCart className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
 
@@ -670,11 +668,11 @@ export default function ShopHome() {
                     <Link
                       key={product.id}
                       to={getProductUrl(storeSubdomain, product.slug)}
-                      className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500"
+                      className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
                     >
                       {discountPercentage && discountPercentage > 0 && (
-                        <div className="absolute top-3 left-3 z-10 bg-blue-600 text-white font-bold text-sm px-3 py-1 rounded-full shadow-md flex items-center">
-                          <ArrowDown className="w-4 h-4 mr-1" />
+                        <div className="absolute top-2 left-2 z-10 bg-blue-600 text-white font-bold text-xs px-2 py-0.5 rounded-full shadow-md flex items-center">
+                          <ArrowDown className="w-3 h-3 mr-1" />
                           {discountPercentage}% OFF
                         </div>
                       )}
@@ -697,22 +695,22 @@ export default function ShopHome() {
                           </div>
                         )}
                       </div>
-                      <div className="p-3 lg:p-4 flex flex-col flex-grow gap-2">
-                        <div className="mb-1 sm:mb-2">
-                          <h4 className="text-base lg:text-lg font-bold text-gray-900 line-clamp-2 leading-snug">{product.name}</h4>
+                      <div className="p-3 lg:p-3 flex flex-col flex-grow gap-2">
+                        <div className="mb-1">
+                          <h4 className="text-sm lg:text-base font-semibold text-gray-900 line-clamp-2 leading-tight">{product.name}</h4>
                         </div>
                         <div className="mt-auto">
-                          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-2 sm:gap-0">
+                          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-1 gap-1 sm:gap-0">
                             <div>
                               {comparisonPrice && (
-                                <del className="block text-sm text-gray-400 leading-none mb-0.5">
+                                <del className="block text-xs text-gray-400 leading-none mb-0.5">
                                   {new Intl.NumberFormat('pt-BR', {
                                     style: 'currency',
                                     currency: 'BRL',
                                   }).format(comparisonPrice)}
                                 </del>
                               )}
-                              <span className="text-2xl font-bold text-gray-900">
+                              <span className="text-lg lg:text-xl font-bold text-gray-900">
                                 {new Intl.NumberFormat('pt-BR', {
                                   style: 'currency',
                                   currency: 'BRL',
@@ -721,7 +719,7 @@ export default function ShopHome() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2 mt-2 sm:mt-3">
+                        <div className="flex gap-2 mt-2">
                           <button
                             onClick={(e) => {
                               e.preventDefault();
@@ -729,9 +727,8 @@ export default function ShopHome() {
                               buyNow(product);
                             }}
                             disabled={!hasStock}
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2 lg:py-2.5 rounded-md flex items-center justify-center gap-2 transition-all hover:shadow-md text-xs sm:text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
+                            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-all hover:shadow-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
                           >
-                            <ShoppingCart className="hidden sm:block w-4 h-4 flex-shrink-0" />
                             <span>COMPRAR AGORA</span>
                           </button>
                           <button
@@ -741,11 +738,11 @@ export default function ShopHome() {
                               addToCart(product);
                             }}
                             disabled={!hasStock}
-                            className="w-9 h-9 lg:w-10 lg:h-10 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-8 h-8 lg:w-9 lg:h-9 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Adicionar ao carrinho"
                             aria-label="Adicionar ao carrinho"
                           >
-                            <ShoppingCart className="w-4 h-4" />
+                            <ShoppingCart className="w-3.5 h-3.5" />
                           </button>
                         </div>
                         {isAutoDelivery && (
