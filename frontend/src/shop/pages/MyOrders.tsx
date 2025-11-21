@@ -6,7 +6,7 @@ import {
   Package, ArrowLeft, CheckCircle2, Clock, XCircle,
   ShoppingBag, DollarSign, Calendar, ChevronRight
 } from 'lucide-react';
-import { getShopUrl } from '../../utils/urlUtils';
+import { getShopUrl, getLoginUrl } from '../../utils/urlUtils';
 import Footer from '../components/Footer';
 
 export default function MyOrders() {
@@ -21,7 +21,7 @@ export default function MyOrders() {
     const token = localStorage.getItem(`customer_token_${storeSubdomain}`);
 
     if (!customerData || !token) {
-      navigate(`/${storeSubdomain}/login`);
+      navigate(getLoginUrl(storeSubdomain));
       return;
     }
 

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Footer from '../components/Footer';
-import { getShopUrl } from '../../utils/urlUtils';
+import { getShopUrl, getLoginUrl } from '../../utils/urlUtils';
 
 export default function ShopCheckout() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();
@@ -157,7 +157,7 @@ export default function ShopCheckout() {
 
     if (storeInfo?.require_login_to_purchase && !customer) {
       toast.error('Login obrigatório para finalizar a compra');
-      navigate(`/${storeSubdomain}/login`);
+      navigate(getLoginUrl(storeSubdomain));
       return;
     }
 

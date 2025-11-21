@@ -94,3 +94,10 @@ export function getCategoriesUrl(subdomain: string | null | undefined): string {
   return getShopUrl(subdomain, 'categories');
 }
 
+/**
+ * Gera URL para login do cliente
+ */
+export function getLoginUrl(subdomain: string | null | undefined): string {
+  return getShopUrl(subdomain, 'login');
+}
+

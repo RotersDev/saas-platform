@@ -184,25 +184,55 @@ export class CloudflareService {
   /**
    * Verifica se um domínio aponta para nosso servidor
    */
-  static async verifyDomain(domain: string): Promise<boolean> {
+  /**
+   * Verifica REALMENTE se o domínio está configurado corretamente
+   * @param domain - Domínio do cliente (ex: rsxdenuncias.site)
+   * @param expectedTarget - Target esperado do CNAME (ex: soumelhor.nerix.online)
+   * @returns true se o CNAME está configurado corretamente
+   */
+  static async verifyDomain(domain: string, expectedTarget: string): Promise<boolean> {
     try {
       const dns = await import('dns').then((m) => m.promises);
+      
+      logger.info(`🔍 Verificando DNS para ${domain}...`);
+      
+      // Resolver CNAME do domínio
       const records = await dns.resolveCname(domain);
-      // Verificar se aponta para nosso domínio base ou qualquer subdomínio dele
-      const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
-      // Verificar se algum registro CNAME contém o domínio base
+      
+      logger.info(`📋 Registros CNAME encontrados para ${domain}:`, records);
+      
+      // Verificar se algum registro CNAME aponta exatamente para o target esperado
       const isValid = records.some((record) => {
-        // Remover ponto final se houver
-        const cleanRecord = record.replace(/\.$/, '');
-        // Verificar se contém o domínio base (ex: soumelhor.nerix.online contém nerix.online)
-        return cleanRecord.includes(baseDomain);
+        // Remover ponto final se houver (DNS pode retornar com ponto final)
+        const cleanRecord = record.replace(/\.$/, '').toLowerCase();
+        const cleanExpected = expectedTarget.toLowerCase();
+        
+        // Verificar se o registro é exatamente igual ao esperado
+        const matches = cleanRecord === cleanExpected;
+        
+        if (matches) {
+          logger.info(`✅ CNAME encontrado e correto: ${cleanRecord} === ${cleanExpected}`);
+        } else {
+          logger.warn(`❌ CNAME não corresponde: ${cleanRecord} !== ${cleanExpected}`);
+        }
+        
+        return matches;
       });
 
-      logger.info(`Verificação DNS para ${domain}:`, { records, isValid, baseDomain });
+      if (isValid) {
+        logger.info(`✅ Domínio ${domain} está configurado corretamente! CNAME aponta para ${expectedTarget}`);
+      } else {
+        logger.warn(`❌ Domínio ${domain} NÃO está configurado corretamente. Esperado: ${expectedTarget}, Encontrado: ${records.join(', ')}`);
+      }
+
       return isValid;
     } catch (error: any) {
       // Se não conseguir resolver, pode ser que ainda não esteja configurado ou DNS não propagou
-      logger.warn(`Erro ao verificar DNS para ${domain}:`, error.message);
+      if (error.code === 'ENOTFOUND' || error.code === 'ENODATA') {
+        logger.warn(`❌ Domínio ${domain} não possui registro CNAME ou não foi encontrado. Erro: ${error.code}`);
+      } else {
+        logger.error(`❌ Erro ao verificar DNS para ${domain}:`, error.message);
+      }
       return false;
     }
   }

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
+import { getLoginUrl } from '../../utils/urlUtils';
 
 export default function MyOrderDetails() {
   const { storeSubdomain: storeSubdomainParam, orderId } = useParams<{ storeSubdomain?: string; orderId?: string }>();
@@ -24,7 +25,7 @@ export default function MyOrderDetails() {
     const token = localStorage.getItem(`customer_token_${storeSubdomain}`);
 
     if (!customerData || !token) {
-      navigate(`/${storeSubdomain}/login`);
+      navigate(getLoginUrl(storeSubdomain));
       return;
     }
 

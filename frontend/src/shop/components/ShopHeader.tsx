@@ -2,7 +2,7 @@ import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { ShoppingCart, User, ChevronDown, Package, LogOut } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { normalizeImageUrl } from '../../utils/imageUtils';
-import { getShopUrl, getCheckoutUrl } from '../../utils/urlUtils';
+import { getShopUrl, getCheckoutUrl, getLoginUrl } from '../../utils/urlUtils';
 
 interface ShopHeaderProps {
   storeInfo?: any;
@@ -189,7 +189,7 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
               </div>
             ) : (
               <Link
-                to={`/${storeSubdomain}/login`}
+                to={getLoginUrl(storeSubdomain)}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <User className="w-4 h-4" />

@@ -270,6 +270,7 @@ export class DomainController {
 
   /**
    * Verifica se um domínio está configurado corretamente
+   * Verifica REALMENTE o DNS para garantir que o CNAME aponta para o subdomain correto
    */
   static async verifyDomain(req: TenantRequest, res: Response): Promise<void> {
     try {
@@ -289,18 +290,40 @@ export class DomainController {
         return;
       }
 
-      const isVerified = await CloudflareService.verifyDomain(domain.domain);
+      // Buscar a loja para obter o subdomain
+      const store = await Store.findByPk(domain.store_id);
+      if (!store) {
+        res.status(404).json({ error: 'Loja não encontrada' });
+        return;
+      }
+
+      // Calcular o target esperado: subdomain.nerix.online
+      const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
+      const expectedTarget = `${store.subdomain}.${baseDomain}`;
+
+      logger.info(`Verificando DNS para ${domain.domain}: esperado CNAME -> ${expectedTarget}`);
+
+      // Verificar REALMENTE o DNS
+      const isVerified = await CloudflareService.verifyDomain(domain.domain, expectedTarget);
 
       if (isVerified) {
         await domain.update({
           verified: true,
           verified_at: new Date(),
         });
+        logger.info(`✅ Domínio ${domain.domain} verificado com sucesso!`);
+      } else {
+        // Se não está verificado, garantir que o campo está como false
+        await domain.update({
+          verified: false,
+        });
+        logger.warn(`❌ Domínio ${domain.domain} NÃO está configurado corretamente. CNAME deve apontar para ${expectedTarget}`);
       }
 
       res.json({
         verified: isVerified,
         domain: domain.toJSON(),
+        expectedTarget, // Retornar o target esperado para debug
       });
     } catch (error: any) {
       logger.error('Erro ao verificar domínio:', error);
