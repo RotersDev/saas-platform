@@ -48,7 +48,7 @@ export default function Footer({ storeInfo, theme }: FooterProps) {
                 <img
                   src={normalizeImageUrl(theme?.logo_url || storeInfo?.logo_url)}
                   alt={storeInfo?.name || 'Loja'}
-                  className="h-10 w-10 rounded-full border-2 border-gray-300 object-cover"
+                  className="h-10 w-10 rounded-lg object-contain"
                 />
               )}
               <h3 className="text-xl font-bold text-gray-900">

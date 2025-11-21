@@ -92,7 +92,7 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
               <img
                 src={normalizeImageUrl(theme?.logo_url || storeInfo?.logo_url)}
                 alt={storeInfo?.name || 'Loja'}
-                className="h-10 w-10 rounded-lg object-cover border border-gray-200"
+                className="h-10 w-10 rounded-lg object-contain"
               />
             )}
             <h1 className="text-xl font-bold text-gray-900 hidden sm:block">

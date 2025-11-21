@@ -95,13 +95,21 @@ function ProtectedRoute({ children, requiredRole }: { children: JSX.Element; req
   if (requiredRole) {
     // Para admin, verificar email específico
     if (requiredRole === 'master_admin') {
-      const ADMIN_EMAIL = 'jprotersiza@gmail.com';
-      if (user.email === ADMIN_EMAIL && user.role === requiredRole) {
-        console.log('Access granted - admin email matches');
+      // Lista de emails permitidos para admin master
+      // Pode ser configurado via variável de ambiente VITE_ADMIN_EMAILS (separados por vírgula)
+      const ADMIN_EMAILS_ENV = import.meta.env.VITE_ADMIN_EMAILS || '';
+      const ADMIN_EMAILS = ADMIN_EMAILS_ENV
+        ? ADMIN_EMAILS_ENV.split(',').map((e: string) => e.trim().toLowerCase())
+        : ['jprotersiza@gmail.com', 'admin@platform.com']; // Emails padrão permitidos
+
+      const userEmailLower = user.email?.toLowerCase();
+
+      if (user.role === requiredRole && ADMIN_EMAILS.includes(userEmailLower)) {
+        console.log('Access granted - admin email matches:', userEmailLower);
         return children;
       }
       // Se não é o email correto, redirecionar
-      console.log('Access denied - not admin email');
+      console.log('Access denied - not admin email. User email:', userEmailLower, 'Allowed emails:', ADMIN_EMAILS);
       if (user.store_id) {
         return <Navigate to="/store" replace />;
       }

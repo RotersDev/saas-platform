@@ -225,25 +225,28 @@ export default function ShopCheckout() {
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Carrinho vazio</h1>
-          <Link
-            to={getShopUrl(storeSubdomain)}
-            className="text-indigo-600 hover:text-indigo-700 font-medium inline-flex items-center"
-          >
-            Continuar comprando
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Link>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Carrinho vazio</h1>
+            <Link
+              to={getShopUrl(storeSubdomain)}
+              className="text-indigo-600 hover:text-indigo-700 font-medium inline-flex items-center"
+            >
+              Continuar comprando
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Link>
+          </div>
         </div>
+        <Footer storeInfo={storeInfo} theme={theme} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 w-full">
         {/* Header e breadcrumb */}
         <div className="mb-6 text-center md:text-left">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Finalize sua Compra</h1>

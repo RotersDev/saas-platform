@@ -121,7 +121,7 @@ export default function CustomerLogin() {
 
   return (
     <div
-      className="min-h-screen relative"
+      className="min-h-screen flex flex-col relative"
       style={{
         background: `
           radial-gradient(circle, rgba(59, 130, 246, 0.25) 1.5px, transparent 1.5px),
@@ -131,118 +131,124 @@ export default function CustomerLogin() {
         backgroundPosition: '0 0, 0 0',
       }}
     >
-
-      <main className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              {isCreatingPassword ? 'Criar Senha' : isLogin ? 'Entrar' : 'Criar Conta'}
-            </h1>
-            <p className="text-gray-600 mt-2">
-              {isCreatingPassword
-                ? 'Crie uma senha para acessar suas compras'
-                : isLogin
-                  ? 'Acesse sua conta para ver suas compras'
-                  : 'Cadastre-se para acompanhar suas compras'}
-            </p>
-          </div>
-
-          <form onSubmit={isCreatingPassword ? handleCreatePassword : handleSubmit} className="space-y-6">
-            {!isLogin && !isCreatingPassword && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nome Completo *
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Seu nome completo"
-                  />
-                </div>
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+        <div className="w-full max-w-md">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+            {/* Header com gradiente */}
+            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-8 py-6 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
+                <Lock className="w-8 h-8 text-white" />
               </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                E-mail *
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="seu@email.com"
-                />
-              </div>
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                {isCreatingPassword ? 'Criar Senha' : isLogin ? 'Entrar' : 'Criar Conta'}
+              </h1>
+              <p className="text-indigo-100 text-sm md:text-base">
+                {isCreatingPassword
+                  ? 'Crie uma senha para acessar suas compras'
+                  : isLogin
+                    ? 'Acesse sua conta para ver suas compras'
+                    : 'Cadastre-se para acompanhar suas compras'}
+              </p>
             </div>
 
-            {!isCreatingPassword && !isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Telefone (opcional)
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="(00) 00000-0000"
-                />
-              </div>
-            )}
+            <div className="p-8">
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Senha *
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="••••••••"
-                  minLength={6}
-                />
-              </div>
-              {!isLogin && (
-                <p className="text-xs text-gray-500 mt-1">Mínimo de 6 caracteres</p>
+              <form onSubmit={isCreatingPassword ? handleCreatePassword : handleSubmit} className="space-y-5">
+                {!isLogin && !isCreatingPassword && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Nome Completo *
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        required
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm"
+                        placeholder="Seu nome completo"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    E-mail *
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm"
+                      placeholder="seu@email.com"
+                    />
+                  </div>
+                </div>
+
+                {!isCreatingPassword && !isLogin && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Telefone (opcional)
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm"
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Senha *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="password"
+                      required
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm"
+                      placeholder="••••••••"
+                      minLength={6}
+                    />
+                  </div>
+                  {!isLogin && (
+                    <p className="text-xs text-gray-500 mt-2">Mínimo de 6 caracteres</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3.5 rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm"
+                >
+                  {isCreatingPassword ? 'Criar Senha' : isLogin ? 'Entrar' : 'Criar Conta'}
+                </button>
+              </form>
+
+              {!isCreatingPassword && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setFormData({ email: '', password: '', name: '', phone: '' });
+                    }}
+                    className="w-full text-indigo-600 hover:text-indigo-700 text-sm font-medium transition-colors"
+                  >
+                    {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login'}
+                  </button>
+                </div>
               )}
             </div>
-
-            <button
-              type="submit"
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
-            >
-              {isCreatingPassword ? 'Criar Senha' : isLogin ? 'Entrar' : 'Criar Conta'}
-            </button>
-          </form>
-
-          {!isCreatingPassword && (
-            <>
-              <div className="mt-6 text-center">
-                <button
-                  onClick={() => {
-                    setIsLogin(!isLogin);
-                    setFormData({ email: '', password: '', name: '', phone: '' });
-                  }}
-                  className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-                >
-                  {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login'}
-                </button>
-              </div>
-            </>
-          )}
+          </div>
         </div>
       </main>
 
