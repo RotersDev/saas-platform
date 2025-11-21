@@ -53,12 +53,17 @@ export default function ShopHome() {
       const url = categorySlug
         ? `/api/public/products?category_slug=${categorySlug}`
         : '/api/public/products';
+      console.log('[ShopHome] 🛒 Buscando produtos:', url, '| StoreInfo:', storeInfo ? `${storeInfo.name} (${storeInfo.status})` : 'não encontrado');
       const response = await api.get(url);
+      console.log('[ShopHome] ✅ Produtos recebidos:', response.data?.length || 0, 'produtos');
       return response.data || [];
     },
     {
       staleTime: 2 * 60 * 1000,
       enabled: !!storeInfo && (storeInfo.status === 'active' || storeInfo.status === 'trial'),
+      onError: (error: any) => {
+        console.error('[ShopHome] ❌ Erro ao buscar produtos:', error);
+      },
     }
   );
 

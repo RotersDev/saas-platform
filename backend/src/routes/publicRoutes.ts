@@ -8,6 +8,12 @@ import { Theme, Category } from '../models';
 
 export const publicRoutes = Router();
 
+// Middleware de log para debug
+publicRoutes.use((req, res, next) => {
+  console.log('[PublicRoutes] 📥 Requisição recebida:', req.method, req.path, '| Host:', req.headers.host);
+  next();
+});
+
 // Rotas públicas da loja (sem autenticação)
 publicRoutes.use(resolveTenantPublic);
 

@@ -6,11 +6,15 @@ import { OrderService } from '../services/orderService';
 export class ApiController {
   static async listProducts(req: any, res: Response): Promise<void> {
     try {
-      // Log para debug
-      if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production') {
-        console.log('[ApiController.listProducts] Host:', req.headers.host);
-        console.log('[ApiController.listProducts] Store encontrada:', req.store ? `Sim - ${req.store.name} (ID: ${req.store.id})` : 'Não');
-      }
+      // Log para debug - SEMPRE logar
+      console.log('[ApiController.listProducts] 🚀 REQUISIÇÃO RECEBIDA');
+      console.log('[ApiController.listProducts] 📍 URL:', req.originalUrl || req.url);
+      console.log('[ApiController.listProducts] 🌐 Host:', req.headers.host);
+      console.log('[ApiController.listProducts] 📨 Headers:', {
+        'x-store-subdomain': req.headers['x-store-subdomain'],
+        'user-agent': req.headers['user-agent']?.substring(0, 50),
+      });
+      console.log('[ApiController.listProducts] 🏪 Store encontrada:', req.store ? `✅ Sim - ${req.store.name} (ID: ${req.store.id}, Subdomain: ${req.store.subdomain})` : '❌ Não');
 
       if (!req.store) {
         console.warn('[ApiController.listProducts] Loja não encontrada - retornando array vazio');
@@ -30,10 +34,10 @@ export class ApiController {
       const { category_id, category_slug } = req.query;
       const where: any = { store_id: req.store.id, is_active: true };
 
-      // Log para debug
-      if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production') {
-        console.log('[ApiController.listProducts] Buscando produtos para store_id:', req.store.id);
-      }
+      // Log para debug - SEMPRE logar
+      console.log('[ApiController.listProducts] 🔍 Buscando produtos para store_id:', req.store.id);
+      console.log('[ApiController.listProducts] 📋 Query params:', { category_id, category_slug });
+      console.log('[ApiController.listProducts] 🔎 Where clause:', JSON.stringify(where));
 
       if (category_slug) {
         // Buscar categoria por slug
