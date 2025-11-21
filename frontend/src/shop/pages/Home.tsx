@@ -64,7 +64,7 @@ export default function ShopHome() {
         : '/api/public/products';
       console.log('[ShopHome] 🛒 Buscando produtos:', url, '| StoreInfo:', storeInfo ? `${storeInfo.name} (${storeInfo.status})` : 'não encontrado');
       const response = await api.get(url);
-      console.log('[ShopHome] ✅ Produtos recebidos:', response.data?.length || 0, 'produtos');
+      console.log('[ShopHome] ✅ Produtos recebidos:', response.data?.length || 0, 'produtos', response.data);
       return response.data || [];
     },
     {
@@ -353,6 +353,18 @@ export default function ShopHome() {
       const dateB = new Date(catB.created_at).getTime();
       return dateA - dateB;
     });
+
+  // Log para debug - após produtos serem carregados
+  console.log('[ShopHome] 📊 Estado dos produtos:', {
+    productsCount: products?.length || 0,
+    categoriesCount: categories?.length || 0,
+    categoriesWithProductsCount: categoriesWithProducts.length,
+    productsByCategory: Object.keys(productsByCategory).map(k => ({
+      catId: k,
+      count: productsByCategory[Number(k)]?.length || 0,
+    })),
+    products: products?.map((p: any) => ({ id: p.id, name: p.name, category_id: p.category_id })),
+  });
 
   return (
     <div className="min-h-screen flex flex-col">

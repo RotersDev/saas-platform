@@ -322,22 +322,31 @@ export class ProductController {
           res.status(500).json({ error: `Erro ao fazer upload das imagens: ${error.message}` });
           return;
         }
-      } else if (req.body.images) {
-        // Se imagens vieram apenas como JSON (URLs)
+      } else if (req.body.images !== undefined) {
+        // Se imagens vieram apenas como JSON (URLs) - pode ser array vazio para remover todas
         if (typeof req.body.images === 'string') {
           try {
             const parsedImages = JSON.parse(req.body.images);
-            // Remover @ do início das URLs se houver
-            images = Array.isArray(parsedImages)
-              ? parsedImages.map((url: string) => url.startsWith('@') ? url.substring(1) : url)
-              : product.images || [];
+            // Se for array, usar diretamente (pode estar vazio para remover todas)
+            if (Array.isArray(parsedImages)) {
+              images = parsedImages.map((url: string) => url.startsWith('@') ? url.substring(1) : url);
+            } else {
+              images = [];
+            }
           } catch (e) {
-            images = product.images || [];
+            // Se falhar o parse, usar array vazio
+            images = [];
           }
         } else if (Array.isArray(req.body.images)) {
-          // Remover @ do início das URLs se houver
-          images = req.body.images.map((url: string) => url.startsWith('@') ? url.substring(1) : url);
+          // Se já é array, usar diretamente
+          images = req.body.images.map((url: string) => (typeof url === 'string' && url.startsWith('@')) ? url.substring(1) : url);
+        } else {
+          // Se não é array nem string, manter as imagens existentes
+          images = product.images || [];
         }
+      } else {
+        // Se não há imagens no body e não há arquivos, manter as imagens existentes
+        images = product.images || [];
       }
 
       // Validar categoria se fornecida

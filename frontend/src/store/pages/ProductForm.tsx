@@ -137,19 +137,18 @@ export default function StoreProductForm() {
 
     const formDataToSend = new FormData();
 
+    // Sempre enviar imagens (mesmo que vazio) para permitir remoção
+    // Se há arquivos novos, enviar os arquivos
     if (imageFiles.length > 0) {
       imageFiles.forEach((file) => {
         formDataToSend.append('images', file);
       });
     }
 
-    if (formData.images.length > 0) {
-      if (imageFiles.length === 0) {
-        formDataToSend.append('images', JSON.stringify(formData.images));
-      } else {
-        formDataToSend.append('images', JSON.stringify(formData.images));
-      }
-    }
+    // Sempre enviar as imagens existentes (pode estar vazio para remover todas)
+    // Se há arquivos novos, combinar com as existentes
+    // Se não há arquivos novos, apenas enviar as existentes (ou vazio se removidas)
+    formDataToSend.append('images', JSON.stringify(formData.images));
 
     formDataToSend.append('name', formData.name);
     formDataToSend.append('slug', formData.slug);
