@@ -160,7 +160,7 @@ export default function DomainsSettings() {
     addDomainMutation.mutate(domainData);
   };
 
-  const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
+  const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
 
   if (storeLoading || domainsLoading) {
     return (
