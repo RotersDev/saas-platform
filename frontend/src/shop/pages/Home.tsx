@@ -47,6 +47,15 @@ export default function ShopHome() {
     }
   );
 
+  // Log para debug
+  const productsEnabled = !!storeInfo && (storeInfo.status === 'active' || storeInfo.status === 'trial');
+  console.log('[ShopHome] 🔍 Estado da query de produtos:', {
+    storeInfo: storeInfo ? `${storeInfo.name} (${storeInfo.status})` : 'não encontrado',
+    enabled: productsEnabled,
+    storeLoading,
+    storeSubdomain,
+  });
+
   const { data: products, isLoading: productsLoading } = useQuery(
     ['shopProducts', storeSubdomain, categorySlug],
     async () => {
@@ -60,7 +69,7 @@ export default function ShopHome() {
     },
     {
       staleTime: 2 * 60 * 1000,
-      enabled: !!storeInfo && (storeInfo.status === 'active' || storeInfo.status === 'trial'),
+      enabled: productsEnabled,
       onError: (error: any) => {
         console.error('[ShopHome] ❌ Erro ao buscar produtos:', error);
       },
