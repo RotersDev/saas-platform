@@ -118,7 +118,6 @@ export default function StoreCategories() {
 
     e.preventDefault();
     const touchY = e.touches[0].clientY;
-    const deltaY = touchY - touchStartY;
 
     // Encontrar qual elemento está sendo tocado agora
     const elements = document.querySelectorAll('[data-category-index]');
@@ -126,7 +125,6 @@ export default function StoreCategories() {
 
     elements.forEach((el, idx) => {
       const rect = el.getBoundingClientRect();
-      const centerY = rect.top + rect.height / 2;
 
       if (touchY >= rect.top && touchY <= rect.bottom) {
         if (idx !== touchCurrentIndex) {

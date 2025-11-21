@@ -46,7 +46,7 @@ export interface UploadOptions {
  * @returns URL pública do arquivo
  */
 export async function uploadToR2(options: UploadOptions): Promise<string> {
-  const { storeId, category, buffer, mimeType, originalName } = options;
+  const { storeId, category, buffer, mimeType } = options;
 
   // Validar variáveis de ambiente
   const bucket = process.env.R2_BUCKET;

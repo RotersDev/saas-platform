@@ -5,11 +5,13 @@ Este guia explica como fazer o deploy da aplicação na VPS e manter funcionando
 ## 📋 Pré-requisitos
 
 ### Na VPS:
+
 - Ubuntu 20.04+ ou Debian 11+
 - Acesso root ou sudo
 - Conexão SSH configurada
 
 ### Localmente:
+
 - Node.js 18+
 - Git
 - PostgreSQL (para desenvolvimento local)
@@ -19,11 +21,13 @@ Este guia explica como fazer o deploy da aplicação na VPS e manter funcionando
 ## 🔧 Setup Inicial da VPS (Execute UMA VEZ)
 
 ### 1. Conectar na VPS
+
 ```bash
 ssh root@72.61.56.208
 ```
 
 ### 2. Executar script de setup
+
 ```bash
 # Fazer upload do setup-vps.sh para a VPS primeiro
 chmod +x setup-vps.sh
@@ -31,6 +35,7 @@ chmod +x setup-vps.sh
 ```
 
 Este script irá instalar:
+
 - Node.js 20.x
 - PostgreSQL
 - Nginx
@@ -38,7 +43,9 @@ Este script irá instalar:
 - Git
 
 ### 3. Configurar PostgreSQL
+
 O script já cria o banco, mas você pode ajustar:
+
 ```bash
 sudo -u postgres psql
 ALTER USER postgres WITH PASSWORD 'sua_senha_segura';
@@ -52,6 +59,7 @@ ALTER USER postgres WITH PASSWORD 'sua_senha_segura';
 ### Opção 1: Upload via Git (Recomendado)
 
 #### Na VPS:
+
 ```bash
 cd /var/www
 git clone seu-repositorio.git saas-platform
@@ -59,6 +67,7 @@ cd saas-platform
 ```
 
 #### Ou via SCP (do seu computador local):
+
 ```bash
 # Compactar o projeto (excluindo node_modules e dist)
 tar --exclude='node_modules' --exclude='dist' --exclude='.git' -czf projeto.tar.gz .
@@ -92,9 +101,10 @@ scp ecosystem.config.js root@72.61.56.208:/var/www/saas-platform/
 ### 1. Configurar variáveis de ambiente
 
 Na VPS:
+
 ```bash
 cd /var/www/saas-platform/backend
-cp .env.example .env
+cp env.example .env
 nano .env  # ou use vim/vi
 ```
 
@@ -139,6 +149,7 @@ systemctl reload nginx
 ```
 
 **Se não tiver domínio ainda**, você pode usar o IP diretamente:
+
 - Altere `server_name` para `_` (aceita qualquer domínio)
 - Ou use `server_name 72.61.56.208;`
 
@@ -155,6 +166,7 @@ chmod +x deploy.sh
 ## 🔄 Comandos Úteis
 
 ### PM2 (Gerenciador de Processos)
+
 ```bash
 # Ver status
 pm2 status
@@ -176,6 +188,7 @@ pm2 monit
 ```
 
 ### Nginx
+
 ```bash
 # Testar configuração
 nginx -t
@@ -194,6 +207,7 @@ tail -f /var/log/nginx/saas-platform-error.log
 ```
 
 ### PostgreSQL
+
 ```bash
 # Conectar
 sudo -u postgres psql
@@ -215,6 +229,7 @@ sudo -u postgres psql saas_platform < backup.sql
 Para manter funcionando localmente:
 
 ### 1. Instalar dependências
+
 ```bash
 cd backend
 npm install
@@ -224,6 +239,7 @@ npm install
 ```
 
 ### 2. Configurar .env local
+
 ```bash
 cd backend
 cp .env.example .env
@@ -231,11 +247,13 @@ cp .env.example .env
 ```
 
 ### 3. Iniciar PostgreSQL local (Docker)
+
 ```bash
 docker-compose up -d postgres
 ```
 
 ### 4. Rodar em desenvolvimento
+
 ```bash
 # Terminal 1 - Backend
 cd backend
@@ -272,6 +290,7 @@ Depois, descomente as linhas SSL no `nginx.conf`.
 ## 🐛 Troubleshooting
 
 ### Backend não inicia
+
 ```bash
 # Ver logs
 pm2 logs saas-platform-backend
@@ -284,11 +303,13 @@ cat backend/.env
 ```
 
 ### Nginx retorna 502
+
 - Verifique se o backend está rodando: `pm2 status`
 - Verifique os logs do Nginx: `tail -f /var/log/nginx/error.log`
 - Verifique se a porta 3000 está acessível: `curl http://127.0.0.1:3000/api/health`
 
 ### Banco de dados não conecta
+
 ```bash
 # Verificar se PostgreSQL está rodando
 systemctl status postgresql
@@ -300,6 +321,7 @@ sudo -u postgres psql -d saas_platform
 ```
 
 ### Frontend não carrega
+
 - Verifique se o build foi feito: `ls -la frontend/dist`
 - Verifique os logs do Nginx
 - Verifique se o caminho está correto no nginx.conf
@@ -340,8 +362,8 @@ cd /var/www/saas-platform
 ## 📞 Suporte
 
 Em caso de problemas:
+
 1. Verifique os logs: `pm2 logs saas-platform-backend`
 2. Verifique o status: `pm2 status`
 3. Verifique Nginx: `systemctl status nginx`
 4. Verifique PostgreSQL: `systemctl status postgresql`
-

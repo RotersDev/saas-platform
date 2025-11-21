@@ -245,11 +245,16 @@ export class CategoryController {
       }
 
       // Atualizar display_order de cada categoria
+      if (!req.store) {
+        res.status(400).json({ error: 'Loja não encontrada' });
+        return;
+      }
+
       await Promise.all(
         numericIds.map((categoryId: number, index: number) => {
           return Category.update(
             { display_order: index + 1 },
-            { where: { id: categoryId, store_id: req.store.id } }
+            { where: { id: categoryId, store_id: req.store!.id } }
           );
         })
       );

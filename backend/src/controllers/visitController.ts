@@ -14,7 +14,8 @@ export class VisitController {
 
       const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || '';
-      const referer = req.headers.referer || req.headers.referrer || '';
+      const refererRaw = req.headers.referer || req.headers.referrer || '';
+      const referer = Array.isArray(refererRaw) ? refererRaw[0] : refererRaw;
       // Aceitar path de query params ou body
       const path = (req.query.path as string) || (req.body?.page_url as string) || req.originalUrl || '/';
 

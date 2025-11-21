@@ -2,6 +2,7 @@
 
 # Script de Deploy para VPS
 # Uso: ./deploy.sh
+# Atualiza o código do Git e faz deploy
 
 set -e
 
@@ -29,10 +30,21 @@ mkdir -p "$PROJECT_DIR"
 mkdir -p "$BACKEND_DIR/logs"
 mkdir -p "$FRONTEND_DIR/dist"
 
+# Verificar se é um repositório Git e atualizar
+if [ -d "$PROJECT_DIR/.git" ]; then
+    echo "📥 Atualizando código do Git..."
+    cd "$PROJECT_DIR"
+    git pull origin main || git pull origin master || echo "⚠️  Não foi possível fazer pull"
+else
+    echo -e "${YELLOW}⚠️  Diretório não é um repositório Git${NC}"
+    echo -e "${YELLOW}💡 Para usar Git, execute: git clone https://github.com/RotersDev/saas-platform.git $PROJECT_DIR${NC}"
+fi
+
 # Verificar se .env existe
 if [ ! -f "$BACKEND_DIR/.env" ]; then
     echo -e "${RED}❌ Arquivo .env não encontrado em $BACKEND_DIR${NC}"
-    echo -e "${YELLOW}📝 Copie o arquivo .env.example para .env e configure as variáveis${NC}"
+    echo -e "${YELLOW}📝 Copie o arquivo env.example para .env e configure as variáveis${NC}"
+    echo -e "${YELLOW}   cp $BACKEND_DIR/env.example $BACKEND_DIR/.env${NC}"
     exit 1
 fi
 

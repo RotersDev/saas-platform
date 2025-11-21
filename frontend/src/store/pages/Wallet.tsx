@@ -7,7 +7,6 @@ import {
   ArrowDownCircle,
   Info,
   AlertCircle,
-  CheckCircle2,
   X,
   HelpCircle,
   ChevronDown,
@@ -16,8 +15,6 @@ import {
   Clock,
   CreditCard,
   User,
-  Mail,
-  Calendar,
   Shield,
   Sparkles,
 } from 'lucide-react';

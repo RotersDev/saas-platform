@@ -8,7 +8,7 @@ import { AuthRequest } from '../middleware/auth';
 import emailService from '../services/emailService';
 import logger from '../config/logger';
 import { parseUserAgent, getClientIp } from '../utils/deviceParser';
-import { getIPInfo, formatLocation, getCityAndCountry } from '../services/ipInfoService';
+import { getIPInfo, formatLocation } from '../services/ipInfoService';
 
 export class AuthController {
   static async login(req: Request, res: Response): Promise<void> {
@@ -105,9 +105,9 @@ export class AuthController {
           user_agent: userAgent,
           device_info: deviceInfo,
           location: location || '',
-          city: city || null,
-          region: region || null,
-          country: country || null,
+          city: city || undefined,
+          region: region || undefined,
+          country: country || undefined,
           is_active: true,
           last_activity: new Date(),
         });
@@ -552,7 +552,7 @@ export class AuthController {
 
         // Se não tem campos separados, tentar parsear location
         if (!city && !region && !country && sessionData.location) {
-          const parts = sessionData.location.split(', ').map(p => p.trim()).filter(p => p);
+          const parts = sessionData.location.split(', ').map((p: string) => p.trim()).filter((p: string) => p);
 
           if (parts.length >= 3) {
             city = parts[0];

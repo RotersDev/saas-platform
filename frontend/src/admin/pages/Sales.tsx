@@ -243,7 +243,7 @@ export default function AdminSales() {
             <tbody className="divide-y divide-gray-200">
               {data?.sales && data.sales.length > 0 ? (
                 data.sales.flatMap((sale) =>
-                  sale.items.map((item, index) => (
+                  sale.items.map((item) => (
                     <tr key={`${sale.id}-${item.id}`} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm font-mono text-gray-900">{sale.id}</td>
                       <td className="px-6 py-4 text-sm font-mono text-gray-900">{sale.order_number}</td>

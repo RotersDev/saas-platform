@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
-import { ArrowLeft, Save, Camera, LogOut, User, Mail, Upload, X, Monitor, Globe, Trash2, Settings } from 'lucide-react';
+import { ArrowLeft, Save, LogOut, User, Mail, Upload, X, Monitor, Globe, Trash2 } from 'lucide-react';
 import { useConfirm } from '../../hooks/useConfirm';
 
 type TabType = 'profile' | 'devices';
@@ -50,7 +50,7 @@ export default function StoreAccount() {
       return response.data;
     },
     {
-      onSuccess: (data, sessionId) => {
+      onSuccess: (data) => {
         refetchSessions();
 
         // Se foi a sessão atual que foi removida, fazer logout imediatamente
@@ -59,7 +59,7 @@ export default function StoreAccount() {
           setTimeout(() => {
             logout();
             navigate('/login');
-            toast.info('Você foi desconectado deste dispositivo');
+            toast('Você foi desconectado deste dispositivo', { icon: 'ℹ️' });
           }, 500);
         } else {
           toast.success('Dispositivo desconectado com sucesso!');

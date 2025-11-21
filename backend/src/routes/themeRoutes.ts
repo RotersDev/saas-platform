@@ -32,11 +32,11 @@ const optionalUpload = (req: Request, res: Response, next: NextFunction) => {
         if (files.logo) console.log('[ThemeRoutes] Logo:', files.logo[0]?.originalname, files.logo[0]?.size);
         if (files.favicon) console.log('[ThemeRoutes] Favicon:', files.favicon[0]?.originalname, files.favicon[0]?.size);
       }
-      next();
+      return next();
     });
   }
   console.log('[ThemeRoutes] Não é multipart/form-data, pulando multer');
-  next();
+  return next();
 };
 
 themeRoutes.get('/', ThemeController.get);

@@ -4,8 +4,7 @@ import api from '../../config/axios';
 import { useState, useEffect } from 'react';
 import {
   Package, ArrowLeft, CheckCircle2, Clock, XCircle,
-  ShoppingBag, DollarSign, Calendar, FileText, CreditCard,
-  TrendingUp, ChevronRight
+  ShoppingBag, DollarSign, Calendar, ChevronRight
 } from 'lucide-react';
 import { getShopUrl } from '../../utils/urlUtils';
 import Footer from '../components/Footer';

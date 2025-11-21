@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, ArrowDown, CircleX, Zap, ShieldCheck } from 'lucide-react';
+import { ShoppingCart, ArrowDown, X, Zap, ShieldCheck } from 'lucide-react';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import { getProductUrl } from '../../utils/urlUtils';
 
@@ -7,10 +7,9 @@ interface ProductCardProps {
   product: any;
   storeSubdomain: string;
   onBuyNow?: (product: any) => void;
-  onAddToCart?: (product: any) => void;
 }
 
-export default function ProductCard({ product, storeSubdomain, onBuyNow, onAddToCart }: ProductCardProps) {
+export default function ProductCard({ product, storeSubdomain, onBuyNow }: ProductCardProps) {
   const realPrice = Number(product.price);
   const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
   const discountPercentage = comparisonPrice
@@ -34,13 +33,6 @@ export default function ProductCard({ product, storeSubdomain, onBuyNow, onAddTo
     }
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onAddToCart) {
-      onAddToCart(product);
-    }
-  };
 
   return (
     <Link
@@ -59,7 +51,7 @@ export default function ProductCard({ product, storeSubdomain, onBuyNow, onAddTo
       <div className="relative overflow-hidden aspect-video">
         {!hasStock && (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 p-4 text-center">
-            <CircleX className="w-8 h-8 text-red-500 mb-2" />
+            <X className="w-8 h-8 text-red-500 mb-2" />
             <span className="font-bold text-white">ESGOTADO</span>
             <span className="text-sm text-gray-300 mt-1">Avise-me quando disponível</span>
           </div>

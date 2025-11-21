@@ -29,7 +29,7 @@ export default function CreateStore() {
         formDataToSend.append('logo', formData.logo);
       }
 
-      const response = await api.post('/api/stores/create', formDataToSend, {
+      await api.post('/api/stores/create', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

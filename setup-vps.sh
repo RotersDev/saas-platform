@@ -15,7 +15,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Verificar se é root
-if [ "$EUID" -ne 0 ]; then 
+if [ "$EUID" -ne 0 ]; then
     echo -e "${RED}❌ Por favor, execute como root (sudo ./setup-vps.sh)${NC}"
     exit 1
 fi
@@ -59,9 +59,16 @@ ufw --force enable || true
 echo -e "${GREEN}✅ Setup concluído!${NC}"
 echo ""
 echo "📝 Próximos passos:"
-echo "1. Faça upload do código para /var/www/saas-platform"
-echo "2. Copie .env.example para backend/.env e configure"
-echo "3. Execute: cd /var/www/saas-platform && ./deploy.sh"
+echo "1. Clone o repositório Git:"
+echo "   cd /var/www && git clone https://github.com/RotersDev/saas-platform.git saas-platform"
+echo ""
+echo "2. Configure o .env:"
+echo "   cd /var/www/saas-platform/backend"
+echo "   cp env.example .env"
+echo "   nano .env  # Configure as variáveis"
+echo ""
+echo "3. Execute o deploy:"
+echo "   cd /var/www/saas-platform && chmod +x deploy.sh && ./deploy.sh"
 echo ""
 echo "🌐 Para configurar Nginx, veja o arquivo nginx.conf.example"
 

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../../config/axios';
-import { User, Trash2, Search, AlertTriangle, Mail, Calendar, Store as StoreIcon } from 'lucide-react';
+import { User, Trash2, Search, Mail, Calendar, Store as StoreIcon } from 'lucide-react';
 import { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -13,7 +13,7 @@ export default function AdminAccounts() {
   const queryClient = useQueryClient();
   const { confirm, Dialog } = useConfirm();
 
-  const { data, isLoading, refetch } = useQuery(
+  const { data, isLoading } = useQuery(
     ['adminAccounts', debouncedSearchQuery],
     async () => {
       const params = new URLSearchParams();

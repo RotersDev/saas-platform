@@ -34,7 +34,7 @@ export class ProductController {
           // Fazer upload de todas as imagens para R2
           const uploadPromises = req.files.map((file: Express.Multer.File) =>
             uploadToR2({
-              storeId: req.store.id,
+              storeId: req.store!.id,
               category: 'products',
               buffer: file.buffer,
               mimeType: file.mimetype,
@@ -287,7 +287,7 @@ export class ProductController {
           // Fazer upload de todas as imagens para R2
           const uploadPromises = req.files.map((file: Express.Multer.File) =>
             uploadToR2({
-              storeId: req.store.id,
+              storeId: req.store!.id,
               category: 'products',
               buffer: file.buffer,
               mimeType: file.mimetype,

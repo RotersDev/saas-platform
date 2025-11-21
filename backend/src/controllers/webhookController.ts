@@ -107,9 +107,9 @@ export class WebhookController {
             });
 
             if (orderWithItems) {
-              const orderData = orderWithItems.toJSON();
+              const orderData = orderWithItems.toJSON() as any;
               // Adicionar chaves aos itens se disponíveis
-              if (orderData.items) {
+              if (orderData.items && Array.isArray(orderData.items)) {
                 for (const item of orderData.items) {
                   if (item.product_key) {
                     item.keys = item.product_key.split('\n').filter((k: string) => k.trim());
