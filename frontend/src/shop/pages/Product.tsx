@@ -8,31 +8,37 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { normalizeImageUrl, normalizeImageUrls } from '../../utils/imageUtils';
 import Footer from '../components/Footer';
-import { getShopUrl, getProductUrl, getCheckoutUrl } from '../../utils/urlUtils';
+import { getShopUrl, getProductUrl, getCheckoutUrl, getSubdomainFromHostname } from '../../utils/urlUtils';
 
 export default function ShopProduct() {
   const { slug: slugParam, storeSubdomain: storeSubdomainParam } = useParams<{ slug?: string; storeSubdomain?: string }>();
   const [searchParams] = useSearchParams();
-  const storeSubdomain = storeSubdomainParam || searchParams.get('store');
+  // Priorizar: hostname > path > query param (fallback)
+  const subdomainFromHostname = getSubdomainFromHostname();
+  const storeSubdomain = subdomainFromHostname || storeSubdomainParam || searchParams.get('store');
   const slug = slugParam;
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [cart, setCart] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`cart_${storeSubdomain}`);
-    return saved ? JSON.parse(saved) : [];
-  });
 
   const { data: storeInfo } = useQuery(
-    ['shopStore', storeSubdomain],
+    ['shopStore', storeSubdomain, window.location.hostname],
     async () => {
       const response = await api.get('/api/public/store');
       return response.data;
     },
     {
       staleTime: Infinity,
+      enabled: true, // Sempre tentar buscar (funciona com subdomain ou domínio customizado)
     }
   );
+
+  // Usar storeInfo.id como identificador do carrinho quando não há subdomain (domínio customizado)
+  const cartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : 'default');
+  const [cart, setCart] = useState<any[]>(() => {
+    const saved = localStorage.getItem(`cart_${cartKey}`);
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const { data: theme } = useQuery(
     ['shopTheme', storeSubdomain],
@@ -46,17 +52,31 @@ export default function ShopProduct() {
     }
   );
 
-  const { data: product, isLoading } = useQuery(
-    ['shopProduct', slug, storeSubdomain],
+  // Log para debug
+  console.log('[ShopProduct] 🔍 Estado:', {
+    slugParam,
+    storeSubdomainParam,
+    slug,
+    storeSubdomain,
+    hostname: window.location.hostname,
+    pathname: window.location.pathname,
+    storeInfo: storeInfo ? `${storeInfo.name} (${storeInfo.id})` : 'não encontrado',
+  });
+
+  const { data: product, isLoading, error: productError } = useQuery(
+    ['shopProduct', slug, storeSubdomain, window.location.hostname],
     async () => {
       if (slug) {
+        console.log('[ShopProduct] 🛒 Buscando produto com slug:', slug);
         const response = await api.get(`/api/public/products/slug/${slug}`);
+        console.log('[ShopProduct] ✅ Produto recebido:', response.data ? `${response.data.name} (ID: ${response.data.id})` : 'null');
         return response.data;
       }
+      console.warn('[ShopProduct] ⚠️ Slug não encontrado');
       return null;
     },
     {
-      enabled: !!slug && !!storeSubdomain,
+      enabled: !!slug && !!storeInfo, // Habilitar se tiver slug e storeInfo (funciona com subdomain ou domínio customizado)
       staleTime: 2 * 60 * 1000,
       retry: (failureCount, error: any) => {
         if (error?.response?.status === 429) {
@@ -65,11 +85,16 @@ export default function ShopProduct() {
         return failureCount < 2;
       },
       onError: (error: any) => {
+        console.error('[ShopProduct] ❌ Erro ao buscar produto:', error);
         if (error?.response?.status === 429) {
           toast.error('Muitas requisições. Aguarde alguns instantes e tente novamente.', {
             duration: 5000,
             icon: '⏳',
           });
+        } else if (error?.response?.status === 404) {
+          console.warn('[ShopProduct] ⚠️ Produto não encontrado (404)');
+        } else {
+          console.error('[ShopProduct] ❌ Erro desconhecido:', error?.response?.status, error?.response?.data);
         }
       },
     }
@@ -91,11 +116,13 @@ export default function ShopProduct() {
   );
 
   useEffect(() => {
-    const saved = localStorage.getItem(`cart_${storeSubdomain}`);
-    if (saved) {
-      setCart(JSON.parse(saved));
+    if (cartKey) {
+      const saved = localStorage.getItem(`cart_${cartKey}`);
+      if (saved) {
+        setCart(JSON.parse(saved));
+      }
     }
-  }, [storeSubdomain]);
+  }, [cartKey, storeInfo]);
 
   useEffect(() => {
     if (product?.images && product.images.length > 0) {
@@ -118,11 +145,20 @@ export default function ShopProduct() {
     );
   }
 
-  if (!product) {
+  if (!isLoading && !product) {
+    console.warn('[ShopProduct] ⚠️ Produto não encontrado. Estado:', {
+      slug,
+      storeSubdomain,
+      storeInfo: storeInfo ? `${storeInfo.name} (${storeInfo.id})` : 'não encontrado',
+      productError: productError?.response?.status,
+      productErrorData: productError?.response?.data,
+    });
+
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Produto não encontrado</h1>
+          <p className="text-gray-600 mb-4">O produto que você está procurando não existe nesta loja.</p>
           <Link
             to={getShopUrl(storeSubdomain)}
             className="text-blue-600 hover:text-blue-700"
@@ -155,14 +191,14 @@ export default function ShopProduct() {
     }
 
     setCart(newCart);
-    localStorage.setItem(`cart_${storeSubdomain}`, JSON.stringify(newCart));
+    localStorage.setItem(`cart_${cartKey}`, JSON.stringify(newCart));
     toast.success('Produto adicionado ao carrinho!');
   };
 
   const buyNow = () => {
     const newCart = [{ ...product, quantity }];
     setCart(newCart);
-    localStorage.setItem(`cart_${storeSubdomain}`, JSON.stringify(newCart));
+    localStorage.setItem(`cart_${cartKey}`, JSON.stringify(newCart));
     navigate(getCheckoutUrl(storeSubdomain));
   };
 
@@ -484,7 +520,7 @@ export default function ShopProduct() {
                               newCart = [...cart, { ...relatedProduct, quantity: 1 }];
                             }
                             setCart(newCart);
-                            localStorage.setItem(`cart_${storeSubdomain}`, JSON.stringify(newCart));
+                            localStorage.setItem(`cart_${cartKey}`, JSON.stringify(newCart));
                             toast.success('Produto adicionado ao carrinho!');
                           }}
                           className="px-3 py-2 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-all flex items-center justify-center active:scale-[0.98]"

@@ -191,21 +191,47 @@ export class CloudflareService {
    * @returns true se o TXT record contém o token esperado
    */
   static async verifyDomainTxt(domain: string, expectedToken: string): Promise<boolean> {
-    const txtRecordName = `_cf-custom-hostname.${domain}`;
+    // Cloudflare remove automaticamente o domínio do nome do registro TXT
+    // Então _cf-custom-hostname.nerixdigital.shop vira apenas _cf-custom-hostname
+    // Vamos tentar ambos os formatos
+    const txtRecordNameFull = `_cf-custom-hostname.${domain}`;
+    const txtRecordNameShort = `_cf-custom-hostname`;
 
     try {
       const dns = await import('dns').then((m) => m.promises);
 
-      logger.info(`🔍 Verificando TXT record para ${txtRecordName}...`);
+      logger.info(`🔍 Verificando TXT record para ${txtRecordNameFull} ou ${txtRecordNameShort}...`);
       logger.info(`🔍 Token esperado: ${expectedToken}`);
 
-      // Resolver TXT record
-      const records = await dns.resolveTxt(txtRecordName);
+      let records: string[][] = [];
+      let txtValues: string[] = [];
+      let usedRecordName = '';
 
-      // TXT records retornam arrays de strings, então precisamos "achatar" o array
-      const txtValues = records.flat();
+      // Tentar primeiro com o nome completo
+      try {
+        records = await dns.resolveTxt(txtRecordNameFull);
+        txtValues = records.flat();
+        usedRecordName = txtRecordNameFull;
+        logger.info(`✅ TXT record encontrado com nome completo: ${txtRecordNameFull}`);
+      } catch (error: any) {
+        // Se não encontrar com nome completo, tentar apenas _cf-custom-hostname
+        if (error.code === 'ENOTFOUND' || error.code === 'ENODATA') {
+          logger.info(`ℹ️ Não encontrado com nome completo, tentando ${txtRecordNameShort}...`);
+          try {
+            records = await dns.resolveTxt(txtRecordNameShort);
+            txtValues = records.flat();
+            usedRecordName = txtRecordNameShort;
+            logger.info(`✅ TXT record encontrado com nome curto: ${txtRecordNameShort}`);
+          } catch (shortError: any) {
+            logger.warn(`❌ Não foi possível resolver TXT record com nenhum dos formatos. Erro: ${shortError.code} - ${shortError.message}`);
+            throw error; // Lançar o erro original
+          }
+        } else {
+          throw error;
+        }
+      }
 
-      logger.info(`📋 Registros TXT encontrados para ${txtRecordName}:`, JSON.stringify(txtValues, null, 2));
+      logger.info(`📋 Registros TXT encontrados para ${usedRecordName}:`, JSON.stringify(txtValues, null, 2));
       logger.info(`📋 Total de registros: ${txtValues.length}`);
 
       // Verificar se algum registro TXT contém o token esperado
@@ -235,7 +261,7 @@ export class CloudflareService {
       });
 
       if (isValid) {
-        logger.info(`✅ Domínio ${domain} TXT record verificado! Token encontrado.`);
+        logger.info(`✅ Domínio ${domain} TXT record verificado! Token encontrado usando ${usedRecordName}.`);
       } else {
         logger.warn(`❌ Domínio ${domain} TXT record NÃO verificado. Esperado: ${expectedToken}, Encontrado: ${txtValues.join(', ')}`);
       }
@@ -244,7 +270,7 @@ export class CloudflareService {
     } catch (error: any) {
       // Se não conseguir resolver, pode ser que ainda não esteja configurado ou DNS não propagou
       if (error.code === 'ENOTFOUND' || error.code === 'ENODATA') {
-        logger.warn(`❌ TXT record ${txtRecordName} não encontrado. Erro: ${error.code}`);
+        logger.warn(`❌ TXT record não encontrado para ${txtRecordNameFull} nem ${txtRecordNameShort}. Erro: ${error.code}`);
       } else {
         logger.error(`❌ Erro ao verificar TXT record para ${domain}:`, error.message);
       }

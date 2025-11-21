@@ -133,7 +133,18 @@ export class ApiController {
 
   static async getProductBySlug(req: any, res: Response): Promise<void> {
     try {
+      // Log para debug
+      console.log('[ApiController.getProductBySlug] 🚀 REQUISIÇÃO RECEBIDA');
+      console.log('[ApiController.getProductBySlug] 📍 URL:', req.originalUrl || req.url);
+      console.log('[ApiController.getProductBySlug] 🌐 Host:', req.headers.host);
+      console.log('[ApiController.getProductBySlug] 📨 Headers:', {
+        'x-store-subdomain': req.headers['x-store-subdomain'],
+      });
+      console.log('[ApiController.getProductBySlug] 🔍 Slug:', req.params.slug);
+      console.log('[ApiController.getProductBySlug] 🏪 Store encontrada:', req.store ? `✅ Sim - ${req.store.name} (ID: ${req.store.id}, Subdomain: ${req.store.subdomain})` : '❌ Não');
+
       if (!req.store) {
+        console.warn('[ApiController.getProductBySlug] ❌ Loja não encontrada');
         res.status(400).json({ error: 'Loja não encontrada' });
         return;
       }
@@ -147,15 +158,38 @@ export class ApiController {
         return;
       }
 
+      console.log('[ApiController.getProductBySlug] 🔍 Buscando produto com slug:', req.params.slug, '| Store ID:', req.store.id);
+
       const product = await Product.findOne({
         where: { slug: req.params.slug, store_id: req.store.id, is_active: true },
         include: [{ association: 'categoryData' }],
       });
 
       if (!product) {
+        console.warn('[ApiController.getProductBySlug] ❌ Produto não encontrado. Verificando produtos no banco...');
+        // Verificar se há produtos com esse slug (mesmo inativos) para debug
+        try {
+          const allProductsWithSlug = await Product.findAll({
+            where: { slug: req.params.slug, store_id: req.store.id },
+            attributes: ['id', 'name', 'slug', 'is_active'],
+          });
+          console.log('[ApiController.getProductBySlug] 📊 Produtos encontrados com esse slug:', allProductsWithSlug.length);
+          if (allProductsWithSlug.length > 0) {
+            console.log('[ApiController.getProductBySlug] 📋 Produtos:', allProductsWithSlug.map(p => ({ id: p.id, name: p.name, slug: p.slug, is_active: p.is_active })));
+          }
+
+          // Verificar se há produtos ativos na loja
+          const activeProductsCount = await Product.count({ where: { store_id: req.store.id, is_active: true } });
+          console.log('[ApiController.getProductBySlug] 📊 Total de produtos ativos na loja:', activeProductsCount);
+        } catch (debugError: any) {
+          console.error('[ApiController.getProductBySlug] Erro ao verificar produtos:', debugError);
+        }
+
         res.status(404).json({ error: 'Produto não encontrado' });
         return;
       }
+
+      console.log('[ApiController.getProductBySlug] ✅ Produto encontrado:', product.name, '| ID:', product.id);
 
       // Buscar estoque disponível (chaves não usadas)
       const availableStock = await ProductKey.count({

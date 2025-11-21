@@ -214,11 +214,25 @@ function SubdomainShopWrapper() {
   const isSaasDomain = hostname === saasDomain || hostname === `www.${saasDomain}`;
 
   // Se há subdomínio conhecido do domínio base (ex: marcos.nerix.online), renderizar ShopLayout com rotas
-  // IMPORTANTE: Para subdomínios, as rotas são diretas (sem subdomain no path)
-  // O backend resolve a loja baseado no header Host
+  // Aceitar ambos os formatos: /product/:slug e /:storeSubdomain/product/:slug
   if (subdomain) {
     return (
       <Routes>
+        {/* Rotas com subdomain no path (ex: /marcos/product/dfs) - usar parâmetro dinâmico */}
+        <Route path=":storeSubdomain/*" element={<ShopLayout />}>
+          <Route index element={<ShopHome />} />
+          <Route path="product/:slug" element={<ShopProduct />} />
+          <Route path="checkout" element={<ShopCheckout />} />
+          <Route path="payment/:orderId" element={<ShopPayment />} />
+          <Route path="order/:orderId" element={<ShopOrderStatus />} />
+          <Route path="categories" element={<ShopCategories />} />
+          <Route path="terms" element={<ShopTerms />} />
+          <Route path="login" element={<CustomerLogin />} />
+          <Route path="my-orders" element={<MyOrders />} />
+          <Route path="my-orders/:orderId" element={<MyOrderDetails />} />
+          <Route path="*" element={<PageNotFound />} />
+        </Route>
+        {/* Rotas diretas sem subdomain no path (ex: /product/dfs) - fallback */}
         <Route element={<ShopLayout />}>
           <Route index element={<ShopHome />} />
           <Route path="product/:slug" element={<ShopProduct />} />

@@ -21,19 +21,26 @@ api.interceptors.request.use(
     // 1. Primeiro tentar pegar do hostname (ex: asdad.nerix.online -> asdad)
     const subdomainFromHostname = getSubdomainFromHostname();
 
-    // 2. Tentar pegar do path (formato: /{subdomain}/...)
+    // 2. Tentar pegar do path (formato: /{subdomain}/...) - mas apenas se não for uma rota conhecida
     const pathParts = window.location.pathname.split('/').filter(Boolean);
-    const subdomainFromPath = pathParts[0];
+    const firstPathPart = pathParts[0];
+    // Rotas conhecidas que NÃO são subdomínios
+    const knownShopRoutes = ['admin', 'store', 'login', 'create-store', 'product', 'checkout', 'payment', 'order', 'categories', 'terms', 'my-orders', 'forgot-password', 'reset-password'];
+    const subdomainFromPath = firstPathPart && !knownShopRoutes.includes(firstPathPart) ? firstPathPart : null;
 
     // 3. Tentar query param (fallback para rotas antigas)
     const urlParams = new URLSearchParams(window.location.search);
     let storeParam = subdomainFromHostname || urlParams.get('store') || subdomainFromPath;
 
     // 4. Se ainda não encontrou, tentar pegar do localStorage (armazenado após login ou primeira requisição)
-    if (!storeParam || storeParam === 'admin' || storeParam === 'store' || storeParam === 'login' || storeParam === 'create-store') {
+    if (!storeParam || storeParam === 'admin' || storeParam === 'store' || storeParam === 'login' || storeParam === 'create-store' || knownShopRoutes.includes(storeParam)) {
       const storedSubdomain = localStorage.getItem('store_subdomain');
       if (storedSubdomain) {
         storeParam = storedSubdomain;
+      } else {
+        // Se não encontrou subdomain e não é uma rota conhecida, pode ser domínio customizado
+        // Nesse caso, não enviar header X-Store-Subdomain (o backend resolve pelo hostname)
+        storeParam = null;
       }
     }
 
@@ -60,7 +67,10 @@ api.interceptors.request.use(
       delete config.headers['Content-Type'];
     }
 
-    if (storeParam && storeParam !== 'admin' && storeParam !== 'store' && storeParam !== 'login' && storeParam !== 'create-store' && !config.headers['X-Store-Subdomain']) {
+    // Lista de rotas conhecidas que não devem ser tratadas como subdomain
+    const knownShopRoutesForHeader = ['admin', 'store', 'login', 'create-store', 'product', 'checkout', 'payment', 'order', 'categories', 'terms', 'my-orders', 'forgot-password', 'reset-password'];
+
+    if (storeParam && !knownShopRoutesForHeader.includes(storeParam) && !config.headers['X-Store-Subdomain']) {
       config.headers['X-Store-Subdomain'] = storeParam;
       // Log apenas para rotas públicas de produtos/loja
       if (config.url?.includes('/api/public/')) {
