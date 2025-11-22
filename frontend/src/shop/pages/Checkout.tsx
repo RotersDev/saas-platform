@@ -48,11 +48,15 @@ export default function ShopCheckout() {
   const [customer, setCustomer] = useState<any>(null);
 
   useEffect(() => {
-    const customerData = localStorage.getItem(`customer_${storeSubdomain}`);
-    if (customerData) {
+    const currentCartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+    if (!currentCartKey) return;
+
+    const customerData = localStorage.getItem(`customer_${currentCartKey}`);
+    const token = localStorage.getItem(`customer_token_${currentCartKey}`);
+    if (customerData && token) {
       setCustomer(JSON.parse(customerData));
     }
-  }, [storeSubdomain]);
+  }, [storeSubdomain, storeInfo]);
 
   const { data: theme } = useQuery(
     ['shopTheme', storeSubdomain],
@@ -67,24 +71,49 @@ export default function ShopCheckout() {
   );
 
   useEffect(() => {
-    const saved = localStorage.getItem(`cart_${storeSubdomain}`);
-    if (saved) {
-      setCart(JSON.parse(saved));
+    const currentCartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+    if (!currentCartKey) {
+      setCart([]);
+      return;
     }
-  }, [storeSubdomain]);
+    try {
+      const saved = localStorage.getItem(`cart_${currentCartKey}`);
+      if (saved) {
+        const cart = JSON.parse(saved);
+        setCart(Array.isArray(cart) ? cart : []);
+        console.log('[Checkout] Carrinho carregado:', { cartKey: currentCartKey, items: cart.length });
+      } else {
+        setCart([]);
+      }
+    } catch (error) {
+      console.error('[Checkout] Erro ao carregar carrinho:', error);
+      setCart([]);
+    }
+  }, [storeSubdomain, storeInfo]);
 
   if (storeInfo && (storeInfo.status === 'blocked' || storeInfo.status === 'suspended')) {
     return <StoreBlocked status={storeInfo.status} storeName={storeInfo.name} />;
   }
 
   const removeFromCart = (productId: number) => {
+    const currentCartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+    if (!currentCartKey) {
+      toast.error('Loja não identificada');
+      return;
+    }
     const newCart = cart.filter((item: any) => item.id !== productId);
     setCart(newCart);
-    localStorage.setItem(`cart_${storeSubdomain}`, JSON.stringify(newCart));
+    localStorage.setItem(`cart_${currentCartKey}`, JSON.stringify(newCart));
+    window.dispatchEvent(new Event('cartUpdated'));
     toast.success('Produto removido do carrinho');
   };
 
   const updateQuantity = (productId: number, newQuantity: number) => {
+    const currentCartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+    if (!currentCartKey) {
+      toast.error('Loja não identificada');
+      return;
+    }
     if (newQuantity < 1) {
       removeFromCart(productId);
       return;
@@ -93,7 +122,8 @@ export default function ShopCheckout() {
       item.id === productId ? { ...item, quantity: newQuantity } : item
     );
     setCart(newCart);
-    localStorage.setItem(`cart_${storeSubdomain}`, JSON.stringify(newCart));
+    localStorage.setItem(`cart_${currentCartKey}`, JSON.stringify(newCart));
+    window.dispatchEvent(new Event('cartUpdated'));
   };
 
   const subtotal = cart.reduce(
@@ -206,8 +236,12 @@ export default function ShopCheckout() {
         },
       });
 
-      localStorage.removeItem(`cart_${storeSubdomain}`);
+      const currentCartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+      if (currentCartKey) {
+        localStorage.removeItem(`cart_${currentCartKey}`);
+      }
       setCart([]);
+      window.dispatchEvent(new Event('cartUpdated'));
 
       if (response.data?.order?.order_number) {
         navigate(getShopUrl(storeSubdomain, `payment/${encodeURIComponent(response.data.order.order_number)}`));
