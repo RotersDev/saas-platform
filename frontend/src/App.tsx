@@ -82,17 +82,24 @@ const queryClient = new QueryClient({
 
 function ProtectedRoute({ children, requiredRole }: { children: JSX.Element; requiredRole?: string }) {
   const { user, isAuthenticated } = useAuthStore();
+  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   // Debug: verificar estado de autenticação
   console.log('ProtectedRoute check:', {
     isAuthenticated,
     userRole: user?.role,
     requiredRole,
-    userEmail: user?.email
+    userEmail: user?.email,
+    isLocalhost
   });
 
-  // Se não estiver autenticado, redirecionar para login
+  // Se não estiver autenticado, redirecionar para login (exceto em localhost para visualizar layout)
   if (!isAuthenticated || !user) {
+    // Em localhost, permitir acesso sem autenticação apenas para visualizar o layout
+    if (isLocalhost) {
+      console.log('Localhost detected - allowing access without authentication for layout preview');
+      return children;
+    }
     console.log('Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }

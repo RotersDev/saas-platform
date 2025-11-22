@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/axios';
 import toast from 'react-hot-toast';
-import { Store, Upload, ArrowRight, CheckCircle2, Sparkles, Zap, Shield } from 'lucide-react';
+import { Upload, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 export default function CreateStore() {
@@ -99,7 +99,7 @@ export default function CreateStore() {
       // Tentar atualizar token, mas manter o atual se falhar
       let token = currentToken;
       let user = currentUser;
-      
+
       try {
         const refreshResponse = await api.post('/api/auth/refresh-token');
         if (refreshResponse.data?.token) {
@@ -137,7 +137,7 @@ export default function CreateStore() {
       useAuthStore.getState().setToken(token);
       localStorage.setItem('user', JSON.stringify(finalUser));
       useAuthStore.getState().setUser(finalUser);
-      
+
       console.log('[CreateStore] Sessão atualizada:', { hasToken: !!token, store_id: finalUser.store_id });
 
       toast.success('Loja criada com sucesso! 🎉');
@@ -167,204 +167,160 @@ export default function CreateStore() {
   const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
 
   return (
-    <div className="min-h-screen relative py-8 px-4 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Background decorativo */}
+    <div className="min-h-screen relative py-12 px-4 sm:px-6 lg:px-8">
+      {/* Background com degradê de baixo para cima e bolinhas azuis destacadas - igual ao resto do site */}
       <div
-        className="fixed inset-0 -z-10 opacity-40"
+        className="fixed inset-0 -z-10"
         style={{
           background: `
-            radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 40% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)
+            radial-gradient(circle, rgba(59, 130, 246, 0.25) 1.5px, transparent 1.5px),
+            linear-gradient(to top, #e2e8f0 0%, #f1f5f9 30%, #f8fafc 60%, #ffffff 100%)
           `,
+          backgroundSize: '30px 30px, 100% 100%',
         }}
       />
 
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg mb-4">
-            <Store className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Crie sua Loja Virtual
+          <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight text-gray-900 mb-2">
+            Criar nova loja
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Configure sua loja em poucos minutos e comece a vender online hoje mesmo
+          <p className="text-lg text-gray-600">
+            Configure sua loja em poucos minutos e comece a vender produtos digitais
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Coluna Esquerda - Benefícios */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20">
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-blue-600" />
-                Por que escolher?
-              </h2>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <Zap className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">Setup Rápido</p>
-                    <p className="text-sm text-gray-600">Configure em minutos e comece a vender</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">Seguro e Confiável</p>
-                    <p className="text-sm text-gray-600">Plataforma segura para seus clientes</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">Fácil de Usar</p>
-                    <p className="text-sm text-gray-600">Interface intuitiva e moderna</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-6 text-white">
-              <h3 className="font-bold text-lg mb-3">Passo a Passo</h3>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-white text-xs font-bold">1</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">Escolha um nome único</p>
-                    <p className="text-sm text-blue-100">Seu nome será usado em toda a plataforma</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-white text-xs font-bold">2</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">Configure seu subdomínio</p>
-                    <p className="text-sm text-blue-100">Seus clientes acessarão por este endereço</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-white text-xs font-bold">3</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">Personalize sua loja</p>
-                    <p className="text-sm text-blue-100">Adicione logo e descrição</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Coluna Direita - Formulário */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Coluna Principal - Formulário */}
           <div className="lg:col-span-2">
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
-              <form onSubmit={handleCreateStore} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nome da Loja <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-base"
-                    placeholder="Ex: Minha Loja Digital"
-                    disabled={loading}
-                  />
+            <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+              {/* Header do Card */}
+              <div className="flex items-center p-6 border-b border-gray-200">
+                <div className="space-y-1">
+                  <h3 className="font-semibold leading-none tracking-tight text-gray-900">
+                    Informações da Loja
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Preencha os dados básicos para criar sua loja
+                  </p>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Subdomínio <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      required
-                      value={formData.subdomain}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
-                        })
-                      }
-                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-base"
-                      placeholder="minha-loja"
+              {/* Body do Card */}
+              <div className="p-6 pt-6">
+                <form onSubmit={handleCreateStore} className="space-y-5">
+                  {/* Nome e Subdomínio lado a lado */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-900 inline-flex items-center gap-1">
+                        Nome da Loja <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="flex h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="Digite o nome da sua loja"
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-900 inline-flex items-center gap-1">
+                        Subdomínio <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <div className="absolute left-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                            <path d="M2 12h20"></path>
+                          </svg>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={formData.subdomain}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+                            })
+                          }
+                          className="flex h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 pl-10 pr-20 text-sm shadow-sm transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          placeholder="Digite seu subdomínio"
+                          disabled={loading}
+                        />
+                        <span className="absolute right-3 text-sm text-gray-500">.{baseDomain}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Descrição */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-900">
+                      Descrição da Loja
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={4}
+                      className="flex w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm shadow-sm transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                      placeholder="Descreva sua loja, produtos que vende, missão, etc..."
                       disabled={loading}
                     />
-                    <span className="text-gray-600 font-medium text-base">.{baseDomain}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Apenas letras minúsculas, números e hífens. Ex: minha-loja
-                  </p>
-                  {formData.subdomain && (
-                    <p className="text-sm text-blue-600 mt-1 font-medium">
-                      Sua loja estará em: <span className="font-bold">{formData.subdomain}.{baseDomain}</span>
-                    </p>
-                  )}
-                </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Descrição da Loja
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={4}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none text-base"
-                    placeholder="Descreva sua loja, produtos que vende, missão, etc..."
-                    disabled={loading}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Logo da Loja <span className="text-gray-500 font-normal">(opcional)</span>
-                  </label>
-                  <div className="mt-1">
+                  {/* Logo */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-900 inline-flex items-center gap-1">
+                      Logo <span className="text-gray-500 font-normal">(opcional)</span>
+                    </label>
                     {logoPreview ? (
-                      <div className="relative">
-                        <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50">
-                          <img
-                            src={logoPreview}
-                            alt="Preview"
-                            className="mx-auto h-32 w-32 object-contain rounded-lg"
-                          />
+                      <div className="space-y-3">
+                        <div className="rounded-xl border-2 border-dashed border-gray-300 p-6 bg-gray-50">
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
+                              <img
+                                src={logoPreview}
+                                alt="Preview"
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-sm text-gray-900">Imagem selecionada</h3>
+                              <p className="text-sm text-gray-500">Logo da sua loja</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData({ ...formData, logo: null });
+                                setLogoPreview(null);
+                              }}
+                              className="text-sm text-red-600 hover:text-red-700 font-medium"
+                              disabled={loading}
+                            >
+                              Remover
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFormData({ ...formData, logo: null });
-                            setLogoPreview(null);
-                          }}
-                          className="mt-2 text-sm text-red-600 hover:text-red-700 font-medium"
-                          disabled={loading}
-                        >
-                          Remover logo
-                        </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-blue-400 transition">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                          <p className="mb-2 text-sm text-gray-500">
-                            <span className="font-semibold text-blue-600">Clique para enviar</span> ou arraste e solte
-                          </p>
-                          <p className="text-xs text-gray-500">PNG, JPG, GIF até 5MB</p>
+                      <label className="rounded-xl border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer block">
+                        <div className="flex space-y-1.5 p-6 flex-row gap-3">
+                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                            <Upload className="w-5 h-5 text-gray-600" />
+                          </div>
+                          <div className="space-y-1 flex-1">
+                            <h3 className="font-semibold leading-none tracking-tight text-gray-900 text-sm">
+                              Escolha sua imagem
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              Faça o upload de sua imagem por aqui
+                            </p>
+                          </div>
                         </div>
                         <input
                           type="file"
@@ -376,21 +332,12 @@ export default function CreateStore() {
                       </label>
                     )}
                   </div>
-                </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => navigate('/')}
-                    className="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition text-base"
-                    disabled={loading}
-                  >
-                    Voltar
-                  </button>
+                  {/* Botão Submit */}
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition inline-flex items-center justify-center text-base shadow-lg"
+                    className="flex items-center gap-1.5 justify-center px-4 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 rounded-lg w-full h-12 shadow-sm"
                   >
                     {loading ? (
                       <span className="flex items-center gap-2">
@@ -401,14 +348,57 @@ export default function CreateStore() {
                         Criando loja...
                       </span>
                     ) : (
-                      <span className="flex items-center gap-2">
-                        Criar Loja
-                        <ArrowRight className="w-5 h-5" />
-                      </span>
+                      <>
+                        Criar loja
+                        <ArrowRight className="w-4 h-4" />
+                      </>
                     )}
                   </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          {/* Coluna Lateral - Informações Adicionais */}
+          <div className="space-y-6">
+            {/* Card de Preview do Subdomínio */}
+            {formData.subdomain && (
+              <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
+                <h3 className="font-semibold text-sm text-gray-900 mb-2">URL da sua loja</h3>
+                <p className="text-sm text-gray-600 break-all">
+                  <span className="font-mono text-blue-600">{formData.subdomain}.{baseDomain}</span>
+                </p>
+              </div>
+            )}
+
+            {/* Card de Ajuda */}
+            <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center p-6 border-b border-gray-200">
+                <div className="space-y-1">
+                  <h3 className="font-semibold leading-none tracking-tight text-gray-900 text-sm">
+                    Dicas
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Algumas recomendações
+                  </p>
                 </div>
-              </form>
+              </div>
+              <div className="p-6 pt-6">
+                <ul className="space-y-3 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 mt-0.5">•</span>
+                    <span>Escolha um nome que represente sua marca</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 mt-0.5">•</span>
+                    <span>O subdomínio deve ser único e fácil de lembrar</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 mt-0.5">•</span>
+                    <span>Você pode alterar essas informações depois</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

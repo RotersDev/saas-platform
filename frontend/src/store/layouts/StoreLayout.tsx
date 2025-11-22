@@ -110,6 +110,17 @@ export default function StoreLayout() {
     return username[0].toUpperCase();
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return 'Bom dia';
+    } else if (hour >= 12 && hour < 18) {
+      return 'Boa tarde';
+    } else {
+      return 'Boa noite';
+    }
+  };
+
   const currentUser = userData || user;
 
 
@@ -177,7 +188,14 @@ export default function StoreLayout() {
         <div className="flex flex-col h-full">
           {/* Logo/Header */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <h1 className="text-lg font-bold text-gray-900">Painel</h1>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Painel</h1>
+              {currentUser?.name && (
+                <p className="text-xs text-gray-600 mt-0.5">
+                  {getGreeting()}, {currentUser.name.split(' ')[0]}
+                </p>
+              )}
+            </div>
             <button
               onClick={() => setMobileMenuOpen(false)}
               className="lg:hidden text-gray-500 hover:text-gray-700"
@@ -293,7 +311,14 @@ export default function StoreLayout() {
             </button>
 
             {/* Desktop Title */}
-            <h1 className="hidden lg:block text-lg font-bold text-gray-900">Painel do Lojista</h1>
+            <div className="hidden lg:block">
+              <h1 className="text-lg font-bold text-gray-900">Painel</h1>
+              {currentUser?.name && (
+                <p className="text-sm text-gray-600 mt-0.5">
+                  {getGreeting()}, {currentUser.name.split(' ')[0]}
+                </p>
+              )}
+            </div>
 
             {/* User Profile */}
             {currentUser && (
