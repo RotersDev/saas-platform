@@ -232,6 +232,8 @@ function SubdomainShopWrapper() {
           <Route path="categories" element={<ShopCategories />} />
           <Route path="terms" element={<ShopTerms />} />
           <Route path="login" element={<CustomerLogin />} />
+          <Route path="forgot-password" element={<CustomerForgotPassword />} />
+          <Route path="reset-password" element={<CustomerResetPassword />} />
           <Route path="my-orders" element={<MyOrders />} />
           <Route path="my-orders/:orderId" element={<MyOrderDetails />} />
           <Route path="*" element={<PageNotFound />} />
@@ -246,6 +248,8 @@ function SubdomainShopWrapper() {
           <Route path="categories" element={<ShopCategories />} />
           <Route path="terms" element={<ShopTerms />} />
           <Route path="login" element={<CustomerLogin />} />
+          <Route path="forgot-password" element={<CustomerForgotPassword />} />
+          <Route path="reset-password" element={<CustomerResetPassword />} />
           <Route path="my-orders" element={<MyOrders />} />
           <Route path="my-orders/:orderId" element={<MyOrderDetails />} />
           <Route path="*" element={<PageNotFound />} />
