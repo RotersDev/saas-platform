@@ -99,9 +99,13 @@ export class VisitController {
           [Op.gte]: new Date(start as string),
           [Op.lte]: new Date(end as string),
         };
+        console.log('[VisitController.getVisitStats] Filtro de data:', { start, end, store_id: req.store.id });
+      } else {
+        console.log('[VisitController.getVisitStats] Sem filtro de data, buscando todas as visitas da loja:', req.store.id);
       }
 
       const totalVisits = await Visit.count({ where });
+      console.log('[VisitController.getVisitStats] Total de visitas encontradas:', totalVisits, '| Store ID:', req.store.id);
 
       // Visitas únicas por IP - usar distinct
       const allVisits = await Visit.findAll({

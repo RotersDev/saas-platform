@@ -131,6 +131,8 @@ export default function ShopHome() {
       const newCart = [...currentCart, { ...product, quantity: 1 }];
       setCart(newCart);
       localStorage.setItem(`cart_${currentCartKey}`, JSON.stringify(newCart));
+      // Disparar evento customizado para atualizar contador no header
+      window.dispatchEvent(new Event('cartUpdated'));
       console.log('[Home.addToCart] Produto adicionado:', { productId: product.id, cartKey: currentCartKey, cartSize: newCart.length });
       toast.success('Produto adicionado ao carrinho!');
     } catch (error) {

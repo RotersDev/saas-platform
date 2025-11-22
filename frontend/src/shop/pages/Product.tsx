@@ -239,6 +239,8 @@ export default function ShopProduct() {
 
       setCart(newCart);
       localStorage.setItem(`cart_${currentCartKey}`, JSON.stringify(newCart));
+      // Disparar evento customizado para atualizar contador no header
+      window.dispatchEvent(new Event('cartUpdated'));
       console.log('[addToCart] Produto adicionado:', { productId: product.id, quantity, cartKey: currentCartKey, cartSize: newCart.length });
       toast.success('Produto adicionado ao carrinho!');
     } catch (error) {
@@ -266,6 +268,8 @@ export default function ShopProduct() {
       const newCart = [{ ...product, quantity }];
       setCart(newCart);
       localStorage.setItem(`cart_${currentCartKey}`, JSON.stringify(newCart));
+      // Disparar evento customizado para atualizar contador no header
+      window.dispatchEvent(new Event('cartUpdated'));
       console.log('[buyNow] Redirecionando para checkout:', { productId: product.id, quantity, cartKey: currentCartKey });
       navigate(getCheckoutUrl(storeSubdomain));
     } catch (error) {

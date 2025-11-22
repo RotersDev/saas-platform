@@ -235,20 +235,53 @@ export default function ShopLayout() {
   // Atualizar contador do carrinho
   useEffect(() => {
     const updateCartCount = () => {
-      const saved = localStorage.getItem(`cart_${storeSubdomain}`);
-      if (saved) {
-        const cart = JSON.parse(saved);
-        setCartCount(cart.length);
-      } else {
+      // Usar o mesmo cálculo de cartKey que as páginas usam
+      const currentCartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+      if (!currentCartKey) {
+        setCartCount(0);
+        return;
+      }
+      try {
+        const saved = localStorage.getItem(`cart_${currentCartKey}`);
+        if (saved) {
+          const cart = JSON.parse(saved);
+          setCartCount(Array.isArray(cart) ? cart.length : 0);
+        } else {
+          setCartCount(0);
+        }
+      } catch (error) {
+        console.error('[ShopLayout] Erro ao atualizar contador do carrinho:', error);
         setCartCount(0);
       }
     };
 
     updateCartCount();
-    // Atualizar quando o storage mudar
+
+    // Listener para mudanças no localStorage (de outras abas/janelas)
+    const handleStorageChange = (e: StorageEvent) => {
+      const currentCartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+      if (e.key === `cart_${currentCartKey}`) {
+        updateCartCount();
+      }
+    };
+
+    // Listener para evento customizado (mesma aba)
+    const handleCartUpdated = () => {
+      updateCartCount();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('cartUpdated', handleCartUpdated);
+
+    // Atualizar periodicamente (fallback)
     const interval = setInterval(updateCartCount, 1000);
-    return () => clearInterval(interval);
-  }, [storeSubdomain]);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('cartUpdated', handleCartUpdated);
+      clearInterval(interval);
+    };
+  }, [storeSubdomain, storeInfo]);
 
   // Verificar se a loja não existe (só verificar se não está carregando)
   if (!storeLoading && (!storeInfo || storeError)) {
