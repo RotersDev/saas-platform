@@ -4,7 +4,7 @@ import { CustomerAuthController } from '../controllers/customerAuthController';
 import { VisitController } from '../controllers/visitController';
 import { CouponController } from '../controllers/couponController';
 import { resolveTenantPublic } from '../middleware/tenant';
-import { Theme, Category } from '../models';
+import { Theme, Category, Template } from '../models';
 
 export const publicRoutes = Router();
 
@@ -97,18 +97,45 @@ publicRoutes.get('/theme', async (req: any, res) => {
       where: { store_id: req.store.id },
     });
 
+    // Buscar template ativo
+    const activeTemplate = await Template.findOne({
+      where: {
+        store_id: req.store.id,
+        is_active: true,
+      },
+    });
+
+    // Se não há template ativo, buscar template padrão
+    let template = activeTemplate;
+    if (!template) {
+      template = await Template.findOne({
+        where: {
+          store_id: req.store.id,
+          is_default: true,
+        },
+      });
+    }
+
     if (!theme) {
-      // Retornar tema padrão
+      // Retornar tema padrão com template
       res.json({
         primary_color: '#000000',
         secondary_color: '#ffffff',
         accent_color: '#007bff',
-        custom_css: '',
+        custom_css: template?.custom_css || '',
+        custom_js: template?.custom_js || '',
       });
       return;
     }
 
-    res.json(theme);
+    // Mesclar tema com template ativo (template tem prioridade)
+    const response = {
+      ...theme.toJSON(),
+      custom_css: template?.custom_css || theme.custom_css || '',
+      custom_js: template?.custom_js || theme.custom_js || '',
+    };
+
+    res.json(response);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar tema' });
   }

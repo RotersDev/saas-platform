@@ -15,6 +15,18 @@ export default function Landing() {
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
+    // Verificar se estamos em uma rota de loja (subdomain no path)
+    const pathname = window.location.pathname;
+    const pathParts = pathname.split('/').filter(Boolean);
+    const firstPart = pathParts[0];
+    const knownShopRoutes = ['admin', 'store', 'login', 'register', 'create-store', 'product', 'checkout', 'payment', 'order', 'categories', 'terms', 'my-orders', 'forgot-password', 'reset-password', 'api'];
+    const isShopRoute = firstPart && !knownShopRoutes.includes(firstPart) && firstPart.length > 0 && /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/i.test(firstPart);
+
+    // Se estamos em uma rota de loja, não redirecionar
+    if (isShopRoute) {
+      return;
+    }
+
     // Redirecionar usuários logados para o dashboard
     if (isAuthenticated && user) {
       if (user.store_id) {

@@ -119,27 +119,55 @@ export default function ShopLayout() {
       existingStyles.forEach((el) => el.remove());
 
       // Criar novo elemento de estilo para esta loja
+      // O CSS só será aplicado na loja (ShopLayout), nunca no dashboard
+      // O isolamento é garantido porque este componente só renderiza na loja
       if (theme.custom_css && theme.custom_css.trim()) {
         const styleElement = document.createElement('style');
         styleElement.id = `store-custom-css-${storeIdentifier}`;
         styleElement.setAttribute('data-store', storeIdentifier);
+        styleElement.setAttribute('data-store-id', String(storeInfo.id));
         styleElement.type = 'text/css';
         styleElement.textContent = theme.custom_css;
         document.head.appendChild(styleElement);
       }
 
-      // Aplicar JavaScript personalizado
+      // Aplicar JavaScript personalizado com isolamento completo
       if (theme.custom_js && theme.custom_js.trim()) {
         // Remover scripts antigos desta loja
-        const existingScripts = document.querySelectorAll(`script[data-store="${storeIdentifier}"]`);
+        const existingScripts = document.querySelectorAll(`script[data-store="${storeIdentifier}"], script[id^="store-custom-js-"]`);
         existingScripts.forEach((el) => el.remove());
 
-        // Criar novo script
+        // Criar novo script com isolamento
+        // Envolver o código em uma IIFE (Immediately Invoked Function Expression) isolada
+        // Isso garante que o código não polua o escopo global e não afete outras lojas
+        const isolatedCode = `
+          (function() {
+            'use strict';
+            // Isolar dentro de um escopo específico da loja
+            const STORE_ID = '${storeIdentifier}';
+            const STORE_ID_NUM = ${storeInfo.id};
+
+            // Verificar se estamos na loja correta (não no dashboard)
+            if (window.location.pathname.startsWith('/store') ||
+                window.location.pathname.startsWith('/admin') ||
+                window.location.pathname === '/') {
+              return; // Não executar no dashboard ou landing
+            }
+
+            try {
+              ${theme.custom_js}
+            } catch (error) {
+              console.error('[Store Custom JS Error]', error);
+            }
+          })();
+        `;
+
         const scriptElement = document.createElement('script');
         scriptElement.id = `store-custom-js-${storeIdentifier}`;
         scriptElement.setAttribute('data-store', storeIdentifier);
+        scriptElement.setAttribute('data-store-id', String(storeInfo.id));
         scriptElement.type = 'text/javascript';
-        scriptElement.textContent = theme.custom_js;
+        scriptElement.textContent = isolatedCode;
         document.head.appendChild(scriptElement);
       }
 

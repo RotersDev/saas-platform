@@ -3,8 +3,10 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useLocation } from 'react-router-dom';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { Code, FileCode, Save, Bell, Mail, MessageSquare, Smartphone, AlertCircle, CheckCircle2, Loader2, Globe, ChevronDown, ChevronUp, Settings as SettingsIcon, FileText } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Code, FileCode, Save, Bell, Mail, MessageSquare, Smartphone, AlertCircle, CheckCircle2, Loader2, Globe, ChevronDown, ChevronUp, Settings as SettingsIcon, FileText, Plus, Edit, Trash2, Check } from 'lucide-react';
+import CreateTemplateModal from '../../components/CreateTemplateModal';
+import ConfirmModal from '../../components/ConfirmModal';
+import { Link, useNavigate } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useThemeStore } from '../themeStore';
@@ -29,10 +31,9 @@ type TabType = 'general' | 'advanced' | 'notifications' | 'domains' | 'terms';
 
 export default function StoreSettings() {
   const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { theme: currentTheme } = useThemeStore();
-  const [customCss, setCustomCss] = useState('');
-  const [customJs, setCustomJs] = useState('');
 
   // Determinar aba ativa baseado na URL ou hash
   const getActiveTab = (): TabType => {
@@ -136,6 +137,10 @@ export default function StoreSettings() {
   const [webhookUrls, setWebhookUrls] = useState<Record<string, string>>({});
   const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
   const [expandedWebhooks, setExpandedWebhooks] = useState<Record<string, boolean>>({});
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
+  const [showActivateConfirm, setShowActivateConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
 
   const { data: theme, isLoading: themeLoading } = useQuery('theme', async () => {
     const response = await api.get('/api/themes');
@@ -155,12 +160,31 @@ export default function StoreSettings() {
     }
   );
 
-  useEffect(() => {
-    if (theme) {
-      setCustomCss(theme.custom_css || '');
-      setCustomJs(theme.custom_js || '');
+  // Templates
+  const { data: templates, isLoading: templatesLoading, refetch: refetchTemplates } = useQuery(
+    'templates',
+    async () => {
+      const response = await api.get('/api/templates');
+      return response.data;
+    },
+    {
+      staleTime: 30000,
     }
-  }, [theme]);
+  );
+
+  // Verificar se já existe template padrão, se não, criar
+  useEffect(() => {
+    if (templates && templates.length === 0) {
+      // Criar template padrão automaticamente
+      api.post('/api/templates/default')
+        .then(() => {
+          refetchTemplates();
+        })
+        .catch((error) => {
+          console.error('Erro ao criar template padrão:', error);
+        });
+    }
+  }, [templates, refetchTemplates]);
 
   useEffect(() => {
     if (notificationsData) {
@@ -178,27 +202,6 @@ export default function StoreSettings() {
     }
   }, [notificationsData]);
 
-  const updateThemeMutation = useMutation(
-    async (data: { custom_css?: string; custom_js?: string }) => {
-      const response = await api.put('/api/themes', data, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      return response.data;
-    },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('theme');
-        queryClient.invalidateQueries('shopTheme');
-        toast.success('Configurações salvas com sucesso!');
-      },
-      onError: (error: any) => {
-        const errorMessage = error.response?.data?.error || 'Erro ao atualizar configurações';
-        toast.error(errorMessage);
-      },
-    }
-  );
 
   const updateNotificationsMutation = useMutation(
     async (notificationsToUpdate: Array<{ type: string; event: string; enabled: boolean; webhook_url?: string }>) => {
@@ -241,11 +244,96 @@ export default function StoreSettings() {
     }
   );
 
-  const handleSaveTheme = () => {
-    updateThemeMutation.mutate({
-      custom_css: customCss,
-      custom_js: customJs,
+  // Mutations para templates
+  const createTemplateMutation = useMutation(
+    async (name: string) => {
+      const response = await api.post('/api/templates', { name });
+      return response.data;
+    },
+    {
+      onSuccess: () => {
+        refetchTemplates();
+        toast.success('Template criado com sucesso!');
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.error || 'Erro ao criar template');
+      },
+    }
+  );
+
+  const activateTemplateMutation = useMutation(
+    async (id: number) => {
+      const response = await api.post(`/api/templates/${id}/activate`);
+      return response.data;
+    },
+    {
+      onSuccess: () => {
+        refetchTemplates();
+        queryClient.invalidateQueries('shopTheme');
+        toast.success('Template ativado com sucesso!');
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.error || 'Erro ao ativar template');
+      },
+    }
+  );
+
+  const deleteTemplateMutation = useMutation(
+    async (id: number) => {
+      const response = await api.delete(`/api/templates/${id}`);
+      return response.data;
+    },
+    {
+      onSuccess: () => {
+        refetchTemplates();
+        toast.success('Template deletado com sucesso!');
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.error || 'Erro ao deletar template');
+      },
+    }
+  );
+
+  const handleCreateTemplate = () => {
+    setShowCreateTemplateModal(true);
+  };
+
+  const handleConfirmCreateTemplate = (name: string) => {
+    createTemplateMutation.mutate(name, {
+      onSuccess: () => {
+        setShowCreateTemplateModal(false);
+      },
     });
+  };
+
+  const handleActivateTemplate = (template: any) => {
+    setSelectedTemplate(template);
+    setShowActivateConfirm(true);
+  };
+
+  const handleConfirmActivate = () => {
+    if (selectedTemplate) {
+      activateTemplateMutation.mutate(selectedTemplate.id);
+      setShowActivateConfirm(false);
+      setSelectedTemplate(null);
+    }
+  };
+
+  const handleDeleteTemplate = (template: any) => {
+    if (template.is_default) {
+      toast.error('Não é possível deletar o template padrão');
+      return;
+    }
+    setSelectedTemplate(template);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedTemplate) {
+      deleteTemplateMutation.mutate(selectedTemplate.id);
+      setShowDeleteConfirm(false);
+      setSelectedTemplate(null);
+    }
   };
 
   const handleSaveNotifications = () => {
@@ -656,108 +744,195 @@ export default function StoreSettings() {
       )}
 
       {activeTab === 'advanced' && (
-        <div className="space-y-6">
-          {/* CSS Personalizado */}
+        <div className="space-y-4 sm:space-y-6">
+          {/* Gerenciamento de Templates */}
           <div className={`rounded-xl border shadow-sm ${
             currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
-            <div className={`p-6 border-b ${
+            <div className={`p-4 sm:p-6 border-b ${
               currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
             }`}>
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${
-                  currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
-                }`}>
-                  <FileCode className={`w-5 h-5 ${
-                    currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                  }`} />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${
+                    currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+                  }`}>
+                    <FileCode className={`w-5 h-5 ${
+                      currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                    }`} />
+                  </div>
+                  <div>
+                    <h2 className={`text-base sm:text-lg font-semibold ${
+                      currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>Templates</h2>
+                    <p className={`text-xs sm:text-sm ${
+                      currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>Gerencie seus templates de CSS e JavaScript personalizados</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className={`text-lg font-semibold ${
-                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
-                  }`}>CSS Personalizado</h2>
-                  <p className={`text-sm ${
-                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                  }`}>Adicione estilos customizados para sua loja</p>
-                </div>
+                <button
+                  onClick={handleCreateTemplate}
+                  disabled={createTemplateMutation.isLoading}
+                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium text-sm whitespace-nowrap"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {createTemplateMutation.isLoading ? 'Criando...' : 'Novo Template'}
+                </button>
               </div>
             </div>
-            <div className="p-6">
-              <div className="relative">
-                <textarea
-                  value={customCss}
-                  onChange={(e) => setCustomCss(e.target.value)}
-                  rows={20}
-                  className={`w-full px-4 py-3 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
-                    currentTheme === 'dark'
-                      ? 'border-gray-600 bg-gray-900 text-white placeholder-gray-500'
-                      : 'border-gray-300 bg-white'
-                  }`}
-                  placeholder="/* Seu CSS personalizado aqui */"
-                  spellCheck={false}
-                />
-              </div>
-              <p className={`text-xs mt-3 ${
-                currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+            <div className="p-4 sm:p-6">
+              {templatesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : templates && templates.length > 0 ? (
+                <div className="space-y-3">
+                  {templates.map((template: any) => (
+                    <div
+                      key={template.id}
+                      className={`border rounded-lg p-4 ${
+                        template.is_active
+                          ? currentTheme === 'dark'
+                            ? 'border-blue-500 bg-blue-900/20'
+                            : 'border-blue-500 bg-blue-50'
+                          : currentTheme === 'dark'
+                            ? 'border-gray-700'
+                            : 'border-gray-200'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className={`font-semibold truncate ${
+                              currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                            }`}>
+                              {template.name}
+                            </h3>
+                            {template.is_default && (
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${
+                                currentTheme === 'dark'
+                                  ? 'bg-gray-700 text-gray-300'
+                                  : 'bg-gray-200 text-gray-700'
+                              }`}>
+                                Padrão
+                              </span>
+                            )}
+                            {template.is_active && (
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${
+                                currentTheme === 'dark'
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-blue-600 text-white'
+                              }`}>
+                                Ativo
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-sm mt-1 ${
+                            currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
+                            {template.custom_css ? 'CSS: Sim' : 'CSS: Não'} • {template.custom_js ? 'JS: Sim' : 'JS: Não'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {!template.is_active && (
+                            <button
+                              onClick={() => handleActivateTemplate(template)}
+                              disabled={activateTemplateMutation.isLoading}
+                              className={`p-2 rounded-lg transition-colors ${
+                                currentTheme === 'dark'
+                                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
+                                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                              } disabled:opacity-50`}
+                              title="Ativar template"
+                            >
+                              <Check className="w-5 h-5" />
+                            </button>
+                          )}
+                          {!template.is_default && (
+                            <button
+                              onClick={() => navigate(`/store/settings/templates/${template.id}/edit`)}
+                              className={`p-2 rounded-lg transition-colors ${
+                                currentTheme === 'dark'
+                                  ? 'hover:bg-gray-700 text-gray-400 hover:text-white'
+                                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                              }`}
+                              title="Editar template"
+                            >
+                              <Edit className="w-5 h-5" />
+                            </button>
+                          )}
+                          {template.is_default && (
+                            <span className={`p-2 rounded-lg ${
+                              currentTheme === 'dark'
+                                ? 'text-gray-500'
+                                : 'text-gray-400'
+                            }`} title="Template padrão não pode ser editado">
+                              <Edit className="w-5 h-5 opacity-50" />
+                            </span>
+                          )}
+                          {!template.is_default && (
+                            <button
+                              onClick={() => handleDeleteTemplate(template)}
+                              disabled={deleteTemplateMutation.isLoading}
+                              className={`p-2 rounded-lg transition-colors ${
+                                currentTheme === 'dark'
+                                  ? 'hover:bg-red-900/50 text-gray-400 hover:text-red-400'
+                                  : 'hover:bg-red-50 text-gray-600 hover:text-red-600'
+                              } disabled:opacity-50`}
+                              title="Deletar template"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileCode className={`w-12 h-12 mx-auto mb-4 ${
+                    currentTheme === 'dark' ? 'text-gray-600' : 'text-gray-400'
+                  }`} />
+                  <p className={`${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Nenhum template criado ainda. Crie um novo template para começar.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Informações sobre Templates */}
+          <div className={`rounded-xl border shadow-sm ${
+            currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className="p-4 sm:p-6">
+              <h3 className={`text-base sm:text-lg font-semibold mb-3 ${
+                currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>Sobre Templates</h3>
+              <ul className={`space-y-2 text-xs sm:text-sm ${
+                currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
               }`}>
-                O CSS será aplicado diretamente na sua loja. Use seletores específicos para evitar conflitos.
-              </p>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1 flex-shrink-0">•</span>
+                  <span>Cada template é isolado e não afeta outras lojas ou o dashboard</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1 flex-shrink-0">•</span>
+                  <span>Você pode criar múltiplos templates e alternar entre eles</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1 flex-shrink-0">•</span>
+                  <span>O template padrão da Nerix sempre está disponível e não pode ser editado</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1 flex-shrink-0">•</span>
+                  <span>Novos templates são criados com base no template padrão atualizado</span>
+                </li>
+              </ul>
             </div>
-          </div>
-
-          {/* JavaScript Personalizado */}
-          <div className={`rounded-xl border shadow-sm ${
-            currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-          }`}>
-            <div className={`p-6 border-b ${
-              currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
-            }`}>
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${
-                  currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
-                }`}>
-                  <Code className={`w-5 h-5 ${
-                    currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                  }`} />
-                </div>
-                <div>
-                  <h2 className={`text-lg font-semibold ${
-                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
-                  }`}>JavaScript Personalizado</h2>
-                  <p className={`text-sm ${
-                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                  }`}>Adicione scripts customizados para sua loja</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="relative">
-                <textarea
-                  value={customJs}
-                  onChange={(e) => setCustomJs(e.target.value)}
-                  rows={20}
-                  className={`w-full px-4 py-3 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
-                    currentTheme === 'dark'
-                      ? 'border-gray-600 bg-gray-900 text-white placeholder-gray-500'
-                      : 'border-gray-300 bg-white'
-                  }`}
-                  placeholder="// Seu JavaScript personalizado aqui"
-                  spellCheck={false}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Botão Salvar */}
-          <div className="flex justify-end">
-            <button
-              onClick={handleSaveTheme}
-              disabled={updateThemeMutation.isLoading}
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium shadow-md hover:shadow-lg"
-            >
-              <Save className="w-5 h-5 mr-2" />
-              {updateThemeMutation.isLoading ? 'Salvando...' : 'Salvar Configurações'}
-            </button>
           </div>
         </div>
       )}
@@ -1140,6 +1315,46 @@ export default function StoreSettings() {
           </div>
         </div>
       )}
+
+      {/* Modal de Criar Template */}
+      <CreateTemplateModal
+        isOpen={showCreateTemplateModal}
+        onClose={() => setShowCreateTemplateModal(false)}
+        onConfirm={handleConfirmCreateTemplate}
+        isLoading={createTemplateMutation.isLoading}
+      />
+
+      {/* Modal de Confirmação - Ativar Template */}
+      <ConfirmModal
+        isOpen={showActivateConfirm}
+        onClose={() => {
+          setShowActivateConfirm(false);
+          setSelectedTemplate(null);
+        }}
+        onConfirm={handleConfirmActivate}
+        title="Ativar Template"
+        message={`Deseja ativar o template "${selectedTemplate?.name}"? O template atualmente ativo será desativado.`}
+        confirmText="Ativar"
+        cancelText="Cancelar"
+        isLoading={activateTemplateMutation.isLoading}
+        variant="default"
+      />
+
+      {/* Modal de Confirmação - Deletar Template */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setSelectedTemplate(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Deletar Template"
+        message={`Tem certeza que deseja deletar o template "${selectedTemplate?.name}"? Esta ação não pode ser desfeita.`}
+        confirmText="Deletar"
+        cancelText="Cancelar"
+        isLoading={deleteTemplateMutation.isLoading}
+        variant="danger"
+      />
     </div>
   );
 }

@@ -28,6 +28,7 @@ import StoreCategories from './store/pages/Categories';
 import StoreProductForm from './store/pages/ProductForm';
 import StoreSettings from './store/pages/Settings';
 import StoreDomains from './store/pages/Domains';
+import StoreTemplateEditor from './store/pages/TemplateEditor';
 import StoreWallet from './store/pages/Wallet';
 import StoreAccount from './store/pages/Account';
 
@@ -228,13 +229,13 @@ function SubdomainShopWrapper() {
   const isBaseDomain = hostname === baseDomain || hostname === `www.${baseDomain}`;
   const isSaasDomain = hostname === saasDomain || hostname === `www.${saasDomain}`;
 
-  // Se há subdomínio conhecido do domínio base (ex: marcos.nerix.online), renderizar ShopLayout com rotas
+  // Se há subdomínio conhecido do domínio base (ex: marcos.nerix.online) ou no path (localhost)
   // Aceitar ambos os formatos: /product/:slug e /:storeSubdomain/product/:slug
   if (subdomain) {
     return (
       <Routes>
-        {/* Rotas com subdomain no path (ex: /marcos/product/dfs) - usar parâmetro dinâmico */}
-        <Route path=":storeSubdomain/*" element={<ShopLayout />}>
+        {/* Rotas com subdomain no path (ex: /marcos/product/dfs ou /asdadaadas) - usar parâmetro dinâmico */}
+        <Route path={`${subdomain}/*`} element={<ShopLayout />}>
           <Route index element={<ShopHome />} />
           <Route path="product/:slug" element={<ShopProduct />} />
           <Route path="checkout" element={<ShopCheckout />} />
@@ -270,7 +271,8 @@ function SubdomainShopWrapper() {
   }
 
   // Se é localhost ou domínio base (nerix.online), renderizar Landing
-  if (isLocalhost || isBaseDomain) {
+  // MAS apenas se não houver subdomínio no path
+  if ((isLocalhost || isBaseDomain) && !subdomain) {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -331,6 +333,7 @@ function SubdomainShopWrapper() {
 // Componente que decide qual rota renderizar baseado no hostname
 function RouteSelector() {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'nerix.online';
   const saasDomain = import.meta.env.VITE_SAAS_DOMAIN || 'nerix.com.br';
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost');
@@ -339,8 +342,30 @@ function RouteSelector() {
   const subdomain = getSubdomainFromHostname();
   const isSubdomainOfBase = hostname.endsWith(`.${baseDomain}`) && !isBaseDomain;
 
+  // Em localhost, verificar se há subdomínio no path
+  if (isLocalhost) {
+    const pathParts = pathname.split('/').filter(Boolean);
+    const firstPart = pathParts[0];
+    const knownRoutes = ['admin', 'store', 'login', 'register', 'create-store', 'product', 'checkout', 'payment', 'order', 'categories', 'terms', 'my-orders', 'forgot-password', 'reset-password', 'api'];
+
+    // Se há subdomínio no path em localhost, renderizar ShopLayout
+    if (subdomain && firstPart === subdomain && !knownRoutes.includes(subdomain)) {
+      return <SubdomainShopWrapper />;
+    }
+
+    // Se não há subdomínio e não é rota conhecida, pode ser landing ou dashboard
+    if (!subdomain && !firstPart) {
+      return <SubdomainShopWrapper />;
+    }
+
+    // Se é rota conhecida (store, admin, etc), deixar o roteamento normal funcionar
+    if (firstPart && knownRoutes.includes(firstPart)) {
+      return <SubdomainShopWrapper />;
+    }
+  }
+
   // Se é domínio SaaS ou base, renderizar Landing (que tem suas próprias rotas internas)
-  if (isSaasDomain || (isBaseDomain && !subdomain) || (isLocalhost && !subdomain)) {
+  if (isSaasDomain || (isBaseDomain && !subdomain)) {
     return <SubdomainShopWrapper />;
   }
 
@@ -405,6 +430,7 @@ function App() {
               <Route path="theme" element={<StoreTheme />} />
               <Route path="settings" element={<StoreSettings />} />
               <Route path="settings/domains" element={<StoreDomains />} />
+              <Route path="settings/templates/:id/edit" element={<StoreTemplateEditor />} />
               <Route path="wallet" element={<StoreWallet />} />
               <Route path="account" element={<StoreAccount />} />
             </Route>

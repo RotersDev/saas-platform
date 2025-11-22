@@ -157,6 +157,132 @@ async function startServer() {
       // await sequelize.sync({ alter: true });
     }
 
+    // Criar tabelas se não existirem (não bloquear se falhar)
+    const tablesToCreate = [
+      {
+        name: 'templates',
+        createQuery: `
+          CREATE TABLE templates (
+            id SERIAL PRIMARY KEY,
+            store_id INTEGER NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            is_default BOOLEAN NOT NULL DEFAULT false,
+            is_active BOOLEAN NOT NULL DEFAULT false,
+            custom_css TEXT,
+            custom_js TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+          );
+        `,
+        indexes: [
+          `CREATE INDEX templates_store_id_idx ON templates(store_id);`,
+          `CREATE INDEX templates_store_id_is_active_idx ON templates(store_id, is_active);`,
+        ],
+      },
+      {
+        name: 'domains',
+        createQuery: `
+          CREATE TABLE domains (
+            id SERIAL PRIMARY KEY,
+            store_id INTEGER NOT NULL,
+            domain VARCHAR(255) NOT NULL UNIQUE,
+            is_primary BOOLEAN NOT NULL DEFAULT false,
+            ssl_enabled BOOLEAN NOT NULL DEFAULT false,
+            ssl_certificate TEXT,
+            ssl_key TEXT,
+            verified BOOLEAN NOT NULL DEFAULT false,
+            verified_at TIMESTAMP,
+            verify_token VARCHAR(255),
+            verify_token_expires TIMESTAMP,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+          );
+        `,
+        indexes: [
+          `CREATE INDEX domains_store_id_idx ON domains(store_id);`,
+          `CREATE INDEX domains_domain_idx ON domains(domain);`,
+        ],
+      },
+    ];
+
+    for (const table of tablesToCreate) {
+      try {
+        const [results] = await sequelize.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables
+            WHERE table_schema = 'public'
+            AND table_name = '${table.name}'
+          );
+        `);
+        const tableExists = (results as any[])[0]?.exists;
+
+        if (!tableExists) {
+          logger.info(`🔄 Criando tabela ${table.name}...`);
+          try {
+            await sequelize.query(table.createQuery);
+            for (const indexQuery of table.indexes) {
+              try {
+                await sequelize.query(indexQuery);
+              } catch (indexError: any) {
+                if (!indexError.message?.includes('already exists')) {
+                  logger.warn(`⚠️ Aviso ao criar índice para ${table.name}:`, indexError.message);
+                }
+              }
+            }
+            logger.info(`✅ Tabela ${table.name} criada com sucesso!`);
+          } catch (createError: any) {
+            if (createError.message && createError.message.includes('already exists')) {
+              logger.info(`ℹ️ Tabela ${table.name} já existe.`);
+            } else {
+              logger.warn(`⚠️ Aviso ao criar tabela ${table.name}:`, createError.message);
+            }
+          }
+        } else {
+          logger.info(`ℹ️ Tabela ${table.name} já existe. Verificando colunas...`);
+
+          // Verificar e criar colunas faltantes (especialmente para domains)
+          if (table.name === 'domains') {
+            try {
+              const [columns] = await sequelize.query(`
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                AND table_name = 'domains';
+              `);
+              const existingColumns = (columns as any[]).map((c: any) => c.column_name);
+
+              if (!existingColumns.includes('verify_token')) {
+                logger.info(`🔄 Adicionando coluna verify_token à tabela domains...`);
+                await sequelize.query(`ALTER TABLE domains ADD COLUMN verify_token VARCHAR(255);`);
+                logger.info(`✅ Coluna verify_token adicionada!`);
+              }
+
+              if (!existingColumns.includes('verify_token_expires')) {
+                logger.info(`🔄 Adicionando coluna verify_token_expires à tabela domains...`);
+                await sequelize.query(`ALTER TABLE domains ADD COLUMN verify_token_expires TIMESTAMP;`);
+                logger.info(`✅ Coluna verify_token_expires adicionada!`);
+              }
+            } catch (columnError: any) {
+              logger.warn(`⚠️ Aviso ao verificar colunas de ${table.name}:`, columnError.message);
+            }
+          }
+
+          // Verificar índices faltantes
+          for (const indexQuery of table.indexes) {
+            try {
+              await sequelize.query(indexQuery);
+            } catch (indexError: any) {
+              if (!indexError.message?.includes('already exists')) {
+                // Ignorar se o índice já existe
+              }
+            }
+          }
+        }
+      } catch (error: any) {
+        logger.warn(`⚠️ Aviso ao verificar tabela ${table.name} (continuando):`, error.message);
+      }
+    }
+
     // Importar modelos antes de iniciar o servidor (não bloquear se falhar)
     // Usar Promise.race com timeout para evitar travamento
     try {

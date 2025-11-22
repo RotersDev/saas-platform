@@ -1,16 +1,33 @@
 /**
- * Extrai o subdomínio do hostname atual
+ * Extrai o subdomínio do hostname atual ou do path (para localhost)
  * Exemplo: asdad.nerix.online -> asdad
  * Exemplo: loja1.nerix.online -> loja1
+ * Exemplo: localhost:5173/asdadaadas -> asdadaadas (do path)
  * Exemplo: nerix.online -> null (domínio principal)
  */
 export function getSubdomainFromHostname(): string | null {
   if (typeof window === 'undefined') return null;
 
   const hostname = window.location.hostname;
+  const pathname = window.location.pathname;
 
-  // Em desenvolvimento local, não há subdomínio
+  // Em desenvolvimento local, tentar extrair do path
   if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost')) {
+    // Extrair primeira parte do path como subdomínio
+    const pathParts = pathname.split('/').filter(Boolean);
+    const firstPart = pathParts[0];
+
+    // Rotas conhecidas que NÃO são subdomínios
+    const knownRoutes = ['admin', 'store', 'login', 'register', 'create-store', 'product', 'checkout', 'payment', 'order', 'categories', 'terms', 'my-orders', 'forgot-password', 'reset-password', 'api'];
+
+    // Se a primeira parte do path não é uma rota conhecida e não está vazia, é provavelmente um subdomínio
+    if (firstPart && !knownRoutes.includes(firstPart) && firstPart.length > 0) {
+      // Validar formato básico (letras, números, hífens)
+      if (/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/i.test(firstPart)) {
+        return firstPart;
+      }
+    }
+
     return null;
   }
 

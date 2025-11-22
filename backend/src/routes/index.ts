@@ -18,6 +18,7 @@ import { webhookRoutes } from './webhookRoutes';
 import { walletRoutes } from './walletRoutes';
 import { visitRoutes } from './visitRoutes';
 import { uploadRoutes } from './uploadRoutes';
+import { templateRoutes } from './templateRoutes';
 
 const router = Router();
 
@@ -33,6 +34,7 @@ router.use('/orders', orderRoutes);
 router.use('/customers', customerRoutes);
 router.use('/coupons', couponRoutes);
 router.use('/themes', themeRoutes);
+router.use('/templates', templateRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/domains', domainRoutes);

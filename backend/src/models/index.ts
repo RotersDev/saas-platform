@@ -26,6 +26,7 @@ import { Wallet } from './Wallet';
 import { Withdrawal } from './Withdrawal';
 import { Visit } from './Visit';
 import { UserSession } from './UserSession';
+import { Template } from './Template';
 
 // Initialize all models
 Store.initialize(sequelize);
@@ -55,6 +56,7 @@ Wallet.initialize(sequelize);
 Withdrawal.initialize(sequelize);
 Visit.initialize(sequelize);
 UserSession.initialize(sequelize);
+Template.initialize(sequelize);
 
 // Define associations
 Store.hasMany(User, { foreignKey: 'store_id', as: 'users' });
@@ -149,6 +151,10 @@ Visit.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
 User.hasMany(UserSession, { foreignKey: 'user_id', as: 'sessions' });
 UserSession.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
+// Template relationships
+Store.hasMany(Template, { foreignKey: 'store_id', as: 'templates' });
+Template.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+
 export {
   sequelize,
   Store,
@@ -178,6 +184,7 @@ export {
   Withdrawal,
   Visit,
   UserSession,
+  Template,
 };
 
 
