@@ -17,9 +17,6 @@
     "configure-split": "tsx src/scripts/configurePlatformSplit.ts",
     "set-3percent-split": "tsx src/scripts/set3PercentSplit.ts",
     "update-role": "tsx src/scripts/updateUserRole.ts",
-    "create-templates-table": "tsx src/scripts/createTemplatesTable.ts",
-    "create-domains-table": "tsx src/scripts/createDomainsTable.ts",
-    "create-all-tables": "tsx src/scripts/createTemplatesTable.ts && tsx src/scripts/createDomainsTable.ts",
     "test": "jest",
     "lint": "eslint src --ext .ts"
   },
