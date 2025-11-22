@@ -866,50 +866,74 @@ export default function StoreProductForm() {
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className={`block text-sm font-medium mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
                           Limite de Estoque
                         </label>
                         <input
                           type="number"
                           value={formData.stock_limit}
                           onChange={(e) => setFormData({ ...formData, stock_limit: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                              : 'border-gray-300'
+                          }`}
                           placeholder="100"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className={`block text-sm font-medium mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
                           Quantidade Mínima de Compra
                         </label>
                         <input
                           type="number"
                           value={formData.min_quantity}
                           onChange={(e) => setFormData({ ...formData, min_quantity: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                              : 'border-gray-300'
+                          }`}
                           placeholder="1"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className={`block text-sm font-medium mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
                           Quantidade Máxima de Compra
                         </label>
                         <input
                           type="number"
                           value={formData.max_quantity}
                           onChange={(e) => setFormData({ ...formData, max_quantity: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                              : 'border-gray-300'
+                          }`}
                           placeholder="10"
                         />
                       </div>
                     </div>
 
-                    <div className="pt-6 border-t border-gray-200 space-y-4">
+                    <div className={`pt-6 border-t space-y-4 ${
+                      theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+                    }`}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium text-gray-900">Ocultar produto</div>
-                          <p className="text-sm text-gray-600 mt-1">
+                          <div className={`font-medium ${
+                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          }`}>Ocultar produto</div>
+                          <p className={`text-sm mt-1 ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
                             Ao ocultar o produto ele não será mais visto, apenas para quem tem o link.
                           </p>
                         </div>
@@ -926,8 +950,12 @@ export default function StoreProductForm() {
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium text-gray-900">Ocultar vendas</div>
-                          <p className="text-sm text-gray-600 mt-1">
+                          <div className={`font-medium ${
+                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          }`}>Ocultar vendas</div>
+                          <p className={`text-sm mt-1 ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
                             Habilite esta função caso você queira ocultar as vendas deste produto em sua loja.
                           </p>
                         </div>
@@ -951,9 +979,15 @@ export default function StoreProductForm() {
           {/* Sidebar - Oculto em mobile */}
           <div className="hidden lg:block space-y-6">
             {/* Imagem Principal */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="font-semibold text-gray-900">Imagem principal</h3>
+            <div className={`rounded-xl border shadow-sm ${
+              theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <div className={`p-6 border-b ${
+                theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+              }`}>
+                <h3 className={`font-semibold ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>Imagem principal</h3>
               </div>
               <div className="p-6 space-y-4">
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
