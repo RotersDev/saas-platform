@@ -45,12 +45,24 @@ export default function Footer({ storeInfo, theme }: FooterProps) {
           {/* Sobre a Loja */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-3 mb-4">
-              {(theme?.logo_url || storeInfo?.logo_url) && (
+              {(theme?.logo_url || storeInfo?.logo_url) ? (
                 <img
                   src={normalizeImageUrl(theme?.logo_url || storeInfo?.logo_url)}
                   alt={storeInfo?.name || 'Loja'}
                   className="h-10 w-10 rounded-lg object-contain"
+                  loading="eager"
+                  decoding="sync"
+                  onError={(e) => {
+                    // Se a imagem falhar ao carregar, mostrar apenas o texto
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
                 />
+              ) : (
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <span className="text-blue-600 font-bold text-sm">
+                    {(storeInfo?.name || 'L')[0].toUpperCase()}
+                  </span>
+                </div>
               )}
               <h3 className="text-xl font-bold text-gray-900">
                 {storeInfo?.name || 'Nossa Loja'}

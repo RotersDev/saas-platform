@@ -125,7 +125,20 @@ api.interceptors.response.use(
       const urlParams = new URLSearchParams(window.location.search);
       const storeParam = urlParams.get('store') || subdomainFromPath;
 
-      const hasCustomerToken = storeParam ? localStorage.getItem(`customer_token_${storeParam}`) : null;
+      // Tentar pegar storeInfo do localStorage ou da query para identificar a loja
+      let storeInfo = null;
+      try {
+        const storedStoreInfo = localStorage.getItem('storeInfo');
+        if (storedStoreInfo) {
+          storeInfo = JSON.parse(storedStoreInfo);
+        }
+      } catch (e) {
+        // Ignorar erro
+      }
+
+      // Calcular customerKey (mesmo cálculo usado em outras partes)
+      const customerKey = storeParam || (storeInfo ? `store-${storeInfo.id}` : null);
+      const hasCustomerToken = customerKey ? localStorage.getItem(`customer_token_${customerKey}`) : null;
       const hasToken = localStorage.getItem('token');
 
       // Tentar renovar token se for erro 401 e tiver token (pode ser token expirado)
@@ -155,6 +168,14 @@ api.interceptors.response.use(
           // Se falhar ao renovar, fazer logout apenas se realmente não conseguir autenticar
           console.error('Erro ao renovar token:', refreshError);
         }
+      }
+
+      // Para rotas de cliente com erro 401, verificar se o token realmente expirou
+      // Se for TOKEN_EXPIRED, não remover o token imediatamente - deixar o componente tratar
+      if (isCustomerRoute && hasCustomerToken && error.response?.data?.code === 'TOKEN_EXPIRED') {
+        // Token expirado - não fazer nada aqui, deixar o componente tratar
+        // O componente pode redirecionar para login ou tentar renovar
+        return Promise.reject(error);
       }
 
       // Só fazer logout e redirecionar se já havia um token (sessão expirada) e não conseguiu renovar

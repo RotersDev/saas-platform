@@ -1,5 +1,5 @@
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, ChevronDown, Package, LogOut } from 'lucide-react';
+import { ShoppingCart, User, ChevronDown, Package, LogOut, Mail } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import { getShopUrl, getCheckoutUrl, getLoginUrl } from '../../utils/urlUtils';
@@ -31,7 +31,7 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
 
     const customerData = localStorage.getItem(`customer_${customerKey}`);
     const token = localStorage.getItem(`customer_token_${customerKey}`);
-    
+
     if (customerData && token) {
       try {
         setCustomer(JSON.parse(customerData));
@@ -60,7 +60,7 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
         }
       }
     };
-    
+
     // Listener para evento customizado (mesma aba)
     const handleCustomerUpdated = () => {
       const updated = localStorage.getItem(`customer_${customerKey}`);
@@ -76,10 +76,10 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
         setCustomer(null);
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('customerUpdated', handleCustomerUpdated);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('customerUpdated', handleCustomerUpdated);
@@ -136,15 +136,27 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
         <div className="flex items-center justify-between h-16">
           {/* Logo e Nome */}
           <Link
-            to={getShopUrl(storeSubdomain, '')}
+            to={getShopUrl(storeSubdomain, '', true)}
             className="flex items-center space-x-3 hover:opacity-80 transition-opacity flex-shrink-0"
           >
-            {(theme?.logo_url || storeInfo?.logo_url) && (
+            {(theme?.logo_url || storeInfo?.logo_url) ? (
               <img
                 src={normalizeImageUrl(theme?.logo_url || storeInfo?.logo_url)}
                 alt={storeInfo?.name || 'Loja'}
                 className="h-10 w-10 rounded-lg object-contain"
+                loading="eager"
+                decoding="sync"
+                onError={(e) => {
+                  // Se a imagem falhar ao carregar, mostrar apenas o texto
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
               />
+            ) : (
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <span className="text-blue-600 font-bold text-sm">
+                  {(storeInfo?.name || 'L')[0].toUpperCase()}
+                </span>
+              </div>
             )}
             <h1 className="text-xl font-bold text-gray-900 hidden sm:block">
               {storeInfo?.name || 'Loja'}
@@ -193,46 +205,76 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
                   />
                 </button>
 
-                {/* Dropdown Menu */}
+                {/* Dropdown Menu - Design Moderno */}
                 {profileMenuOpen && (
                   <div
                     ref={profileMenuRef}
-                    className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-2 origin-top-right animate-in fade-in slide-in-from-top-2"
+                    className="absolute top-full right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-blue-100 overflow-hidden origin-top-right animate-in fade-in slide-in-from-top-2"
+                    style={{
+                      animation: 'slideDown 0.2s ease-out',
+                    }}
                   >
-                    {/* Header do Menu */}
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-indigo-600 font-semibold text-sm">
+                    {/* Header com Gradiente Azul */}
+                    <div className="relative bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 px-6 py-5">
+                      <div className="absolute inset-0 bg-black/5"></div>
+                      <div className="relative flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-white/30">
+                          <span className="text-white font-bold text-lg">
                             {getInitials(customer.name)}
                           </span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate">
+                        <div className="flex-1 min-w-0 text-white">
+                          <div className="text-base font-bold truncate mb-0.5">
                             {customer.name}
                           </div>
-                          <div className="text-xs text-gray-500 truncate">{customer.email}</div>
+                          <div className="text-xs text-blue-100 truncate flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {customer.email}
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Itens do Menu */}
-                    <div className="py-2">
+                    {/* Itens do Menu - Cards Estilizados */}
+                    <div className="p-3 space-y-2 bg-gradient-to-b from-gray-50 to-white">
                       <Link
                         to={getShopUrl(storeSubdomain, 'my-orders')}
                         onClick={() => setProfileMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors group"
+                        className="group relative flex items-center gap-4 px-4 py-4 bg-white rounded-xl border-2 border-transparent hover:border-blue-200 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5"
                       >
-                        <Package className="w-5 h-5 text-gray-400 group-hover:text-indigo-600" />
-                        <span className="flex-1">Minhas Compras</span>
-                        <ChevronDown className="w-4 h-4 text-gray-400 rotate-[-90deg]" />
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">
+                          <Package className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                            Minhas Compras
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            Ver seus pedidos
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                            <ChevronDown className="w-4 h-4 text-blue-600 rotate-[-90deg]" />
+                          </div>
+                        </div>
                       </Link>
+
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors group"
+                        className="group relative w-full flex items-center gap-4 px-4 py-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border-2 border-red-200 hover:border-red-300 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5"
                       >
-                        <LogOut className="w-5 h-5 group-hover:text-red-700" />
-                        <span>Sair da conta</span>
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">
+                          <LogOut className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="text-sm font-bold text-red-700 group-hover:text-red-800 transition-colors">
+                            Sair da conta
+                          </div>
+                          <div className="text-xs text-red-600 mt-0.5">
+                            Encerrar sessão
+                          </div>
+                        </div>
                       </button>
                     </div>
                   </div>

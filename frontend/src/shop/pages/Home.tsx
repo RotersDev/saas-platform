@@ -91,7 +91,7 @@ export default function ShopHome() {
   );
 
   // Buscar categorias
-  const { data: categories } = useQuery(
+  const { data: categories, isLoading: categoriesLoading } = useQuery(
     ['shopCategories', storeSubdomain],
     async () => {
       const response = await api.get('/api/public/categories');
@@ -364,6 +364,10 @@ export default function ShopHome() {
                     onBuyNow={buyNow}
                   />
                 ))}
+              </div>
+            ) : categoriesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
               </div>
             ) : (
               // Se não há categorias, mostrar mensagem

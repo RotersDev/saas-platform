@@ -143,7 +143,23 @@ export default function ShopLayout() {
         document.head.appendChild(scriptElement);
       }
 
-      // Aplicar favicon
+      // Preload de imagens (logo e favicon) para carregamento rápido
+      const logoUrlToUse = theme?.logo_url || storeInfo?.logo_url;
+      if (logoUrlToUse) {
+        const logoUrl = normalizeImageUrl(logoUrlToUse);
+        // Verificar se já existe um preload para esta imagem
+        const existingPreload = document.querySelector(`link[rel="preload"][href="${logoUrl}"]`);
+        if (!existingPreload) {
+          const preloadLink = document.createElement('link');
+          preloadLink.rel = 'preload';
+          preloadLink.as = 'image';
+          preloadLink.href = logoUrl;
+          preloadLink.setAttribute('data-store', storeIdentifier);
+          document.head.appendChild(preloadLink);
+        }
+      }
+
+      // Aplicar favicon com preload
       const faviconUrlToUse = theme.favicon_url || storeInfo?.favicon_url;
       if (faviconUrlToUse) {
         // Remover todos os favicons existentes primeiro (de qualquer loja)
@@ -152,6 +168,17 @@ export default function ShopLayout() {
 
         // Normalizar URL do favicon
         const faviconUrl = normalizeImageUrl(faviconUrlToUse);
+
+        // Preload do favicon
+        const existingFaviconPreload = document.querySelector(`link[rel="preload"][href="${faviconUrl}"]`);
+        if (!existingFaviconPreload) {
+          const faviconPreload = document.createElement('link');
+          faviconPreload.rel = 'preload';
+          faviconPreload.as = 'image';
+          faviconPreload.href = faviconUrl;
+          faviconPreload.setAttribute('data-store', storeIdentifier);
+          document.head.appendChild(faviconPreload);
+        }
 
         // Determinar o tipo MIME baseado na extensão da URL
         const getFaviconType = (url: string): string => {
