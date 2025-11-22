@@ -189,12 +189,9 @@ export default function StoreLayout() {
           {/* Logo/Header */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Painel</h1>
-              {currentUser?.name && (
-                <p className="text-xs text-gray-600 mt-0.5">
-                  {getGreeting()}, {currentUser.name.split(' ')[0]}
-                </p>
-              )}
+              <h1 className="text-lg font-bold text-gray-900">
+                {getGreeting()}{currentUser?.name ? `, ${currentUser.name.split(' ')[0]}` : currentUser?.username ? `, @${currentUser.username}` : ''}
+              </h1>
             </div>
             <button
               onClick={() => setMobileMenuOpen(false)}
@@ -312,12 +309,9 @@ export default function StoreLayout() {
 
             {/* Desktop Title */}
             <div className="hidden lg:block">
-              <h1 className="text-lg font-bold text-gray-900">Painel</h1>
-              {currentUser?.name && (
-                <p className="text-sm text-gray-600 mt-0.5">
-                  {getGreeting()}, {currentUser.name.split(' ')[0]}
-                </p>
-              )}
+              <h1 className="text-lg font-bold text-gray-900">
+                {getGreeting()}{currentUser?.name ? `, ${currentUser.name.split(' ')[0]}` : currentUser?.username ? `, @${currentUser.username}` : ''}
+              </h1>
             </div>
 
             {/* User Profile */}
