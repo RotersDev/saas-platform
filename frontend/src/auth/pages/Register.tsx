@@ -5,8 +5,10 @@ import toast from 'react-hot-toast';
 import { Mail, Lock, ArrowRight, Shield, User } from 'lucide-react';
 
 export default function Register() {
+  const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const register = useAuthStore((state) => state.register);
@@ -14,10 +16,22 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validações
+    if (!name.trim()) {
+      toast.error('Nome completo é obrigatório');
+      return;
+    }
+
+    if (email !== confirmEmail) {
+      toast.error('Os emails não coincidem');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await register(username, email, password);
+      await register(name, username, email, password);
       const user = useAuthStore.getState().user;
 
       // Redirecionar para o domínio principal do SaaS se estiver em domínio customizado
@@ -77,6 +91,21 @@ export default function Register() {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 <User className="w-4 h-4 inline mr-1" />
+                Nome Completo *
+              </label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                placeholder="Seu nome completo"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <User className="w-4 h-4 inline mr-1" />
                 Username <span className="text-gray-500 font-normal">(3-20 caracteres)</span> *
               </label>
               <div className="flex items-center gap-2">
@@ -117,6 +146,26 @@ export default function Register() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <Mail className="w-4 h-4 inline mr-1" />
+                Confirmar Email *
+              </label>
+              <input
+                type="email"
+                required
+                value={confirmEmail}
+                onChange={(e) => setConfirmEmail(e.target.value)}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                  confirmEmail && email !== confirmEmail ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="confirme@email.com"
+              />
+              {confirmEmail && email !== confirmEmail && (
+                <p className="text-xs text-red-500 mt-1">Os emails não coincidem</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 <Lock className="w-4 h-4 inline mr-1" />
                 Senha *
               </label>
@@ -131,9 +180,9 @@ export default function Register() {
               />
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Shield className="w-4 h-4 text-blue-600" />
-              <span>Seus dados estão seguros e protegidos</span>
+            <div className="flex items-center justify-center gap-2 text-green-600">
+              <Lock className="w-4 h-4" />
+              <span className="text-sm font-medium">Seus dados estão seguros e protegidos</span>
             </div>
 
             <button

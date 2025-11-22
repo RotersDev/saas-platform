@@ -140,10 +140,10 @@ export class AuthController {
 
   static async register(req: Request, res: Response): Promise<void> {
     try {
-      const { email, password, username } = req.body;
+      const { name, email, password, username } = req.body;
 
-      if (!email || !password || !username) {
-        res.status(400).json({ error: 'Username, email e senha são obrigatórios' });
+      if (!email || !password || !username || !name) {
+        res.status(400).json({ error: 'Nome completo, username, email e senha são obrigatórios' });
         return;
       }
 
@@ -171,6 +171,7 @@ export class AuthController {
       // Criar usuário sem loja (será associado quando criar a loja)
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await User.create({
+        name: name.trim(),
         username: username.toLowerCase().trim(),
         email,
         password: hashedPassword,

@@ -91,27 +91,27 @@ export default function Landing() {
 
       {/* Header */}
       <header className={`relative z-50 transition-all duration-300 ${scrollY > 50 ? 'bg-white/98 backdrop-blur-md border-b-2 border-gray-300 shadow-lg' : 'bg-white/90 backdrop-blur-sm border-b border-gray-200 shadow-md'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5">
           <div className="flex justify-between items-center">
             <img
               src="https://pub-2f45ff958477427f8cc4acf8ad69fd88.r2.dev/ChatGPT%20Image%2021%20de%20nov.%20de%202025%2C%2022_47_40.png"
               alt="Nerix"
-              className="h-16 w-auto"
+              className="h-10 w-auto"
             />
-            <div className="flex space-x-4 items-center">
+            <div className="flex space-x-3 items-center">
               {isAuthenticated ? (
                 <>
                   {user?.store_id ? (
                     <a
                       href="/store"
-                      className="text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all"
+                      className="text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all text-sm"
                     >
                       Minha Loja
                     </a>
                   ) : (
                     <button
                       onClick={() => navigate('/create-store')}
-                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold transition-all transform hover:scale-105 shadow-lg"
+                      className="bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 font-semibold transition-all transform hover:scale-105 shadow-lg text-sm"
                     >
                       Criar Loja
                     </button>
@@ -122,10 +122,10 @@ export default function Landing() {
                       toast.success('Logout realizado com sucesso!');
                       navigate('/');
                     }}
-                    className="text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all inline-flex items-center"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all inline-flex items-center text-sm"
                     title="Sair"
                   >
-                    <LogOut className="w-4 h-4 mr-2" />
+                    <LogOut className="w-3.5 h-3.5 mr-1.5" />
                     Sair
                   </button>
                 </>
@@ -133,16 +133,16 @@ export default function Landing() {
                 <>
                   <Link
                     to="/login"
-                    className="text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all inline-flex items-center"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all inline-flex items-center text-sm"
                   >
-                    <LogIn className="w-4 h-4 mr-2" />
+                    <LogIn className="w-3.5 h-3.5 mr-1.5" />
                     Entrar
                   </Link>
                   <Link
                     to="/register"
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 font-semibold transition-all transform hover:scale-105 shadow-lg inline-flex items-center"
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-1.5 rounded-lg hover:from-blue-600 hover:to-blue-700 font-semibold transition-all transform hover:scale-105 shadow-lg inline-flex items-center text-sm"
                   >
-                    <UserPlus className="w-4 h-4 mr-2" />
+                    <UserPlus className="w-3.5 h-3.5 mr-1.5" />
                     Criar Conta
                   </Link>
                 </>
