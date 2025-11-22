@@ -78,67 +78,85 @@ export default function CreateStore() {
         throw new Error('Erro ao criar loja');
       }
 
-      // Salvar token atual antes de fazer qualquer requisição
-      const currentToken = localStorage.getItem('token');
-      const currentUser = useAuthStore.getState().user;
+      // Aguardar um pouco para garantir que o backend atualizou o user no banco
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Aguardar um pouco para garantir que o backend atualizou o user
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Buscar dados atualizados do usuário
-      let updatedUser;
-      try {
-        const meResponse = await api.get('/api/auth/me');
-        updatedUser = meResponse.data;
-        console.log('[CreateStore] Dados atualizados do usuário:', updatedUser);
-      } catch (meError) {
-        console.error('[CreateStore] Erro ao buscar dados do usuário:', meError);
-        // Continuar mesmo se falhar
-      }
-
-      // Tentar atualizar token, mas manter o atual se falhar
-      let token = currentToken;
-      let user = currentUser;
+      // Atualizar token para incluir store_id atualizado
+      let token = localStorage.getItem('token');
+      let finalUser = useAuthStore.getState().user;
 
       try {
+        // Fazer refresh do token para obter dados atualizados com store_id
         const refreshResponse = await api.post('/api/auth/refresh-token');
-        if (refreshResponse.data?.token) {
+        if (refreshResponse.data?.token && refreshResponse.data?.user) {
           token = refreshResponse.data.token;
-          user = refreshResponse.data.user;
-          console.log('[CreateStore] Token atualizado com sucesso');
+          finalUser = refreshResponse.data.user;
+          console.log('[CreateStore] Token e usuário atualizados com sucesso:', finalUser);
         }
       } catch (refreshError: any) {
         console.error('[CreateStore] Erro ao atualizar token:', refreshError);
-        // Manter token atual se refresh falhar
-        if (!token) {
-          token = localStorage.getItem('token');
-        }
-        if (!user) {
-          user = updatedUser || useAuthStore.getState().user;
+
+        // Se o refresh falhar, tentar buscar dados atualizados via /me
+        try {
+          const meResponse = await api.get('/api/auth/me');
+          if (meResponse.data) {
+            finalUser = {
+              id: meResponse.data.id,
+              name: meResponse.data.name,
+              username: meResponse.data.username,
+              email: meResponse.data.email,
+              role: meResponse.data.role,
+              store_id: meResponse.data.store_id,
+              profile_picture_url: meResponse.data.profile_picture_url,
+            };
+            console.log('[CreateStore] Dados atualizados via /me:', finalUser);
+          }
+        } catch (meError) {
+          console.error('[CreateStore] Erro ao buscar dados do usuário:', meError);
+          // Se ambos falharem, usar store_id da resposta de criação
+          if (createResponse.data?.id) {
+            finalUser = {
+              ...(finalUser || {}),
+              store_id: createResponse.data.id,
+            } as any;
+          }
         }
       }
 
-      // Usar os dados mais atualizados, garantindo store_id
-      const finalUser = {
-        ...(updatedUser || user || {}),
-        store_id: updatedUser?.store_id || user?.store_id || createResponse.data.id,
-      };
+      // Garantir que temos store_id
+      if (!finalUser?.store_id && createResponse.data?.id) {
+        finalUser = {
+          ...(finalUser || {}),
+          store_id: createResponse.data.id,
+        } as any;
+      }
 
       // Garantir que temos um token antes de atualizar
       if (!token) {
         console.error('[CreateStore] Nenhum token disponível após criar loja');
         toast.error('Erro ao manter sessão. Por favor, faça login novamente.');
-        // Não redirecionar, deixar o usuário tentar novamente
+        navigate('/login');
         return;
       }
 
-      // Atualizar localStorage e store
+      // Atualizar localStorage e store de forma atômica
       localStorage.setItem('token', token);
-      useAuthStore.getState().setToken(token);
-      localStorage.setItem('user', JSON.stringify(finalUser));
-      useAuthStore.getState().setUser(finalUser);
+      if (finalUser) {
+        localStorage.setItem('user', JSON.stringify(finalUser));
+      }
 
-      console.log('[CreateStore] Sessão atualizada:', { hasToken: !!token, store_id: finalUser.store_id });
+      // Atualizar o store de forma que preserve isAuthenticated
+      useAuthStore.getState().setToken(token);
+      if (finalUser) {
+        useAuthStore.getState().setUser(finalUser);
+      }
+
+      console.log('[CreateStore] Sessão atualizada:', {
+        hasToken: !!token,
+        store_id: finalUser?.store_id,
+        isAuthenticated: useAuthStore.getState().isAuthenticated,
+        user: finalUser
+      });
 
       toast.success('Loja criada com sucesso! 🎉');
 
@@ -147,14 +165,51 @@ export default function CreateStore() {
       if (window.location.hostname !== saasDomain && !window.location.hostname.includes('localhost')) {
         setTimeout(() => {
           window.location.href = `https://${saasDomain}/store`;
-        }, 500);
+        }, 1000);
         return;
       }
 
       // Aguardar um pouco antes de navegar para garantir que tudo foi salvo
       setTimeout(() => {
-        navigate('/store');
-      }, 500);
+        // Verificar novamente se está autenticado antes de navegar
+        const authState = useAuthStore.getState();
+        if (authState.isAuthenticated && authState.user && authState.user.store_id) {
+          navigate('/store', { replace: true });
+        } else {
+          console.error('[CreateStore] Usuário não autenticado ou sem loja após criar loja');
+          console.log('[CreateStore] Estado atual:', authState);
+          // Tentar uma última vez buscar os dados
+          api.get('/api/auth/me')
+            .then(response => {
+              if (response.data) {
+                const user = {
+                  id: response.data.id,
+                  name: response.data.name,
+                  username: response.data.username,
+                  email: response.data.email,
+                  role: response.data.role,
+                  store_id: response.data.store_id,
+                  profile_picture_url: response.data.profile_picture_url,
+                };
+                localStorage.setItem('user', JSON.stringify(user));
+                useAuthStore.getState().setUser(user);
+                if (user.store_id) {
+                  navigate('/store', { replace: true });
+                } else {
+                  toast.error('Erro ao manter sessão. Por favor, faça login novamente.');
+                  navigate('/login');
+                }
+              } else {
+                toast.error('Erro ao manter sessão. Por favor, faça login novamente.');
+                navigate('/login');
+              }
+            })
+            .catch(() => {
+              toast.error('Erro ao manter sessão. Por favor, faça login novamente.');
+              navigate('/login');
+            });
+        }
+      }, 1000);
     } catch (error: any) {
       console.error('Erro ao criar loja:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Erro ao criar loja. Tente novamente.';

@@ -34,24 +34,60 @@ export function useOrderNotifications(enabled: boolean = false, notifyOnOrderCre
     'lastApprovedOrder',
     async () => {
       try {
-        // Buscar pedidos pagos - filtrar por payment_status no frontend pois a API pode não suportar esse filtro
-        const response = await api.get('/api/orders?limit=10');
+        console.log('[useOrderNotifications] 🔍 Buscando pedidos aprovados...');
+        // Buscar todos os pedidos (aumentar limite para garantir que pegamos os mais recentes)
+        const response = await api.get('/api/orders?limit=50');
         // A API retorna { rows: [], count: 0 } quando usa findAndCountAll
         const allOrders = response.data?.rows || response.data?.orders || (Array.isArray(response.data) ? response.data : []);
-        // Filtrar apenas pedidos pagos
-        const paidOrders = allOrders.filter((order: any) =>
-          order.payment_status === 'paid' || order.status === 'paid' || order.status === 'delivered'
-        );
+        console.log('[useOrderNotifications] 📦 Total de pedidos encontrados (aprovados):', allOrders.length);
+
+        // Ordenar por data de criação (mais recente primeiro) caso a API não ordene
+        const sortedOrders = [...allOrders].sort((a: any, b: any) => {
+          const dateA = new Date(a.created_at || a.createdAt || 0).getTime();
+          const dateB = new Date(b.created_at || b.createdAt || 0).getTime();
+          return dateB - dateA; // Descendente
+        });
+
+        // Filtrar apenas pedidos pagos/aprovados
+        const paidOrders = sortedOrders.filter((order: any) => {
+          const isPaid = order.payment_status === 'paid' || order.status === 'paid' || order.status === 'delivered';
+          if (isPaid) {
+            console.log('[useOrderNotifications] ✅ Pedido pago encontrado:', {
+              id: order.id,
+              order_number: order.order_number,
+              status: order.status,
+              payment_status: order.payment_status,
+              created_at: order.created_at,
+              total: order.total
+            });
+          }
+          return isPaid;
+        });
+
+        console.log('[useOrderNotifications] 📊 Pedidos pagos encontrados:', paidOrders.length);
         // Retornar o mais recente
-        return paidOrders.length > 0 ? paidOrders[0] : null;
+        const mostRecent = paidOrders.length > 0 ? paidOrders[0] : null;
+        if (mostRecent) {
+          console.log('[useOrderNotifications] 🎯 Pedido pago mais recente selecionado:', {
+            id: mostRecent.id,
+            order_number: mostRecent.order_number,
+            total: mostRecent.total,
+            payment_status: mostRecent.payment_status,
+            status: mostRecent.status,
+            created_at: mostRecent.created_at
+          });
+        } else {
+          console.log('[useOrderNotifications] ⚠️ Nenhum pedido pago encontrado');
+        }
+        return mostRecent;
       } catch (error) {
-        console.error('Erro ao buscar última venda:', error);
+        console.error('[useOrderNotifications] ❌ Erro ao buscar última venda:', error);
         return null;
       }
     },
     {
       enabled: enabled && notificationService.isPermissionGranted(),
-      refetchInterval: enabled && notificationService.isPermissionGranted() ? 10000 : false, // Verificar a cada 10 segundos
+      refetchInterval: enabled && notificationService.isPermissionGranted() ? 5000 : false, // Verificar a cada 5 segundos (mais rápido)
       refetchIntervalInBackground: true,
       staleTime: 0,
       // No iOS, só funcionar se estiver em modo standalone (PWA instalado)
@@ -70,14 +106,14 @@ export function useOrderNotifications(enabled: boolean = false, notifyOnOrderCre
         const response = await api.get('/api/orders?limit=50');
         const allOrders = response.data?.rows || response.data?.orders || (Array.isArray(response.data) ? response.data : []);
         console.log('[useOrderNotifications] 📦 Total de pedidos encontrados:', allOrders.length);
-        
+
         // Ordenar por data de criação (mais recente primeiro) caso a API não ordene
         const sortedOrders = [...allOrders].sort((a: any, b: any) => {
           const dateA = new Date(a.created_at || a.createdAt || 0).getTime();
           const dateB = new Date(b.created_at || b.createdAt || 0).getTime();
           return dateB - dateA; // Descendente
         });
-        
+
         // Filtrar apenas pedidos criados (pending) - mais recentes primeiro
         const createdOrders = sortedOrders.filter((order: any) => {
           const isPending = order.status === 'pending' && order.payment_status === 'pending';
@@ -93,7 +129,7 @@ export function useOrderNotifications(enabled: boolean = false, notifyOnOrderCre
           }
           return isPending;
         });
-        
+
         console.log('[useOrderNotifications] 📊 Pedidos pendentes encontrados:', createdOrders.length);
         // Retornar o mais recente
         const mostRecent = createdOrders.length > 0 ? createdOrders[0] : null;
@@ -123,13 +159,21 @@ export function useOrderNotifications(enabled: boolean = false, notifyOnOrderCre
   );
 
   useEffect(() => {
+    console.log('[useOrderNotifications] Effect pedidos aprovados:', {
+      enabled,
+      permissionGranted: notificationService.isPermissionGranted(),
+      lastOrder: lastOrder ? { id: lastOrder.id, order_number: lastOrder.order_number, payment_status: lastOrder.payment_status } : null,
+      isInitialized: isInitializedRef.current,
+      lastId: lastOrderIdRef.current
+    });
+
     if (!enabled) {
-      console.log('[useOrderNotifications] Desabilitado');
+      console.log('[useOrderNotifications] Notificações de pedidos aprovados desabilitadas');
       return;
     }
 
     if (!notificationService.isPermissionGranted()) {
-      console.log('[useOrderNotifications] Permissão não concedida');
+      console.log('[useOrderNotifications] Permissão não concedida para pedidos aprovados');
       return;
     }
 
@@ -155,32 +199,59 @@ export function useOrderNotifications(enabled: boolean = false, notifyOnOrderCre
     }
 
     // Na primeira vez, apenas armazenar o ID da última venda
+    // Mas verificar se o pedido foi aprovado há menos de 30 segundos (pode ser um pedido novo)
     if (!isInitializedRef.current) {
-      console.log('[useOrderNotifications] Inicializando com venda:', lastOrder.id, lastOrder.order_number);
+      const orderDate = new Date(lastOrder.created_at || lastOrder.createdAt || Date.now());
+      const now = new Date();
+      const secondsSinceCreation = (now.getTime() - orderDate.getTime()) / 1000;
+
+      console.log('[useOrderNotifications] ✅ Inicializando com venda aprovada:', {
+        id: lastOrder.id,
+        order_number: lastOrder.order_number,
+        payment_status: lastOrder.payment_status,
+        status: lastOrder.status,
+        created_at: lastOrder.created_at,
+        secondsSinceCreation: secondsSinceCreation.toFixed(0)
+      });
+
       lastOrderIdRef.current = lastOrder.id;
       isInitializedRef.current = true;
+
+      // Se o pedido foi aprovado há menos de 30 segundos, pode ser um pedido novo - enviar notificação
+      if (secondsSinceCreation < 30) {
+        console.log('[useOrderNotifications] 🆕 Pedido aprovado muito recente detectado na inicialização! Enviando notificação...');
+        const orderAmount = parseFloat(lastOrder.total || 0);
+        const orderNumber = lastOrder.order_number || lastOrder.id;
+        notificationService.notifySaleApproved(orderAmount, orderNumber);
+      }
+
       return;
     }
 
     // Se já foi inicializado e há uma nova venda
     if (lastOrder.id !== lastOrderIdRef.current) {
-      console.log('[useOrderNotifications] Nova venda detectada!', {
+      console.log('[useOrderNotifications] 🎉 NOVA VENDA APROVADA DETECTADA!', {
         oldId: lastOrderIdRef.current,
         newId: lastOrder.id,
         orderNumber: lastOrder.order_number,
-        total: lastOrder.total
+        total: lastOrder.total,
+        payment_status: lastOrder.payment_status,
+        status: lastOrder.status
       });
 
       const orderAmount = parseFloat(lastOrder.total || 0);
       const orderNumber = lastOrder.order_number || lastOrder.id;
 
       // Enviar notificação
+      console.log('[useOrderNotifications] Enviando notificação de venda aprovada...');
       notificationService.notifySaleApproved(orderAmount, orderNumber);
 
       // Atualizar referência
       lastOrderIdRef.current = lastOrder.id;
+    } else {
+      console.log('[useOrderNotifications] Mesmo pedido aprovado, sem mudanças');
     }
-  }, [enabled, lastOrder]);
+  }, [enabled, lastOrder, isStandalone]);
 
   // Monitorar pedidos criados
   useEffect(() => {
@@ -220,17 +291,17 @@ export function useOrderNotifications(enabled: boolean = false, notifyOnOrderCre
       const orderDate = new Date(lastCreatedOrder.created_at || lastCreatedOrder.createdAt || Date.now());
       const now = new Date();
       const secondsSinceCreation = (now.getTime() - orderDate.getTime()) / 1000;
-      
+
       console.log('[useOrderNotifications] ✅ Inicializando com pedido criado:', {
         id: lastCreatedOrder.id,
         order_number: lastCreatedOrder.order_number,
         created_at: lastCreatedOrder.created_at,
         secondsSinceCreation: secondsSinceCreation.toFixed(0)
       });
-      
+
       lastCreatedOrderIdRef.current = lastCreatedOrder.id;
       isCreatedOrderInitializedRef.current = true;
-      
+
       // Se o pedido foi criado há menos de 30 segundos, pode ser um pedido novo - enviar notificação
       if (secondsSinceCreation < 30) {
         console.log('[useOrderNotifications] 🆕 Pedido muito recente detectado na inicialização! Enviando notificação...');
@@ -238,7 +309,7 @@ export function useOrderNotifications(enabled: boolean = false, notifyOnOrderCre
         const orderNumber = lastCreatedOrder.order_number || lastCreatedOrder.id;
         notificationService.notifyOrderCreated(orderAmount, orderNumber);
       }
-      
+
       return;
     }
 

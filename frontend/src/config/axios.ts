@@ -197,13 +197,16 @@ api.interceptors.response.use(
       // Só fazer logout e redirecionar se já havia um token (sessão expirada) e não conseguiu renovar
       // Se não há token, é apenas uma tentativa de login que falhou
       // Para rotas de cliente, não fazer logout automático - deixar o componente tratar
-      if ((hasToken || hasCustomerToken) && !isLoginAttempt && !isCustomerRoute && error.config?._retry) {
+      // Não fazer logout se estiver na página de criar loja (pode estar atualizando token)
+      const currentPath = window.location.pathname;
+      const isCreateStorePage = currentPath === '/create-store' || currentPath.includes('/create-store');
+
+      if ((hasToken || hasCustomerToken) && !isLoginAttempt && !isCustomerRoute && !isCreateStorePage && error.config?._retry) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('store_subdomain');
 
         // Verificar se está em uma rota de loja (não redirecionar)
-        const currentPath = window.location.pathname;
         const pathParts2 = currentPath.split('/').filter(Boolean);
         const isShopRoute = pathParts2.length > 0 &&
                            pathParts2[0] !== 'admin' &&

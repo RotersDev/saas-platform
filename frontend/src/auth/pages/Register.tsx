@@ -32,7 +32,19 @@ export default function Register() {
 
     try {
       await register(name, username, email, password);
+
+      // Aguardar um pouco para garantir que o estado seja atualizado
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const user = useAuthStore.getState().user;
+      const isAuthenticated = useAuthStore.getState().isAuthenticated;
+
+      // Verificar se realmente está autenticado
+      if (!isAuthenticated || !user) {
+        toast.error('Erro ao autenticar. Por favor, faça login manualmente.');
+        navigate('/login');
+        return;
+      }
 
       // Redirecionar para o domínio principal do SaaS se estiver em domínio customizado
       const saasDomain = import.meta.env.VITE_SAAS_DOMAIN || 'xenaparcerias.online';
@@ -45,13 +57,16 @@ export default function Register() {
         return;
       }
 
-      if (user?.store_id) {
-        navigate('/store');
-      } else {
-        navigate('/create-store');
-      }
-
       toast.success('Conta criada com sucesso!');
+
+      // Navegar após um pequeno delay para garantir que o toast apareça
+      setTimeout(() => {
+        if (user?.store_id) {
+          navigate('/store');
+        } else {
+          navigate('/create-store');
+        }
+      }, 500);
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Erro ao criar conta');
     } finally {

@@ -335,7 +335,7 @@ export default function StoreSettings() {
         console.log('[Settings] Solicitando permissão de notificações...');
         const permission = await notificationService.requestPermission();
         console.log('[Settings] Permissão recebida:', permission);
-        
+
         if (permission !== 'granted') {
           toast.error('Permissão de notificações negada. Por favor, permita notificações nas configurações do navegador.');
           return;
