@@ -253,6 +253,24 @@ export class DomainController {
         return;
       }
 
+      const { Op } = await import('sequelize');
+
+      // Verificar se o domínio já está sendo usado por outra loja
+      const { Store } = await import('../models');
+      const existingStore = await Store.findOne({
+        where: {
+          domain: domain.domain,
+          id: { [Op.ne]: req.store.id },
+        },
+      });
+
+      if (existingStore) {
+        res.status(400).json({
+          error: 'Este domínio já está sendo usado por outra loja'
+        });
+        return;
+      }
+
       // Remover primário de outros domínios
       await Domain.update(
         { is_primary: false },
@@ -262,8 +280,39 @@ export class DomainController {
       // Definir este como primário
       await domain.update({ is_primary: true });
 
-      // Atualizar domínio na loja
-      await req.store.update({ domain: domain.domain });
+      // Atualizar domínio na loja apenas se for diferente
+      // Usar transaction para garantir consistência
+      const transaction = await Domain.sequelize?.transaction();
+      try {
+        // Só atualizar se o domínio for diferente do atual
+        if (req.store.domain !== domain.domain) {
+          await req.store.update({ domain: domain.domain }, { transaction });
+        }
+        await transaction?.commit();
+      } catch (updateError: any) {
+        await transaction?.rollback();
+
+        // Se for erro de constraint unique, dar mensagem mais clara
+        if (updateError.name === 'SequelizeUniqueConstraintError' ||
+            updateError.message?.includes('unique') ||
+            updateError.message?.includes('duplicate')) {
+          logger.error('Erro de constraint unique ao atualizar domínio:', updateError);
+          res.status(400).json({
+            error: 'Este domínio já está sendo usado por outra loja. Por favor, remova-o da outra loja primeiro.'
+          });
+          return;
+        }
+
+        // Se for erro de validação, mostrar mensagem específica
+        if (updateError.name === 'SequelizeValidationError') {
+          const validationErrors = updateError.errors?.map((e: any) => e.message).join(', ') || 'Erro de validação';
+          logger.error('Erro de validação ao atualizar domínio:', validationErrors);
+          res.status(400).json({ error: validationErrors });
+          return;
+        }
+
+        throw updateError;
+      }
 
       res.json({
         success: true,
@@ -272,6 +321,21 @@ export class DomainController {
       });
     } catch (error: any) {
       logger.error('Erro ao definir domínio primário:', error);
+
+      // Tratar diferentes tipos de erro
+      if (error.name === 'SequelizeUniqueConstraintError' || error.message?.includes('unique')) {
+        res.status(400).json({
+          error: 'Este domínio já está sendo usado por outra loja. Por favor, remova-o da outra loja primeiro.'
+        });
+        return;
+      }
+
+      if (error.name === 'SequelizeValidationError') {
+        const validationErrors = error.errors?.map((e: any) => e.message).join(', ') || 'Erro de validação';
+        res.status(400).json({ error: validationErrors });
+        return;
+      }
+
       res.status(400).json({ error: error.message || 'Erro ao definir domínio primário' });
     }
   }

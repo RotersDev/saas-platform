@@ -2,7 +2,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import api from '../../config/axios';
 import StoreBlocked from './StoreBlocked';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ShoppingCart, Plus, Minus, AlertTriangle, ArrowDown, XCircle, Package, Zap, Shield, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -34,10 +34,20 @@ export default function ShopProduct() {
   );
 
   // Usar storeInfo.id como identificador do carrinho quando não há subdomain (domínio customizado)
-  const cartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : 'default');
+  const cartKey = useMemo(() => {
+    return storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : 'default');
+  }, [storeSubdomain, storeInfo]);
+
   const [cart, setCart] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`cart_${cartKey}`);
-    return saved ? JSON.parse(saved) : [];
+    const key = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : 'default');
+    if (!key) return [];
+    try {
+      const saved = localStorage.getItem(`cart_${key}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Erro ao carregar carrinho inicial:', error);
+      return [];
+    }
   });
 
   const { data: theme } = useQuery(
@@ -119,7 +129,14 @@ export default function ShopProduct() {
     if (cartKey) {
       const saved = localStorage.getItem(`cart_${cartKey}`);
       if (saved) {
-        setCart(JSON.parse(saved));
+        try {
+          setCart(JSON.parse(saved));
+        } catch (error) {
+          console.error('Erro ao carregar carrinho do localStorage:', error);
+          setCart([]);
+        }
+      } else {
+        setCart([]);
       }
     }
   }, [cartKey, storeInfo]);
@@ -177,29 +194,65 @@ export default function ShopProduct() {
   const isLowStock = stockQuantity > 0 && stockQuantity <= 5;
 
   const addToCart = () => {
-    const existingItem = cart.find((item: any) => item.id === product.id);
-    let newCart;
-
-    if (existingItem) {
-      newCart = cart.map((item: any) =>
-        item.id === product.id
-          ? { ...item, quantity: item.quantity + quantity }
-          : item
-      );
-    } else {
-      newCart = [...cart, { ...product, quantity }];
+    if (!product) {
+      console.error('[addToCart] Produto não encontrado');
+      toast.error('Produto não encontrado');
+      return;
     }
 
-    setCart(newCart);
-    localStorage.setItem(`cart_${cartKey}`, JSON.stringify(newCart));
-    toast.success('Produto adicionado ao carrinho!');
+    if (!cartKey) {
+      console.error('[addToCart] cartKey não definido');
+      toast.error('Loja não identificada');
+      return;
+    }
+
+    try {
+      const existingItem = cart.find((item: any) => item.id === product.id);
+      let newCart;
+
+      if (existingItem) {
+        newCart = cart.map((item: any) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      } else {
+        newCart = [...cart, { ...product, quantity }];
+      }
+
+      setCart(newCart);
+      localStorage.setItem(`cart_${cartKey}`, JSON.stringify(newCart));
+      console.log('[addToCart] Produto adicionado:', { productId: product.id, quantity, cartKey, cartSize: newCart.length });
+      toast.success('Produto adicionado ao carrinho!');
+    } catch (error) {
+      console.error('[addToCart] Erro ao adicionar ao carrinho:', error);
+      toast.error('Erro ao adicionar produto ao carrinho');
+    }
   };
 
   const buyNow = () => {
-    const newCart = [{ ...product, quantity }];
-    setCart(newCart);
-    localStorage.setItem(`cart_${cartKey}`, JSON.stringify(newCart));
-    navigate(getCheckoutUrl(storeSubdomain));
+    if (!product) {
+      console.error('[buyNow] Produto não encontrado');
+      toast.error('Produto não encontrado');
+      return;
+    }
+
+    if (!cartKey) {
+      console.error('[buyNow] cartKey não definido');
+      toast.error('Loja não identificada');
+      return;
+    }
+
+    try {
+      const newCart = [{ ...product, quantity }];
+      setCart(newCart);
+      localStorage.setItem(`cart_${cartKey}`, JSON.stringify(newCart));
+      console.log('[buyNow] Redirecionando para checkout:', { productId: product.id, quantity, cartKey });
+      navigate(getCheckoutUrl(storeSubdomain));
+    } catch (error) {
+      console.error('[buyNow] Erro ao processar compra:', error);
+      toast.error('Erro ao processar compra');
+    }
   };
 
   const minQuantity = product.min_quantity || 1;

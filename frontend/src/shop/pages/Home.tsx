@@ -85,6 +85,16 @@ export default function ShopHome() {
   );
 
   const addToCart = (product: any) => {
+    if (!product) {
+      toast.error('Produto não encontrado');
+      return;
+    }
+
+    if (!cartKey) {
+      toast.error('Loja não identificada');
+      return;
+    }
+
     const existingItem = cart.find((item: any) => item.id === product.id);
     if (existingItem) {
       toast.error('Produto já está no carrinho');
