@@ -295,39 +295,75 @@ export default function StoreSettings() {
         return;
       }
 
-      // Verificar se está em modo standalone (PWA instalado) - especialmente importante para iOS
+      // Detectar plataforma
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      const isAndroid = /Android/.test(navigator.userAgent);
+      const isMobile = isIOS || isAndroid;
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as any).standalone ||
         document.referrer.includes('android-app://');
+      const isDesktop = !isMobile;
 
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      console.log('[Settings] Detecção de plataforma:', {
+        isIOS,
+        isAndroid,
+        isMobile,
+        isDesktop,
+        isStandalone,
+        userAgent: navigator.userAgent
+      });
 
+      // Avisos específicos por plataforma
       if (isIOS && !isStandalone) {
         toast.error('No iPhone, você precisa instalar o app primeiro! Adicione à tela inicial para receber notificações.', {
           duration: 6000,
         });
-        // Ainda permitir ativar, mas avisar
+        // Continuar para solicitar permissão mesmo assim
+      } else if (isAndroid && !isStandalone) {
+        toast('No Android, instale o app para melhor experiência. As notificações funcionarão mesmo no navegador.', {
+          duration: 4000,
+          icon: 'ℹ️',
+        });
+      } else if (isDesktop) {
+        toast('No PC, você receberá notificações no navegador. Certifique-se de permitir notificações.', {
+          duration: 4000,
+          icon: '💻',
+        });
       }
 
       try {
+        console.log('[Settings] Solicitando permissão de notificações...');
         const permission = await notificationService.requestPermission();
+        console.log('[Settings] Permissão recebida:', permission);
+        
         if (permission !== 'granted') {
           toast.error('Permissão de notificações negada. Por favor, permita notificações nas configurações do navegador.');
           return;
         }
 
+        // Mensagens de sucesso por plataforma
         if (isIOS && !isStandalone) {
           toast.success('Permissão concedida! Agora instale o app (Adicionar à tela inicial) para receber notificações.', {
             duration: 6000,
           });
+        } else if (isMobile && isStandalone) {
+          const message = event === 'order_created'
+            ? '✅ Notificações ativadas! Você receberá notificações quando houver novos pedidos criados.'
+            : '✅ Notificações ativadas! Você receberá notificações quando houver vendas aprovadas.';
+          toast.success(message);
+        } else if (isDesktop) {
+          const message = event === 'order_created'
+            ? '✅ Notificações ativadas no navegador! Você receberá notificações quando houver novos pedidos criados.'
+            : '✅ Notificações ativadas no navegador! Você receberá notificações quando houver vendas aprovadas.';
+          toast.success(message);
         } else {
           const message = event === 'order_created'
-            ? 'Notificações ativadas! Você receberá notificações quando houver novos pedidos criados.'
-            : 'Notificações ativadas! Você receberá notificações quando houver vendas aprovadas.';
+            ? '✅ Notificações ativadas! Você receberá notificações quando houver novos pedidos criados.'
+            : '✅ Notificações ativadas! Você receberá notificações quando houver vendas aprovadas.';
           toast.success(message);
         }
       } catch (error) {
-        console.error('Erro ao solicitar permissão:', error);
+        console.error('[Settings] Erro ao solicitar permissão:', error);
         toast.error('Erro ao solicitar permissão de notificações');
         return;
       }
