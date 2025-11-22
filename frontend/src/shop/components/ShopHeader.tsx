@@ -205,29 +205,25 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
                   />
                 </button>
 
-                {/* Dropdown Menu - Design Moderno */}
+                {/* Dropdown Menu - Layout Reformulado */}
                 {profileMenuOpen && (
                   <div
                     ref={profileMenuRef}
-                    className="absolute top-full right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-blue-100 overflow-hidden origin-top-right animate-in fade-in slide-in-from-top-2"
-                    style={{
-                      animation: 'slideDown 0.2s ease-out',
-                    }}
+                    className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden origin-top-right"
                   >
-                    {/* Header com Gradiente Azul */}
-                    <div className="relative bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 px-6 py-5">
-                      <div className="absolute inset-0 bg-black/5"></div>
-                      <div className="relative flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-white/30">
-                          <span className="text-white font-bold text-lg">
+                    {/* Header do Menu - Layout Horizontal */}
+                    <div className="px-5 py-4 bg-gray-50 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 ring-2 ring-gray-100">
+                          <span className="text-indigo-600 font-semibold text-sm">
                             {getInitials(customer.name)}
                           </span>
                         </div>
-                        <div className="flex-1 min-w-0 text-white">
-                          <div className="text-base font-bold truncate mb-0.5">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-gray-900 truncate">
                             {customer.name}
                           </div>
-                          <div className="text-xs text-blue-100 truncate flex items-center gap-1">
+                          <div className="text-xs text-gray-500 truncate mt-0.5 flex items-center gap-1">
                             <Mail className="w-3 h-3" />
                             {customer.email}
                           </div>
@@ -235,47 +231,49 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
                       </div>
                     </div>
 
-                    {/* Itens do Menu - Cards Estilizados */}
-                    <div className="p-3 space-y-2 bg-gradient-to-b from-gray-50 to-white">
-                      <Link
-                        to={getShopUrl(storeSubdomain, 'my-orders')}
-                        onClick={() => setProfileMenuOpen(false)}
-                        className="group relative flex items-center gap-4 px-4 py-4 bg-white rounded-xl border-2 border-transparent hover:border-blue-200 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5"
-                      >
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">
-                          <Package className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                            Minhas Compras
+                    {/* Itens do Menu - Layout em Grid */}
+                    <div className="p-3">
+                      <div className="space-y-1.5">
+                        <Link
+                          to={getShopUrl(storeSubdomain, 'my-orders')}
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors group border border-transparent hover:border-gray-200"
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-gray-200 transition-colors">
+                              <Package className="w-5 h-5 text-gray-600 group-hover:text-gray-900" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 group-hover:text-gray-950">
+                                Minhas Compras
+                              </div>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                Ver pedidos
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            Ver seus pedidos
-                          </div>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                            <ChevronDown className="w-4 h-4 text-blue-600 rotate-[-90deg]" />
-                          </div>
-                        </div>
-                      </Link>
+                          <ChevronDown className="w-4 h-4 text-gray-400 rotate-[-90deg] flex-shrink-0" />
+                        </Link>
 
-                      <button
-                        onClick={handleLogout}
-                        className="group relative w-full flex items-center gap-4 px-4 py-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border-2 border-red-200 hover:border-red-300 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5"
-                      >
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">
-                          <LogOut className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0 text-left">
-                          <div className="text-sm font-bold text-red-700 group-hover:text-red-800 transition-colors">
-                            Sair da conta
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg hover:bg-red-50 transition-colors group border border-transparent hover:border-red-200"
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0 group-hover:bg-red-100 transition-colors">
+                              <LogOut className="w-5 h-5 text-red-600 group-hover:text-red-700" />
+                            </div>
+                            <div className="flex-1 min-w-0 text-left">
+                              <div className="text-sm font-medium text-red-600 group-hover:text-red-700">
+                                Sair da conta
+                              </div>
+                              <div className="text-xs text-red-500 mt-0.5">
+                                Encerrar sessão
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-xs text-red-600 mt-0.5">
-                            Encerrar sessão
-                          </div>
-                        </div>
-                      </button>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
