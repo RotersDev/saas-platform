@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
-import { Mail, Lock, ArrowRight, Shield, User } from 'lucide-react';
+import { Mail, Lock, ArrowRight, User } from 'lucide-react';
 
 export default function Register() {
   const [name, setName] = useState('');
