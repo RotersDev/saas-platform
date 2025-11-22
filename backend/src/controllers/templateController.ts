@@ -166,11 +166,22 @@ export class TemplateController {
       }
 
       // Atualizar template
-      await template.update({
-        ...(name && { name: name.trim() }),
-        ...(custom_css !== undefined && { custom_css }),
-        ...(custom_js !== undefined && { custom_js }),
-      });
+      // Garantir que strings vazias sejam salvas como strings vazias, não null
+      const updateData: any = {};
+      if (name && name.trim() !== template.name) {
+        updateData.name = name.trim();
+      }
+      if (custom_css !== undefined) {
+        updateData.custom_css = custom_css || '';
+      }
+      if (custom_js !== undefined) {
+        updateData.custom_js = custom_js || '';
+      }
+
+      await template.update(updateData);
+
+      // Recarregar para garantir que temos os dados atualizados
+      await template.reload();
 
       res.json(template);
     } catch (error: any) {

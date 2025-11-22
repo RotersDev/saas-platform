@@ -5,6 +5,7 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Save, FileCode, Code, AlertCircle } from 'lucide-react';
 import { useThemeStore } from '../themeStore';
+import Editor from '@monaco-editor/react';
 
 export default function StoreTemplateEditor() {
   const { id } = useParams<{ id: string }>();
@@ -14,7 +15,29 @@ export default function StoreTemplateEditor() {
   const [customCss, setCustomCss] = useState('');
   const [customJs, setCustomJs] = useState('');
   const [templateName, setTemplateName] = useState('');
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [editorHeight, setEditorHeight] = useState(400);
   const saveTimeoutRef = useRef<number | null>(null);
+
+  // Ajustar altura do editor baseado no tamanho da tela
+  useEffect(() => {
+    const updateHeight = () => {
+      if (window.innerWidth < 640) {
+        // Mobile: altura menor
+        setEditorHeight(300);
+      } else if (window.innerWidth < 1024) {
+        // Tablet: altura média
+        setEditorHeight(350);
+      } else {
+        // Desktop: altura padrão
+        setEditorHeight(400);
+      }
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
 
   // Buscar template
   const { data: template, isLoading } = useQuery(
@@ -26,14 +49,27 @@ export default function StoreTemplateEditor() {
     {
       enabled: !!id,
       onSuccess: (data) => {
-        if (data) {
-          setTemplateName(data.name);
+        if (data && !hasLoaded) {
+          setTemplateName(data.name || '');
           setCustomCss(data.custom_css || '');
           setCustomJs(data.custom_js || '');
+          setHasLoaded(true);
         }
       },
     }
   );
+
+  // Atualizar valores quando o template mudar (mas não resetar se já carregou)
+  useEffect(() => {
+    if (template && hasLoaded) {
+      // Só atualizar o nome se mudou (não afeta edição de código)
+      if (template.name !== templateName) {
+        setTemplateName(template.name || '');
+      }
+      // Não atualizar CSS/JS se o usuário já está editando
+      // Os valores serão atualizados apenas quando vierem do servidor após salvar
+    }
+  }, [template?.name]);
 
   // Auto-save (apenas se não for template padrão)
   useEffect(() => {
@@ -45,7 +81,7 @@ export default function StoreTemplateEditor() {
     }
 
     // Criar novo timeout para salvar após 2 segundos de inatividade
-    saveTimeoutRef.current = setTimeout(() => {
+    saveTimeoutRef.current = window.setTimeout(() => {
       updateTemplateMutation.mutate({
         custom_css: customCss,
         custom_js: customJs,
@@ -59,18 +95,38 @@ export default function StoreTemplateEditor() {
     };
   }, [customCss, customJs, template, id]);
 
+  // Verificar se é template padrão antes de usar
+  const isDefaultTemplate = template?.is_default || false;
+
   // Mutation para atualizar template
   const updateTemplateMutation = useMutation(
     async (data: { custom_css?: string; custom_js?: string }) => {
       if (isDefaultTemplate) {
         throw new Error('Template padrão não pode ser editado');
       }
-      const response = await api.put(`/api/templates/${id}`, data);
+      // Garantir que strings vazias sejam enviadas como strings vazias, não undefined
+      const payload: { custom_css: string; custom_js: string } = {
+        custom_css: data.custom_css !== undefined ? (data.custom_css || '') : customCss,
+        custom_js: data.custom_js !== undefined ? (data.custom_js || '') : customJs,
+      };
+      const response = await api.put(`/api/templates/${id}`, payload);
       return response.data;
     },
     {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['template', id]);
+      onSuccess: (savedData) => {
+        // Atualizar os valores locais com os valores salvos
+        if (savedData.custom_css !== undefined) {
+          setCustomCss(savedData.custom_css || '');
+        }
+        if (savedData.custom_js !== undefined) {
+          setCustomJs(savedData.custom_js || '');
+        }
+        // Invalidar queries mas manter os valores locais
+        queryClient.setQueryData(['template', id], (old: any) => ({
+          ...old,
+          custom_css: savedData.custom_css || '',
+          custom_js: savedData.custom_js || '',
+        }));
         queryClient.invalidateQueries('templates');
         queryClient.invalidateQueries('shopTheme');
         // Não mostrar toast no auto-save para não incomodar
@@ -91,9 +147,10 @@ export default function StoreTemplateEditor() {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
+    // Garantir que estamos enviando os valores atuais
     updateTemplateMutation.mutate({
-      custom_css: customCss,
-      custom_js: customJs,
+      custom_css: customCss || '',
+      custom_js: customJs || '',
     });
   };
 
@@ -119,7 +176,6 @@ export default function StoreTemplateEditor() {
     );
   }
 
-  const isDefaultTemplate = template?.is_default;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -210,12 +266,12 @@ export default function StoreTemplateEditor() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
         {/* CSS Editor */}
         <div className={`rounded-xl border shadow-sm ${
           currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
         }`}>
-          <div className={`p-6 border-b ${
+          <div className={`p-3 sm:p-4 lg:p-6 border-b ${
             currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
           }`}>
             <div className="flex items-center gap-3">
@@ -236,20 +292,42 @@ export default function StoreTemplateEditor() {
               </div>
             </div>
           </div>
-          <div className="p-4 sm:p-6">
-            <textarea
-              value={customCss}
-              onChange={(e) => setCustomCss(e.target.value)}
-              disabled={isDefaultTemplate}
-              rows={20}
-              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg font-mono text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
-                currentTheme === 'dark'
-                  ? 'border-gray-600 bg-gray-900 text-white placeholder-gray-500'
-                  : 'border-gray-300 bg-white'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-              placeholder={isDefaultTemplate ? "Template padrão não pode ser editado" : "/* Seu CSS personalizado aqui */"}
-              spellCheck={false}
-            />
+          <div className="p-2 sm:p-4 lg:p-6">
+            <div className={`rounded-lg overflow-hidden border ${
+              currentTheme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+            }`}>
+              <Editor
+                height={`${editorHeight}px`}
+                language="css"
+                value={customCss}
+                onChange={(value) => setCustomCss(value || '')}
+                theme={currentTheme === 'dark' ? 'vs-dark' : 'light'}
+                options={{
+                  readOnly: isDefaultTemplate,
+                  minimap: { enabled: false },
+                  fontSize: window.innerWidth < 640 ? 12 : 14,
+                  lineNumbers: window.innerWidth < 640 ? 'off' : 'on',
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  tabSize: 2,
+                  wordWrap: 'on',
+                  formatOnPaste: true,
+                  formatOnType: true,
+                  suggestOnTriggerCharacters: true,
+                  quickSuggestions: window.innerWidth >= 640,
+                  acceptSuggestionOnCommitCharacter: true,
+                  scrollbar: {
+                    vertical: 'auto',
+                    horizontal: 'auto',
+                    useShadows: false,
+                  },
+                  overviewRulerLanes: 0,
+                  hideCursorInOverviewRuler: true,
+                  overviewRulerBorder: false,
+                }}
+                loading={<div className="text-center py-8">Carregando editor...</div>}
+              />
+            </div>
             {!isDefaultTemplate && (
               <p className={`text-xs mt-3 ${
                 currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
@@ -264,7 +342,7 @@ export default function StoreTemplateEditor() {
         <div className={`rounded-xl border shadow-sm ${
           currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
         }`}>
-          <div className={`p-6 border-b ${
+          <div className={`p-3 sm:p-4 lg:p-6 border-b ${
             currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
           }`}>
             <div className="flex items-center gap-3">
@@ -285,20 +363,42 @@ export default function StoreTemplateEditor() {
               </div>
             </div>
           </div>
-          <div className="p-4 sm:p-6">
-            <textarea
-              value={customJs}
-              onChange={(e) => setCustomJs(e.target.value)}
-              disabled={isDefaultTemplate}
-              rows={20}
-              className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg font-mono text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
-                currentTheme === 'dark'
-                  ? 'border-gray-600 bg-gray-900 text-white placeholder-gray-500'
-                  : 'border-gray-300 bg-white'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-              placeholder={isDefaultTemplate ? "Template padrão não pode ser editado" : "// Seu JavaScript personalizado aqui"}
-              spellCheck={false}
-            />
+          <div className="p-2 sm:p-4 lg:p-6">
+            <div className={`rounded-lg overflow-hidden border ${
+              currentTheme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+            }`}>
+              <Editor
+                height={`${editorHeight}px`}
+                language="javascript"
+                value={customJs}
+                onChange={(value) => setCustomJs(value || '')}
+                theme={currentTheme === 'dark' ? 'vs-dark' : 'light'}
+                options={{
+                  readOnly: isDefaultTemplate,
+                  minimap: { enabled: false },
+                  fontSize: window.innerWidth < 640 ? 12 : 14,
+                  lineNumbers: window.innerWidth < 640 ? 'off' : 'on',
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  tabSize: 2,
+                  wordWrap: 'on',
+                  formatOnPaste: true,
+                  formatOnType: true,
+                  suggestOnTriggerCharacters: true,
+                  quickSuggestions: window.innerWidth >= 640,
+                  acceptSuggestionOnCommitCharacter: true,
+                  scrollbar: {
+                    vertical: 'auto',
+                    horizontal: 'auto',
+                    useShadows: false,
+                  },
+                  overviewRulerLanes: 0,
+                  hideCursorInOverviewRuler: true,
+                  overviewRulerBorder: false,
+                }}
+                loading={<div className="text-center py-8">Carregando editor...</div>}
+              />
+            </div>
             {!isDefaultTemplate && (
               <p className={`text-xs mt-3 ${
                 currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
