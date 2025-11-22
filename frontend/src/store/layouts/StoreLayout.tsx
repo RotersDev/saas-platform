@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { useOrderNotifications } from '../../hooks/useOrderNotifications';
 
 export default function StoreLayout() {
   const location = useLocation();
@@ -54,6 +55,26 @@ export default function StoreLayout() {
   }, [user, showUsernameModal]);
 
   // Buscar dados atualizados do usuário
+  // Buscar configurações de notificações para verificar se está ativado
+  const { data: notificationsData } = useQuery(
+    'notifications',
+    async () => {
+      const response = await api.get('/api/notifications');
+      return response.data;
+    },
+    {
+      staleTime: 60000, // 1 minuto
+    }
+  );
+
+  // Verificar se notificações internas de pedido aprovado estão ativadas
+  const isOrderNotificationEnabled = notificationsData?.some(
+    (notif: any) => notif.type === 'internal' && notif.event === 'order_approved' && notif.enabled
+  ) || false;
+
+  // Monitorar vendas aprovadas e enviar notificações
+  useOrderNotifications(isOrderNotificationEnabled);
+
   const { data: userData } = useQuery(
     'userProfile',
     async () => {

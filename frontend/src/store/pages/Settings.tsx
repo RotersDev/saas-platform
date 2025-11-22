@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useThemeStore } from '../themeStore';
+import { notificationService } from '../../services/notificationService';
 
 // Estilos customizados para o editor
 const quillStyles = `
@@ -282,11 +283,34 @@ export default function StoreSettings() {
     updateNotificationsMutation.mutate(notificationsToUpdate);
   };
 
-  const toggleNotification = (type: string, event: string) => {
+  const toggleNotification = async (type: string, event: string) => {
     const key = `${type}_${event}`;
+    const newValue = !notifications[key];
+
+    // Se está ativando notificações internas (App), solicitar permissão
+    if (type === 'internal' && newValue && event === 'order_approved') {
+      if (!notificationService.isNotificationSupported()) {
+        toast.error('Notificações não são suportadas neste navegador');
+        return;
+      }
+
+      try {
+        const permission = await notificationService.requestPermission();
+        if (permission !== 'granted') {
+          toast.error('Permissão de notificações negada. Por favor, permita notificações nas configurações do navegador.');
+          return;
+        }
+        toast.success('Notificações ativadas! Você receberá notificações quando houver vendas aprovadas.');
+      } catch (error) {
+        console.error('Erro ao solicitar permissão:', error);
+        toast.error('Erro ao solicitar permissão de notificações');
+        return;
+      }
+    }
+
     setNotifications({
       ...notifications,
-      [key]: !notifications[key],
+      [key]: newValue,
     });
   };
 

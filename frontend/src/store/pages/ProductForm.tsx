@@ -658,8 +658,12 @@ export default function StoreProductForm() {
                           <FileText className={`w-6 h-6 mb-2 ${
                             theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
                           }`} />
-                          <span className="text-sm font-medium">Arquivo</span>
-                          <span className="text-xs text-gray-500 mt-1">RAR, TXT, etc</span>
+                          <span className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-white' : ''
+                          }`}>Arquivo</span>
+                          <span className={`text-xs mt-1 ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                          }`}>RAR, TXT, etc</span>
                         </button>
                       </div>
                     </div>
