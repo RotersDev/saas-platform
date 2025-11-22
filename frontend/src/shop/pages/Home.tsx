@@ -346,9 +346,20 @@ export default function ShopHome() {
     : [];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Background com degradê de baixo para cima e bolinhas azuis destacadas - igual ao resto do site */}
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
+          background: `
+            radial-gradient(circle, rgba(59, 130, 246, 0.25) 1.5px, transparent 1.5px),
+            linear-gradient(to top, #e2e8f0 0%, #f1f5f9 30%, #f8fafc 60%, #ffffff 100%)
+          `,
+          backgroundSize: '30px 30px, 100% 100%',
+        }}
+      />
 
-      <main className="flex-1">
+      <main className="flex-1 relative z-0">
         {/* Produtos por Categoria */}
         <section id="produtos" className="py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

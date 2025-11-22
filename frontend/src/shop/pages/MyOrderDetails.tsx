@@ -32,10 +32,43 @@ export default function MyOrderDetails() {
   );
 
   useEffect(() => {
-    const currentCustomerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+    // Tentar pegar storeInfo do localStorage como fallback
+    let fallbackStoreInfo = null;
+    try {
+      const stored = localStorage.getItem('storeInfo');
+      if (stored) {
+        fallbackStoreInfo = JSON.parse(stored);
+      }
+    } catch (e) {
+      // Ignorar erro
+    }
+
+    // Salvar storeInfo no localStorage quando carregar
+    if (storeInfo) {
+      try {
+        localStorage.setItem('storeInfo', JSON.stringify(storeInfo));
+      } catch (e) {
+        // Ignorar erro
+      }
+    }
+
+    const currentCustomerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null) || (fallbackStoreInfo ? `store-${fallbackStoreInfo.id}` : null);
+
+    // Se ainda não tem customerKey, aguardar storeInfo carregar (não redirecionar imediatamente)
     if (!currentCustomerKey) {
-      // Aguardar storeInfo carregar
-      return;
+      // Se storeInfo está carregando, aguardar
+      if (storeInfo === undefined) {
+        return;
+      }
+      // Se storeInfo já foi carregado mas não tem ID, então realmente não tem loja
+      // Mas vamos aguardar um pouco mais antes de redirecionar
+      const timeout = setTimeout(() => {
+        const finalKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null) || (fallbackStoreInfo ? `store-${fallbackStoreInfo.id}` : null);
+        if (!finalKey) {
+          navigate(getLoginUrl(storeSubdomain));
+        }
+      }, 2000); // Aguardar 2 segundos antes de redirecionar
+      return () => clearTimeout(timeout);
     }
 
     const customerData = localStorage.getItem(`customer_${currentCustomerKey}`);

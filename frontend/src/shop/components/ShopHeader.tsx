@@ -21,11 +21,38 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
   const profileButtonRef = useRef<HTMLButtonElement>(null);
 
   // Calcular cartKey (mesmo cálculo usado nas outras páginas)
-  const customerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+  // Usar storeInfo do localStorage como fallback se ainda não carregou
+  const [fallbackStoreInfo, setFallbackStoreInfo] = useState<any>(null);
 
   useEffect(() => {
+    // Tentar pegar storeInfo do localStorage como fallback
+    try {
+      const stored = localStorage.getItem('storeInfo');
+      if (stored) {
+        setFallbackStoreInfo(JSON.parse(stored));
+      }
+    } catch (e) {
+      // Ignorar erro
+    }
+  }, []);
+
+  // Salvar storeInfo no localStorage quando carregar
+  useEffect(() => {
+    if (storeInfo) {
+      try {
+        localStorage.setItem('storeInfo', JSON.stringify(storeInfo));
+      } catch (e) {
+        // Ignorar erro se localStorage não estiver disponível
+      }
+    }
+  }, [storeInfo]);
+
+  const customerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null) || (fallbackStoreInfo ? `store-${fallbackStoreInfo.id}` : null);
+
+  useEffect(() => {
+    // Se não tem customerKey ainda, aguardar storeInfo carregar
     if (!customerKey) {
-      setCustomer(null);
+      // Não limpar customer imediatamente, pode estar carregando
       return;
     }
 
@@ -84,7 +111,7 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('customerUpdated', handleCustomerUpdated);
     };
-  }, [customerKey]);
+  }, [customerKey, storeInfo, fallbackStoreInfo]);
 
   // Fechar menu ao clicar fora
   useEffect(() => {

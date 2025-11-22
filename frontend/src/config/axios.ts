@@ -48,9 +48,25 @@ api.interceptors.request.use(
     const isCustomerRoute = config.url?.includes('/customer/') || config.url?.includes('/customers/');
     let token = null;
 
-    if (isCustomerRoute && storeParam) {
-      // Tentar pegar token de cliente primeiro
-      token = localStorage.getItem(`customer_token_${storeParam}`);
+    if (isCustomerRoute) {
+      // Tentar pegar storeInfo do localStorage como fallback
+      let storeInfo = null;
+      try {
+        const stored = localStorage.getItem('storeInfo');
+        if (stored) {
+          storeInfo = JSON.parse(stored);
+        }
+      } catch (e) {
+        // Ignorar erro
+      }
+
+      // Calcular customerKey (mesmo cálculo usado em outras partes)
+      const customerKey = storeParam || (storeInfo ? `store-${storeInfo.id}` : null);
+
+      if (customerKey) {
+        // Tentar pegar token de cliente primeiro
+        token = localStorage.getItem(`customer_token_${customerKey}`);
+      }
     }
 
     // Se não encontrou token de cliente, tentar token genérico

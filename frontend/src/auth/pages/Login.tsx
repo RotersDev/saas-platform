@@ -153,7 +153,7 @@ export default function Login() {
                 Não tem uma conta?
               </p>
               <Link
-                to="/"
+                to="/register"
                 className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors font-medium text-sm"
               >
                 Criar conta

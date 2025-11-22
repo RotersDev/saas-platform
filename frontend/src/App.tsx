@@ -49,10 +49,14 @@ import PageNotFound from './shop/pages/PageNotFound';
 
 // Landing
 import Landing from './pages/Landing';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+import WalletTerms from './pages/WalletTerms';
 import CreateStore from './pages/CreateStore';
 
 // Auth
 import Login from './auth/pages/Login';
+import Register from './auth/pages/Register';
 import ForgotPassword from './auth/pages/ForgotPassword';
 import ResetPassword from './auth/pages/ResetPassword';
 
@@ -263,6 +267,7 @@ function SubdomainShopWrapper() {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route
@@ -273,6 +278,9 @@ function SubdomainShopWrapper() {
             </ProtectedRoute>
           }
         />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/wallet-terms" element={<WalletTerms />} />
         <Route path="*" element={<Landing />} />
       </Routes>
     );
@@ -283,6 +291,7 @@ function SubdomainShopWrapper() {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route
@@ -293,6 +302,9 @@ function SubdomainShopWrapper() {
             </ProtectedRoute>
           }
         />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/wallet-terms" element={<WalletTerms />} />
         <Route path="*" element={<Landing />} />
       </Routes>
     );
