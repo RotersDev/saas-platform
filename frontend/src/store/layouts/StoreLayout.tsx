@@ -307,12 +307,7 @@ export default function StoreLayout() {
               <Menu className="w-6 h-6" />
             </button>
 
-            {/* Desktop Title */}
-            <div className="hidden lg:block">
-              <h1 className="text-lg font-bold text-gray-900">
-                {getGreeting()}{currentUser?.name ? `, ${currentUser.name.split(' ')[0]}` : currentUser?.username ? `, @${currentUser.username}` : ''}
-              </h1>
-            </div>
+            {/* Desktop Title - Removido para evitar duplicação */}
 
             {/* User Profile */}
             {currentUser && (

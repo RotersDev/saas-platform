@@ -512,49 +512,84 @@ export default function StoreDashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Gráfico de Status - melhorado para mobile */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Status dos Pedidos</h2>
-          <div className="flex flex-col sm:block">
-            {/* Lista de status para mobile */}
-            <div className="sm:hidden space-y-3 mb-4">
-              {(stats?.statusData || []).map((entry: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: entry.color }}></div>
-                    <span className="text-sm font-medium text-gray-900">{entry.name}</span>
+        {/* Gráfico de Status - Design Profissional */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">Status dos Pedidos</h2>
+            <p className="text-sm text-gray-500">Distribuição por status</p>
+          </div>
+
+          {/* Gráfico de Pizza - Melhorado */}
+          <div className="mb-6">
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={stats?.statusData || []}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={false}
+                  outerRadius={90}
+                  innerRadius={50}
+                  fill="#8884d8"
+                  dataKey="value"
+                  stroke="#ffffff"
+                  strokeWidth={3}
+                >
+                  {(stats?.statusData || []).map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  }}
+                  formatter={(value: any, name: any) => [
+                    `${value} pedidos`,
+                    name
+                  ]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Legenda - Design Elegante */}
+          <div className="space-y-3 pt-4 border-t border-gray-100">
+            {(stats?.statusData || []).map((entry: any, index: number) => {
+              const total = stats?.statusData?.reduce((sum: number, e: any) => sum + e.value, 0) || 1;
+              const percentage = ((entry.value / total) * 100).toFixed(1);
+
+              return (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: entry.color }}
+                    ></div>
+                    <span className="text-sm font-medium text-gray-700">{entry.name}</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-sm font-semibold text-gray-900">{entry.value}</span>
-                    <span className="text-xs text-gray-500 ml-1">
-                      ({((entry.value / (stats?.statusData?.reduce((sum: number, e: any) => sum + e.value, 0) || 1)) * 100).toFixed(0)}%)
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${percentage}%`,
+                          backgroundColor: entry.color,
+                        }}
+                      ></div>
+                    </div>
+                    <div className="text-right min-w-[80px]">
+                      <span className="text-sm font-semibold text-gray-900">{entry.value}</span>
+                      <span className="text-xs text-gray-500 ml-1">({percentage}%)</span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-            {/* Gráfico para desktop */}
-            <div className="hidden sm:block">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={stats?.statusData || []}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {(stats?.statusData || []).map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+              );
+            })}
           </div>
         </div>
       </div>
