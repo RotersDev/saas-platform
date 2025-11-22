@@ -298,7 +298,7 @@ export default function StoreLayout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header Profissional */}
         <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="flex items-center justify-between h-16 px-4 lg:px-6">
+          <div className="flex items-center justify-between h-20 px-4 lg:px-6">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(true)}
