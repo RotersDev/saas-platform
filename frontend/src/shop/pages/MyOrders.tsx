@@ -16,34 +16,59 @@ export default function MyOrders() {
   const navigate = useNavigate();
   const [customer, setCustomer] = useState<any>(null);
 
+  const { data: storeInfo } = useQuery(
+    ['shopStore', storeSubdomain],
+    async () => {
+      const response = await api.get('/api/public/store');
+      return response.data;
+    },
+    {
+      staleTime: Infinity,
+    }
+  );
+
   useEffect(() => {
-    const customerData = localStorage.getItem(`customer_${storeSubdomain}`);
-    const token = localStorage.getItem(`customer_token_${storeSubdomain}`);
+    const currentCustomerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+    if (!currentCustomerKey) {
+      // Aguardar storeInfo carregar
+      return;
+    }
+
+    const customerData = localStorage.getItem(`customer_${currentCustomerKey}`);
+    const token = localStorage.getItem(`customer_token_${currentCustomerKey}`);
 
     if (!customerData || !token) {
       navigate(getLoginUrl(storeSubdomain));
       return;
     }
 
-    setCustomer(JSON.parse(customerData));
-  }, [storeSubdomain, navigate]);
+    try {
+      setCustomer(JSON.parse(customerData));
+    } catch (error) {
+      console.error('[MyOrders] Erro ao parsear customer:', error);
+      navigate(getLoginUrl(storeSubdomain));
+    }
+  }, [storeSubdomain, storeInfo, navigate]);
 
   const { data: ordersData, isLoading } = useQuery(
-    ['myOrders', storeSubdomain],
+    ['myOrders', storeSubdomain, storeInfo?.id],
     async () => {
-      const token = localStorage.getItem(`customer_token_${storeSubdomain}`);
+      const currentCustomerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+      if (!currentCustomerKey) return [];
+      
+      const token = localStorage.getItem(`customer_token_${currentCustomerKey}`);
       if (!token) return [];
 
       const response = await api.get('/api/public/customer/my-orders', {
         headers: {
-          'X-Store-Subdomain': storeSubdomain,
+          'X-Store-Subdomain': storeSubdomain || undefined,
           Authorization: `Bearer ${token}`,
         },
       });
       return response.data;
     },
     {
-      enabled: !!customer && !!storeSubdomain,
+      enabled: !!customer && (!!storeSubdomain || !!storeInfo),
       staleTime: 1 * 60 * 1000,
     }
   );

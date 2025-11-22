@@ -34,8 +34,8 @@ export default function StoreOrders() {
   );
 
   const deliverMutation = useMutation(
-    async (id: number) => {
-      await api.post(`/api/orders/${id}/deliver`);
+    async (orderNumber: string) => {
+      await api.post(`/api/orders/${encodeURIComponent(orderNumber)}/deliver`);
     },
     {
       onSuccess: () => {
@@ -46,8 +46,8 @@ export default function StoreOrders() {
   );
 
   const cancelMutation = useMutation(
-    async (id: number) => {
-      await api.post(`/api/orders/${id}/cancel`);
+    async (orderNumber: string) => {
+      await api.post(`/api/orders/${encodeURIComponent(orderNumber)}/cancel`);
     },
     {
       onSuccess: () => {
@@ -191,7 +191,7 @@ export default function StoreOrders() {
                   <tr
                     key={order.id}
                     className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/store/orders/${order.id}`)}
+                    onClick={() => navigate(`/store/orders/${order.order_number || order.id}`)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-bold text-indigo-600">
@@ -256,7 +256,7 @@ export default function StoreOrders() {
                                 confirmText: 'Entregar',
                               });
                               if (confirmed) {
-                                deliverMutation.mutate(order.id);
+                                deliverMutation.mutate(order.order_number || order.id);
                               }
                             }}
                             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
@@ -275,7 +275,7 @@ export default function StoreOrders() {
                                 confirmText: 'Cancelar',
                               });
                               if (confirmed) {
-                                cancelMutation.mutate(order.id);
+                                cancelMutation.mutate(order.order_number || order.id);
                               }
                             }}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"

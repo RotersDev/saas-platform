@@ -167,17 +167,18 @@ export class OrderController {
         return;
       }
 
-      const { Op } = require('sequelize');
-      const orderIdentifier = decodeURIComponent(req.params.id);
+      const orderNumber = decodeURIComponent(req.params.orderNumber || req.params.id || '');
 
-      // Tentar buscar por order_number primeiro, depois por ID numérico
+      if (!orderNumber) {
+        res.status(400).json({ error: 'Número do pedido é obrigatório' });
+        return;
+      }
+
+      // Buscar APENAS por order_number (UUID) - mais seguro
       const order = await Order.findOne({
         where: {
           store_id: storeId,
-          [Op.or]: [
-            { order_number: orderIdentifier },
-            { id: isNaN(Number(orderIdentifier)) ? -1 : Number(orderIdentifier) },
-          ],
+          order_number: orderNumber,
         },
         include: [
           { association: 'items' },
@@ -211,9 +212,16 @@ export class OrderController {
         return;
       }
 
+      const orderNumber = decodeURIComponent(req.params.orderNumber || req.params.id || '');
+
+      if (!orderNumber) {
+        res.status(400).json({ error: 'Número do pedido é obrigatório' });
+        return;
+      }
+
       // Verificar se o pedido pertence à loja antes de entregar
       const order = await Order.findOne({
-        where: { id: req.params.id, store_id: storeId },
+        where: { order_number: orderNumber, store_id: storeId },
       });
 
       if (!order) {
@@ -221,7 +229,7 @@ export class OrderController {
         return;
       }
 
-      await OrderService.deliverOrder(Number(req.params.id));
+      await OrderService.deliverOrder(order.id);
 
       res.json({ message: 'Pedido entregue com sucesso' });
     } catch (error: any) {
@@ -243,8 +251,15 @@ export class OrderController {
         return;
       }
 
+      const orderNumber = decodeURIComponent(req.params.orderNumber || req.params.id || '');
+
+      if (!orderNumber) {
+        res.status(400).json({ error: 'Número do pedido é obrigatório' });
+        return;
+      }
+
       const order = await Order.findOne({
-        where: { id: req.params.id, store_id: storeId },
+        where: { order_number: orderNumber, store_id: storeId },
       });
 
       if (!order) {
@@ -282,8 +297,15 @@ export class OrderController {
         return;
       }
 
+      const orderNumber = decodeURIComponent(req.params.orderNumber || req.params.id || '');
+
+      if (!orderNumber) {
+        res.status(400).json({ error: 'Número do pedido é obrigatório' });
+        return;
+      }
+
       const order = await Order.findOne({
-        where: { id: req.params.id, store_id: storeId },
+        where: { order_number: orderNumber, store_id: storeId },
         include: [{ association: 'payment' }],
       });
 
@@ -393,8 +415,15 @@ export class OrderController {
         return;
       }
 
+      const orderNumber = decodeURIComponent(req.params.orderNumber || req.params.id || '');
+
+      if (!orderNumber) {
+        res.status(400).json({ error: 'Número do pedido é obrigatório' });
+        return;
+      }
+
       const order = await Order.findOne({
-        where: { id: req.params.id, store_id: storeId },
+        where: { order_number: orderNumber, store_id: storeId },
         include: [{ association: 'payment' }],
       });
 

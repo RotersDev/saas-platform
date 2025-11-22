@@ -12,7 +12,7 @@ apiRoutes.use(resolveTenant);
 apiRoutes.get('/products', ApiController.listProducts);
 apiRoutes.get('/products/:id', ApiController.getProduct);
 apiRoutes.get('/orders', ApiController.listOrders);
-apiRoutes.get('/orders/:id', ApiController.getOrder);
+apiRoutes.get('/orders/:orderNumber', ApiController.getOrder);
 apiRoutes.get('/stock/:productId', ApiController.getStock);
 
 

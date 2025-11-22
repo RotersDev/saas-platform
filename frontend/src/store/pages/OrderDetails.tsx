@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useConfirm } from '../../hooks/useConfirm';
 
 export default function OrderDetails() {
-  const { id } = useParams<{ id: string }>();
+  const { orderNumber } = useParams<{ orderNumber: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [blockingBy, setBlockingBy] = useState<'email' | 'ip' | null>(null);
@@ -32,13 +32,14 @@ export default function OrderDetails() {
   };
 
   const { data: order, isLoading } = useQuery(
-    ['order', id],
+    ['order', orderNumber],
     async () => {
-      const response = await api.get(`/api/orders/${id}`);
+      if (!orderNumber) return null;
+      const response = await api.get(`/api/orders/${encodeURIComponent(orderNumber)}`);
       return response.data;
     },
     {
-      enabled: !!id,
+      enabled: !!orderNumber,
     }
   );
 
@@ -61,7 +62,11 @@ export default function OrderDetails() {
 
   const refundMutation = useMutation(
     async () => {
-      const response = await api.post(`/api/orders/${id}/refund`);
+      if (!orderNumber) {
+        toast.error('Número do pedido não encontrado');
+        return;
+      }
+      const response = await api.post(`/api/orders/${encodeURIComponent(orderNumber)}/refund`);
       return response.data;
     },
     {
@@ -77,7 +82,11 @@ export default function OrderDetails() {
 
   const checkPaymentMutation = useMutation(
     async () => {
-      const response = await api.post(`/api/orders/${id}/check-payment`);
+      if (!orderNumber) {
+        toast.error('Número do pedido não encontrado');
+        return;
+      }
+      const response = await api.post(`/api/orders/${encodeURIComponent(orderNumber)}/check-payment`);
       return response.data;
     },
     {

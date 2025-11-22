@@ -50,14 +50,19 @@ export class CustomerOrdersController {
         return;
       }
 
-      const orderIdentifier = decodeURIComponent(req.params.id);
+      const orderNumber = decodeURIComponent(req.params.orderNumber || req.params.id || '');
+
+      if (!orderNumber) {
+        res.status(400).json({ error: 'Número do pedido é obrigatório' });
+        return;
+      }
 
       // SEGURANÇA: Apenas buscar por order_number (não permitir ID numérico sequencial)
       const order = await Order.findOne({
         where: {
           store_id: req.store.id,
           customer_id: req.customer.id,
-          order_number: orderIdentifier, // Apenas order_number, não ID numérico
+          order_number: orderNumber, // Apenas order_number, não ID numérico
         },
         include: [
           { association: 'items' },

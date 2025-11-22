@@ -21,8 +21,8 @@ publicRoutes.get('/products', ApiController.listProducts);
 publicRoutes.get('/products/:id', ApiController.getProduct);
 publicRoutes.get('/products/slug/:slug', ApiController.getProductBySlug);
 publicRoutes.post('/orders', ApiController.createOrder);
-publicRoutes.get('/orders/:id', ApiController.getOrder);
-publicRoutes.post('/orders/:id/check-payment', ApiController.checkPayment);
+publicRoutes.get('/orders/:orderNumber', ApiController.getOrder);
+publicRoutes.post('/orders/:orderNumber/check-payment', ApiController.checkPayment);
 
 // Tracking de visitas
 publicRoutes.post('/visits/track', VisitController.trackVisit);

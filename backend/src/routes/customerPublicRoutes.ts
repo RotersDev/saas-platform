@@ -13,5 +13,5 @@ customerPublicRoutes.use(authenticateCustomer);
 
 // Rotas protegidas para clientes autenticados
 customerPublicRoutes.get('/my-orders', CustomerOrdersController.listMyOrders);
-customerPublicRoutes.get('/my-orders/:id', CustomerOrdersController.getMyOrder);
+customerPublicRoutes.get('/my-orders/:orderNumber', CustomerOrdersController.getMyOrder);
 

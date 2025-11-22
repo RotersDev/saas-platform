@@ -380,7 +380,7 @@ function App() {
               <Route path="products/edit/:id" element={<StoreProductForm />} />
               <Route path="categories" element={<StoreCategories />} />
               <Route path="orders" element={<StoreOrders />} />
-              <Route path="orders/:id" element={<StoreOrderDetails />} />
+              <Route path="orders/:orderNumber" element={<StoreOrderDetails />} />
               <Route path="customers" element={<StoreCustomers />} />
               <Route path="coupons" element={<StoreCoupons />} />
               <Route path="theme" element={<StoreTheme />} />

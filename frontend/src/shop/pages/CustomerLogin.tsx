@@ -59,10 +59,17 @@ export default function CustomerLogin() {
         });
 
         if (response.data.token) {
-          localStorage.setItem(`customer_token_${storeSubdomain}`, response.data.token);
-          localStorage.setItem(`customer_${storeSubdomain}`, JSON.stringify(response.data.customer));
-          toast.success('Login realizado com sucesso!');
-          navigate(getShopUrl(storeSubdomain, 'my-orders'));
+          // Usar o mesmo cálculo de cartKey para customer
+          const currentCustomerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+          if (currentCustomerKey) {
+            localStorage.setItem(`customer_token_${currentCustomerKey}`, response.data.token);
+            localStorage.setItem(`customer_${currentCustomerKey}`, JSON.stringify(response.data.customer));
+            window.dispatchEvent(new Event('customerUpdated'));
+            toast.success('Login realizado com sucesso!');
+            navigate(getShopUrl(storeSubdomain, 'my-orders'));
+          } else {
+            toast.error('Erro ao identificar a loja');
+          }
         }
       } else {
         const response = await api.post('/api/public/customers/register', {
@@ -77,10 +84,17 @@ export default function CustomerLogin() {
         });
 
         if (response.data.token) {
-          localStorage.setItem(`customer_token_${storeSubdomain}`, response.data.token);
-          localStorage.setItem(`customer_${storeSubdomain}`, JSON.stringify(response.data.customer));
-          toast.success('Cadastro realizado com sucesso!');
-          navigate(getShopUrl(storeSubdomain, 'my-orders'));
+          // Usar o mesmo cálculo de cartKey para customer
+          const currentCustomerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+          if (currentCustomerKey) {
+            localStorage.setItem(`customer_token_${currentCustomerKey}`, response.data.token);
+            localStorage.setItem(`customer_${currentCustomerKey}`, JSON.stringify(response.data.customer));
+            window.dispatchEvent(new Event('customerUpdated'));
+            toast.success('Cadastro realizado com sucesso!');
+            navigate(getShopUrl(storeSubdomain, 'my-orders'));
+          } else {
+            toast.error('Erro ao identificar a loja');
+          }
         } else {
           toast.success('Cadastro realizado! Faça login para continuar.');
           setIsLogin(true);
@@ -110,10 +124,17 @@ export default function CustomerLogin() {
       });
 
       if (response.data.token) {
-        localStorage.setItem(`customer_token_${storeSubdomain}`, response.data.token);
-        localStorage.setItem(`customer_${storeSubdomain}`, JSON.stringify(response.data.customer));
-        toast.success('Senha criada com sucesso!');
-        navigate(getShopUrl(storeSubdomain, 'my-orders'));
+        // Usar o mesmo cálculo de cartKey para customer
+        const currentCustomerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+        if (currentCustomerKey) {
+          localStorage.setItem(`customer_token_${currentCustomerKey}`, response.data.token);
+          localStorage.setItem(`customer_${currentCustomerKey}`, JSON.stringify(response.data.customer));
+          window.dispatchEvent(new Event('customerUpdated'));
+          toast.success('Senha criada com sucesso!');
+          navigate(getShopUrl(storeSubdomain, 'my-orders'));
+        } else {
+          toast.error('Erro ao identificar a loja');
+        }
       }
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Erro ao criar senha');

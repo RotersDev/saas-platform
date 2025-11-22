@@ -20,24 +20,71 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Calcular cartKey (mesmo cálculo usado nas outras páginas)
+  const customerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+
   useEffect(() => {
-    const customerData = localStorage.getItem(`customer_${storeSubdomain}`);
-    if (customerData) {
-      setCustomer(JSON.parse(customerData));
+    if (!customerKey) {
+      setCustomer(null);
+      return;
+    }
+
+    const customerData = localStorage.getItem(`customer_${customerKey}`);
+    const token = localStorage.getItem(`customer_token_${customerKey}`);
+    
+    if (customerData && token) {
+      try {
+        setCustomer(JSON.parse(customerData));
+      } catch (error) {
+        console.error('[ShopHeader] Erro ao parsear customer:', error);
+        setCustomer(null);
+      }
+    } else {
+      setCustomer(null);
     }
 
     // Atualizar quando o storage mudar
-    const handleStorageChange = () => {
-      const updated = localStorage.getItem(`customer_${storeSubdomain}`);
-      if (updated) {
-        setCustomer(JSON.parse(updated));
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `customer_${customerKey}` || e.key === `customer_token_${customerKey}`) {
+        const updated = localStorage.getItem(`customer_${customerKey}`);
+        const updatedToken = localStorage.getItem(`customer_token_${customerKey}`);
+        if (updated && updatedToken) {
+          try {
+            setCustomer(JSON.parse(updated));
+          } catch (error) {
+            console.error('[ShopHeader] Erro ao parsear customer no storage change:', error);
+            setCustomer(null);
+          }
+        } else {
+          setCustomer(null);
+        }
+      }
+    };
+    
+    // Listener para evento customizado (mesma aba)
+    const handleCustomerUpdated = () => {
+      const updated = localStorage.getItem(`customer_${customerKey}`);
+      const updatedToken = localStorage.getItem(`customer_token_${customerKey}`);
+      if (updated && updatedToken) {
+        try {
+          setCustomer(JSON.parse(updated));
+        } catch (error) {
+          console.error('[ShopHeader] Erro ao parsear customer no evento:', error);
+          setCustomer(null);
+        }
       } else {
         setCustomer(null);
       }
     };
+    
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [storeSubdomain]);
+    window.addEventListener('customerUpdated', handleCustomerUpdated);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('customerUpdated', handleCustomerUpdated);
+    };
+  }, [customerKey]);
 
   // Fechar menu ao clicar fora
   useEffect(() => {
@@ -59,10 +106,14 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
   }, [profileMenuOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem(`customer_token_${storeSubdomain}`);
-    localStorage.removeItem(`customer_${storeSubdomain}`);
+    const currentCustomerKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+    if (currentCustomerKey) {
+      localStorage.removeItem(`customer_token_${currentCustomerKey}`);
+      localStorage.removeItem(`customer_${currentCustomerKey}`);
+    }
     setCustomer(null);
     setProfileMenuOpen(false);
+    window.dispatchEvent(new Event('customerUpdated'));
     navigate(getShopUrl(storeSubdomain, ''));
   };
 

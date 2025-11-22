@@ -331,7 +331,29 @@ class EmailService {
    * Envia email quando pedido é criado
    */
   async sendOrderCreated(order: any, storeName: string, customerEmail: string): Promise<boolean> {
-    const orderUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/${order.store?.subdomain || ''}/payment/${order.order_number || order.id}`;
+    // Gerar URL correta baseada no domínio primário da loja
+    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
+    const appUrl = process.env.APP_URL || '';
+    const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+
+    let orderUrl: string;
+    const store = order.store || {};
+
+    // Se tem domínio customizado (primário), usar ele
+    if (store.domain) {
+      const baseUrl = isLocalhost ? `https://${store.domain}` : (appUrl || `https://${store.domain}`);
+      orderUrl = `${baseUrl}/payment/${order.order_number || order.id}`;
+    } else if (store.subdomain) {
+      // Se tem subdomain, usar subdomain.baseDomain
+      const baseUrl = isLocalhost ? `https://${store.subdomain}.${baseDomain}` : (appUrl || `https://${store.subdomain}.${baseDomain}`);
+      orderUrl = `${baseUrl}/payment/${order.order_number || order.id}`;
+    } else {
+      // Fallback (não deveria acontecer)
+      const baseUrl = isLocalhost ? `https://${saasDomain}` : (appUrl || `https://${saasDomain}`);
+      orderUrl = `${baseUrl}/payment/${order.order_number || order.id}`;
+    }
+
     const totalFormatted = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
@@ -366,8 +388,6 @@ class EmailService {
           ${itemsList}
         </tbody>
       </table>
-      <p>Ou copie e cole este link no seu navegador:</p>
-      <p style="word-break: break-all; color: #2563eb;">${orderUrl}</p>
     `;
 
     const html = this.getEmailTemplate({
@@ -389,7 +409,29 @@ class EmailService {
    * Envia email quando pedido é aprovado
    */
   async sendOrderApproved(order: any, storeName: string, customerEmail: string, productKeys?: string[]): Promise<boolean> {
-    const orderUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/${order.store?.subdomain || ''}/order/${order.order_number || order.id}`;
+    // Gerar URL correta baseada no domínio primário da loja
+    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
+    const appUrl = process.env.APP_URL || '';
+    const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+
+    let orderUrl: string;
+    const store = order.store || {};
+
+    // Se tem domínio customizado (primário), usar ele
+    if (store.domain) {
+      const baseUrl = isLocalhost ? `https://${store.domain}` : (appUrl || `https://${store.domain}`);
+      orderUrl = `${baseUrl}/order/${order.order_number || order.id}`;
+    } else if (store.subdomain) {
+      // Se tem subdomain, usar subdomain.baseDomain
+      const baseUrl = isLocalhost ? `https://${store.subdomain}.${baseDomain}` : (appUrl || `https://${store.subdomain}.${baseDomain}`);
+      orderUrl = `${baseUrl}/order/${order.order_number || order.id}`;
+    } else {
+      // Fallback (não deveria acontecer)
+      const baseUrl = isLocalhost ? `https://${saasDomain}` : (appUrl || `https://${saasDomain}`);
+      orderUrl = `${baseUrl}/order/${order.order_number || order.id}`;
+    }
+
     const totalFormatted = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
@@ -429,8 +471,18 @@ class EmailService {
    * Envia email de boas-vindas quando loja é criada
    */
   async sendStoreWelcome(storeName: string, ownerEmail: string, subdomain: string): Promise<boolean> {
-    const storeUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/${subdomain}`;
-    const adminUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/store`;
+    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
+    const appUrl = process.env.APP_URL || '';
+    const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
+
+    // URL da loja
+    const storeBaseUrl = isLocalhost ? `https://${subdomain}.${baseDomain}` : (appUrl || `https://${subdomain}.${baseDomain}`);
+    const storeUrl = `${storeBaseUrl}`;
+
+    // URL do admin
+    const adminBaseUrl = isLocalhost ? `https://${saasDomain}` : (appUrl || `https://${saasDomain}`);
+    const adminUrl = `${adminBaseUrl}/store`;
 
     const content = `
       <p>Olá,</p>

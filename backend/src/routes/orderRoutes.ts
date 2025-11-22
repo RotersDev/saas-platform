@@ -15,10 +15,10 @@ orderRoutes.use(requireActiveStore);
 
 orderRoutes.get('/', OrderController.list);
 orderRoutes.post('/', OrderController.create);
-orderRoutes.get('/:id', OrderController.getById);
-orderRoutes.post('/:id/deliver', requireStoreAdmin, OrderController.deliver);
-orderRoutes.post('/:id/cancel', requireStoreAdmin, OrderController.cancel);
-orderRoutes.post('/:id/check-payment', requireStoreAdmin, OrderController.checkPayment);
-orderRoutes.post('/:id/refund', requireStoreAdmin, OrderController.refund);
+orderRoutes.get('/:orderNumber', OrderController.getById);
+orderRoutes.post('/:orderNumber/deliver', requireStoreAdmin, OrderController.deliver);
+orderRoutes.post('/:orderNumber/cancel', requireStoreAdmin, OrderController.cancel);
+orderRoutes.post('/:orderNumber/check-payment', requireStoreAdmin, OrderController.checkPayment);
+orderRoutes.post('/:orderNumber/refund', requireStoreAdmin, OrderController.refund);
 
 
