@@ -193,6 +193,76 @@ export class AuthController {
       const options: SignOptions = { expiresIn };
       const token = jwt.sign(payload, secret, options);
 
+      // Criar hash do token para armazenar na sessão
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+      // Capturar informações do dispositivo e IP
+      const ipAddress = getClientIp(req);
+      const userAgent = req.headers['user-agent'] || '';
+      const deviceInfo = parseUserAgent(userAgent);
+
+      const finalIp = Array.isArray(ipAddress) ? ipAddress[0] : ipAddress;
+      console.log('[AuthController] Registro - IP capturado:', finalIp);
+      console.log('[AuthController] Registro - User Agent:', userAgent);
+      console.log('[AuthController] Registro - Device Info:', deviceInfo);
+
+      // Buscar informações de localização do IP (assíncrono, não bloquear registro)
+      let location = '';
+      let city = '';
+      let region = '';
+      let country = '';
+      try {
+        const ipInfo = await getIPInfo(finalIp);
+        if (ipInfo) {
+          location = formatLocation(ipInfo);
+          city = ipInfo.city || '';
+          region = ipInfo.region || '';
+          country = ipInfo.country || '';
+          console.log('[AuthController] Registro - IP:', finalIp);
+          console.log('[AuthController] Registro - IPInfo completo:', JSON.stringify(ipInfo, null, 2));
+          console.log('[AuthController] Registro - Localização:', location, '| Cidade:', city, '| Região:', region, '| País:', country);
+        } else {
+          console.log('[AuthController] Registro - IPInfo retornou null para IP:', finalIp);
+        }
+      } catch (locationError: any) {
+        console.error('[AuthController] Registro - Erro ao buscar localização:', locationError.message);
+        // Em caso de erro, não usar valores padrão - deixar vazio
+        location = '';
+        city = '';
+        region = '';
+        country = '';
+      }
+
+      // Criar sessão do usuário
+      try {
+        console.log('[AuthController] Registro - Criando sessão com:', {
+          ip: finalIp,
+          city: city || '(não detectada)',
+          region: region || '(não detectada)',
+          country: country || '(não detectada)',
+        });
+
+        const session = await UserSession.create({
+          user_id: user.id,
+          token_hash: tokenHash,
+          ip_address: finalIp,
+          user_agent: userAgent,
+          device_info: deviceInfo,
+          location: location || '',
+          city: city || undefined,
+          region: region || undefined,
+          country: country || undefined,
+          is_active: true,
+          last_activity: new Date(),
+        });
+        console.log('[AuthController] Registro - Sessão criada com sucesso:', session.id);
+        console.log('[AuthController] Registro - Sessão criada - IP:', session.ip_address, 'cidade:', session.city || '(não detectada)', 'região:', session.region || '(não detectada)', 'país:', session.country || '(não detectada)');
+      } catch (sessionError: any) {
+        // Log erro mas não falhar o registro
+        console.error('[AuthController] Registro - Erro ao criar sessão:', sessionError);
+        logger.error('Erro ao criar sessão de usuário no registro', { error: sessionError.message, stack: sessionError.stack });
+      }
+
       res.status(201).json({
         token,
         user: {
@@ -235,6 +305,76 @@ export class AuthController {
       const expiresIn: StringValue | number = (process.env.JWT_EXPIRES_IN || '7d') as StringValue;
       const options: SignOptions = { expiresIn };
       const token = jwt.sign(payload, secret, options);
+
+      // Criar hash do novo token
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+      // Obter token antigo do header para encontrar a sessão
+      const oldToken = req.headers.authorization?.replace('Bearer ', '');
+      const oldTokenHash = oldToken ? crypto.createHash('sha256').update(oldToken).digest('hex') : null;
+
+      // Atualizar ou criar sessão com o novo token
+      try {
+        if (oldTokenHash) {
+          // Tentar encontrar e atualizar sessão existente
+          const existingSession = await UserSession.findOne({
+            where: {
+              user_id: user.id,
+              token_hash: oldTokenHash,
+              is_active: true,
+            },
+          });
+
+          if (existingSession) {
+            // Atualizar sessão existente com novo token hash
+            await existingSession.update({
+              token_hash: tokenHash,
+              last_activity: new Date(),
+            });
+            console.log('[AuthController] RefreshToken - Sessão atualizada:', existingSession.id);
+          } else {
+            // Se não encontrou sessão, criar uma nova
+            const ipAddress = getClientIp(req);
+            const userAgent = req.headers['user-agent'] || '';
+            const deviceInfo = parseUserAgent(userAgent);
+            const finalIp = Array.isArray(ipAddress) ? ipAddress[0] : ipAddress;
+
+            await UserSession.create({
+              user_id: user.id,
+              token_hash: tokenHash,
+              ip_address: finalIp,
+              user_agent: userAgent,
+              device_info: deviceInfo,
+              location: '',
+              is_active: true,
+              last_activity: new Date(),
+            });
+            console.log('[AuthController] RefreshToken - Nova sessão criada');
+          }
+        } else {
+          // Se não há token antigo, criar nova sessão
+          const ipAddress = getClientIp(req);
+          const userAgent = req.headers['user-agent'] || '';
+          const deviceInfo = parseUserAgent(userAgent);
+          const finalIp = Array.isArray(ipAddress) ? ipAddress[0] : ipAddress;
+
+          await UserSession.create({
+            user_id: user.id,
+            token_hash: tokenHash,
+            ip_address: finalIp,
+            user_agent: userAgent,
+            device_info: deviceInfo,
+            location: '',
+            is_active: true,
+            last_activity: new Date(),
+          });
+          console.log('[AuthController] RefreshToken - Nova sessão criada (sem token antigo)');
+        }
+      } catch (sessionError: any) {
+        // Log erro mas não falhar o refresh
+        console.error('[AuthController] RefreshToken - Erro ao atualizar/criar sessão:', sessionError);
+        logger.error('Erro ao atualizar/criar sessão no refresh token', { error: sessionError.message, stack: sessionError.stack });
+      }
 
       res.json({
         token,
