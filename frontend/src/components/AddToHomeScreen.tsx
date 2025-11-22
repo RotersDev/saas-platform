@@ -110,9 +110,11 @@ export default function AddToHomeScreen() {
             <div className={`text-sm space-y-2 ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
             }`}>
-              <p>1. Toque nos três pontos no Safari</p>
+              <p className="font-medium mb-2">⚠️ Importante: No iPhone, as notificações só funcionam quando o app está instalado!</p>
+              <p>1. Toque nos três pontos (⋯) no Safari</p>
               <p>2. Selecione "Compartilhar"</p>
               <p>3. Escolha "Adicionar à Tela de início"</p>
+              <p className="mt-2 text-xs opacity-75">Depois de instalar, abra o app da tela inicial e autorize as notificações novamente.</p>
             </div>
           ) : (
             <p className={`text-sm ${

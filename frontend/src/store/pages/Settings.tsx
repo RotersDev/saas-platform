@@ -294,13 +294,34 @@ export default function StoreSettings() {
         return;
       }
 
+      // Verificar se está em modo standalone (PWA instalado) - especialmente importante para iOS
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone ||
+        document.referrer.includes('android-app://');
+
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+
+      if (isIOS && !isStandalone) {
+        toast.error('No iPhone, você precisa instalar o app primeiro! Adicione à tela inicial para receber notificações.', {
+          duration: 6000,
+        });
+        // Ainda permitir ativar, mas avisar
+      }
+
       try {
         const permission = await notificationService.requestPermission();
         if (permission !== 'granted') {
           toast.error('Permissão de notificações negada. Por favor, permita notificações nas configurações do navegador.');
           return;
         }
-        toast.success('Notificações ativadas! Você receberá notificações quando houver vendas aprovadas.');
+
+        if (isIOS && !isStandalone) {
+          toast.success('Permissão concedida! Agora instale o app (Adicionar à tela inicial) para receber notificações.', {
+            duration: 6000,
+          });
+        } else {
+          toast.success('Notificações ativadas! Você receberá notificações quando houver vendas aprovadas.');
+        }
       } catch (error) {
         console.error('Erro ao solicitar permissão:', error);
         toast.error('Erro ao solicitar permissão de notificações');

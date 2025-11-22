@@ -10,6 +10,13 @@ export function useOrderNotifications(enabled: boolean = false) {
   const lastOrderIdRef = useRef<number | null>(null);
   const isInitializedRef = useRef(false);
 
+  // Verificar se está em modo standalone (PWA instalado) - importante para iOS
+  const isStandalone = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone ||
+    document.referrer.includes('android-app://')
+  );
+
   // Buscar última venda aprovada
   const { data: lastOrder } = useQuery(
     'lastApprovedOrder',
@@ -35,6 +42,9 @@ export function useOrderNotifications(enabled: boolean = false) {
       refetchInterval: enabled && notificationService.isPermissionGranted() ? 10000 : false, // Verificar a cada 10 segundos
       refetchIntervalInBackground: true,
       staleTime: 0,
+      // No iOS, só funcionar se estiver em modo standalone (PWA instalado)
+      // No Android/Desktop, funcionar sempre que tiver permissão
+      ...(isStandalone ? {} : { refetchIntervalInBackground: false }),
     }
   );
 
@@ -46,6 +56,13 @@ export function useOrderNotifications(enabled: boolean = false) {
 
     if (!notificationService.isPermissionGranted()) {
       console.log('[useOrderNotifications] Permissão não concedida');
+      return;
+    }
+
+    // No iOS, só funcionar se estiver em modo standalone (PWA instalado)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS && !isStandalone) {
+      console.log('[useOrderNotifications] iOS detectado mas app não está instalado (não está em modo standalone)');
       return;
     }
 

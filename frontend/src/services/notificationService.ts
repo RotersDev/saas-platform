@@ -59,6 +59,7 @@ class NotificationService {
 
   /**
    * Envia uma notificação de venda aprovada
+   * No iOS, usa service worker quando disponível (requer PWA instalado)
    */
   async notifySaleApproved(amount: number, orderNumber?: string): Promise<void> {
     console.log('[NotificationService] Tentando enviar notificação:', { amount, orderNumber });
@@ -83,20 +84,42 @@ class NotificationService {
         currency: 'BRL',
       }).format(amount);
 
-      console.log('[NotificationService] Criando notificação:', {
-        title: 'Venda Aprovada',
-        body: `Valor: ${formattedAmount}${orderNumber ? ` - Pedido #${orderNumber}` : ''}`,
-        icon: NOTIFICATION_ICON
-      });
-
-      const notification = new Notification('Venda Aprovada', {
+      const notificationOptions = {
         body: `Valor: ${formattedAmount}${orderNumber ? ` - Pedido #${orderNumber}` : ''}`,
         icon: NOTIFICATION_ICON,
         badge: NOTIFICATION_ICON,
         tag: `sale-${orderNumber || Date.now()}`,
         requireInteraction: false,
         silent: false,
+        data: {
+          orderId: orderNumber,
+          amount: formattedAmount,
+        },
+      };
+
+      console.log('[NotificationService] Criando notificação:', {
+        title: 'Venda Aprovada',
+        ...notificationOptions
       });
+
+      // Tentar usar service worker primeiro (funciona melhor no iOS quando PWA está instalado)
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          console.log('[NotificationService] Service Worker pronto, usando showNotification');
+
+          await registration.showNotification('Venda Aprovada', notificationOptions);
+          console.log('[NotificationService] Notificação enviada via Service Worker');
+          return;
+        } catch (swError) {
+          console.warn('[NotificationService] Erro ao usar Service Worker, tentando API direta:', swError);
+          // Continuar com API direta se service worker falhar
+        }
+      }
+
+      // Fallback: usar API de Notification diretamente
+      console.log('[NotificationService] Usando API de Notification diretamente');
+      const notification = new Notification('Venda Aprovada', notificationOptions);
 
       console.log('[NotificationService] Notificação criada com sucesso');
 
