@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Lock, CheckCircle2 } from 'lucide-react';
 import Footer from '../components/Footer';
 import { useQuery } from 'react-query';
-import { getLoginUrl, getShopUrl } from '../../utils/urlUtils';
+import { getLoginUrl } from '../../utils/urlUtils';
 
 export default function CustomerResetPassword() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();

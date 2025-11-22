@@ -46,7 +46,8 @@ export default function ShopHome() {
 
   // Usar storeInfo.id como identificador do carrinho quando não há subdomain (domínio customizado)
   const cartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : 'default');
-  const [cart, setCart] = useState<any[]>([]);
+  // Estado do carrinho mantido para sincronização, mesmo que não seja lido diretamente
+  const [, setCart] = useState<any[]>([]);
 
   // Sincronizar carrinho com cartKey quando mudar
   useEffect(() => {
