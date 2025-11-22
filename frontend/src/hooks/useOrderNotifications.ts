@@ -62,8 +62,17 @@ export function useOrderNotifications(enabled: boolean = false) {
     // No iOS, só funcionar se estiver em modo standalone (PWA instalado)
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     if (isIOS && !isStandalone) {
-      console.log('[useOrderNotifications] iOS detectado mas app não está instalado (não está em modo standalone)');
+      console.warn('[useOrderNotifications] ⚠️ iOS detectado mas app não está instalado. Instale o app para receber notificações.');
       return;
+    }
+
+    // Verificar se service worker está disponível (importante para iOS)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        console.log('[useOrderNotifications] Service Worker pronto:', registration);
+      }).catch((error) => {
+        console.error('[useOrderNotifications] Erro ao verificar Service Worker:', error);
+      });
     }
 
     if (!lastOrder) {

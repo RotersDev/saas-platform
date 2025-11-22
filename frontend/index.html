@@ -16,17 +16,37 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Registrar Service Worker
+      // Registrar Service Worker (importante para notificações no iOS)
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
+          navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
             .then((registration) => {
-              console.log('Service Worker registrado com sucesso:', registration.scope);
+              console.log('✅ Service Worker registrado com sucesso:', registration.scope);
+
+              // Verificar se está ativo
+              if (registration.active) {
+                console.log('✅ Service Worker está ativo');
+              }
+
+              // No iOS, verificar se está em modo standalone
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+              const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone ||
+                document.referrer.includes('android-app://');
+
+              if (isIOS) {
+                console.log('📱 iOS detectado. Modo standalone:', isStandalone);
+                if (!isStandalone) {
+                  console.warn('⚠️ Para receber notificações no iOS, instale o app (Adicionar à tela inicial)');
+                }
+              }
             })
             .catch((error) => {
-              console.error('Erro ao registrar Service Worker:', error);
+              console.error('❌ Erro ao registrar Service Worker:', error);
             });
         });
+      } else {
+        console.warn('⚠️ Service Worker não é suportado neste navegador');
       }
     </script>
   </body>

@@ -84,8 +84,11 @@ class NotificationService {
         currency: 'BRL',
       }).format(amount);
 
+      const notificationTitle = 'Venda realizada';
+      const notificationBody = `Você fez uma venda de ${formattedAmount}`;
+
       const notificationOptions = {
-        body: `Valor: ${formattedAmount}${orderNumber ? ` - Pedido #${orderNumber}` : ''}`,
+        body: notificationBody,
         icon: NOTIFICATION_ICON,
         badge: NOTIFICATION_ICON,
         tag: `sale-${orderNumber || Date.now()}`,
@@ -98,28 +101,36 @@ class NotificationService {
       };
 
       console.log('[NotificationService] Criando notificação:', {
-        title: 'Venda Aprovada',
+        title: notificationTitle,
         ...notificationOptions
       });
 
-      // Tentar usar service worker primeiro (funciona melhor no iOS quando PWA está instalado)
+      // Tentar usar service worker primeiro (OBRIGATÓRIO no iOS quando PWA está instalado)
       if ('serviceWorker' in navigator) {
         try {
+          // Aguardar o service worker estar pronto
           const registration = await navigator.serviceWorker.ready;
           console.log('[NotificationService] Service Worker pronto, usando showNotification');
 
-          await registration.showNotification('Venda Aprovada', notificationOptions);
-          console.log('[NotificationService] Notificação enviada via Service Worker');
+          // No iOS, SEMPRE usar service worker
+          await registration.showNotification(notificationTitle, notificationOptions);
+          console.log('[NotificationService] ✅ Notificação enviada via Service Worker');
           return;
         } catch (swError) {
-          console.warn('[NotificationService] Erro ao usar Service Worker, tentando API direta:', swError);
-          // Continuar com API direta se service worker falhar
+          console.error('[NotificationService] ❌ Erro ao usar Service Worker:', swError);
+          // No iOS, se o service worker falhar, não tentar fallback
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+          if (isIOS) {
+            console.error('[NotificationService] iOS detectado - Service Worker é obrigatório. Verifique se o app está instalado.');
+            return;
+          }
+          // Continuar com API direta apenas em outros dispositivos
         }
       }
 
-      // Fallback: usar API de Notification diretamente
+      // Fallback: usar API de Notification diretamente (apenas para não-iOS)
       console.log('[NotificationService] Usando API de Notification diretamente');
-      const notification = new Notification('Venda Aprovada', notificationOptions);
+      const notification = new Notification(notificationTitle, notificationOptions);
 
       console.log('[NotificationService] Notificação criada com sucesso');
 

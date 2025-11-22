@@ -44,8 +44,8 @@ self.addEventListener('push', (event) => {
   console.log('[Service Worker] Push recebido:', event);
 
   let notificationData = {
-    title: 'Venda Aprovada',
-    body: 'Nova venda aprovada!',
+    title: 'Venda realizada',
+    body: 'Você fez uma venda',
     icon: NOTIFICATION_ICON,
     badge: NOTIFICATION_ICON,
     tag: 'sale-notification',
@@ -56,9 +56,10 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     try {
       const data = event.data.json();
+      const formattedAmount = data.amount || 'R$ 0,00';
       notificationData = {
-        title: data.title || 'Venda Aprovada',
-        body: data.body || `Valor: ${data.amount || 'R$ 0,00'}`,
+        title: data.title || 'Venda realizada',
+        body: data.body || `Você fez uma venda de ${formattedAmount}`,
         icon: data.icon || NOTIFICATION_ICON,
         badge: data.badge || NOTIFICATION_ICON,
         tag: data.tag || `sale-${data.orderId || Date.now()}`,
