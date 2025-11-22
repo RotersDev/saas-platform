@@ -4,8 +4,10 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { Plus, Edit, Trash2, Image as ImageIcon, X, GripVertical } from 'lucide-react';
 import { useConfirm } from '../../hooks/useConfirm';
+import { useThemeStore } from '../themeStore';
 
 export default function StoreCategories() {
+  const { theme } = useThemeStore();
   const { confirm, Dialog } = useConfirm();
   const [showModal, setShowModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
@@ -344,13 +346,15 @@ export default function StoreCategories() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Categorias</h1>
+        <h1 className={`text-3xl font-bold ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>Categorias</h1>
         <button
           onClick={() => {
             resetForm();
             setShowModal(true);
           }}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
         >
           <Plus className="w-4 h-4 mr-2" />
           Nova Categoria
@@ -358,10 +362,18 @@ export default function StoreCategories() {
       </div>
 
       {!categories || categories.length === 0 ? (
-        <div className="bg-white shadow rounded-lg p-12 text-center">
-          <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhuma categoria</h3>
-          <p className="mt-1 text-sm text-gray-500">
+        <div className={`shadow rounded-lg p-12 text-center ${
+          theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <ImageIcon className={`mx-auto h-12 w-12 ${
+            theme === 'dark' ? 'text-gray-600' : 'text-gray-400'
+          }`} />
+          <h3 className={`mt-2 text-sm font-medium ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>Nenhuma categoria</h3>
+          <p className={`mt-1 text-sm ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+          }`}>
             Comece criando sua primeira categoria.
           </p>
           <div className="mt-6">
@@ -390,15 +402,17 @@ export default function StoreCategories() {
               onTouchStart={(e) => handleTouchStart(e, index)}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all ${
-                draggedIndex === index ? 'opacity-50 scale-95 z-50' : ''
-              } ${draggedIndex !== null ? 'cursor-move' : ''}`}
+              className={`rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all ${
+                theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+              } ${draggedIndex === index ? 'opacity-50 scale-95 z-50' : ''} ${draggedIndex !== null ? 'cursor-move' : ''}`}
               style={{ touchAction: 'none' }}
             >
               {/* Imagem - oculta no mobile */}
               <div className="relative hidden md:block">
                 {/* Handle de arrastar - desktop */}
-                <div className="absolute top-2 left-2 z-10 bg-white/90 backdrop-blur-sm rounded p-1.5 shadow-sm cursor-grab active:cursor-grabbing select-none">
+                <div className={`absolute top-2 left-2 z-10 backdrop-blur-sm rounded p-1.5 shadow-sm cursor-grab active:cursor-grabbing select-none ${
+                  theme === 'dark' ? 'bg-gray-700/90' : 'bg-white/90'
+                }`}>
                   <GripVertical className="w-4 h-4 text-gray-500 pointer-events-none" />
                 </div>
                 {category.image_url ? (
@@ -434,8 +448,12 @@ export default function StoreCategories() {
                     <GripVertical className="w-5 h-5 text-gray-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-semibold text-gray-900 truncate">{category.name}</h3>
-                    <p className="text-xs text-gray-500 truncate">/{category.slug}</p>
+                    <h3 className={`text-base font-semibold truncate ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>{category.name}</h3>
+                    <p className={`text-xs truncate ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>/{category.slug}</p>
                   </div>
                   {!category.is_active && (
                     <span className="flex-shrink-0 bg-yellow-500 text-white text-xs px-2 py-0.5 rounded">
@@ -447,7 +465,9 @@ export default function StoreCategories() {
                       e.stopPropagation();
                       handleEdit(category);
                     }}
-                    className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-md"
+                    className={`flex-shrink-0 p-2 rounded-md ${
+                      theme === 'dark' ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'
+                    }`}
                   >
                     <Edit className="w-4 h-4" />
                   </button>
@@ -456,7 +476,9 @@ export default function StoreCategories() {
                       e.stopPropagation();
                       handleDelete(category.id);
                     }}
-                    className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-md"
+                    className={`flex-shrink-0 p-2 rounded-md ${
+                      theme === 'dark' ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'
+                    }`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -464,19 +486,31 @@ export default function StoreCategories() {
 
                 {/* Desktop: Layout vertical completo */}
                 <div className="hidden md:block">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{category.name}</h3>
-                  <p className="text-sm text-gray-500 mb-4">/{category.slug}</p>
+                  <h3 className={`text-lg font-semibold mb-1 ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>{category.name}</h3>
+                  <p className={`text-sm mb-4 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>/{category.slug}</p>
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleEdit(category)}
-                      className="flex-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"
+                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-md ${
+                        theme === 'dark'
+                          ? 'text-blue-400 bg-blue-900/30 hover:bg-blue-900/50'
+                          : 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                      }`}
                     >
                       <Edit className="w-4 h-4 inline mr-1" />
                       Editar
                     </button>
                     <button
                       onClick={() => handleDelete(category.id)}
-                      className="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100"
+                      className={`px-3 py-2 text-sm font-medium rounded-md ${
+                        theme === 'dark'
+                          ? 'text-red-400 bg-red-900/30 hover:bg-red-900/50'
+                          : 'text-red-600 bg-red-50 hover:bg-red-100'
+                      }`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -491,15 +525,19 @@ export default function StoreCategories() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className={`rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto ${
+            theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+          }`}>
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className={`text-2xl font-bold ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
                   {selectedCategory ? 'Editar Categoria' : 'Nova Categoria'}
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className={theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -507,7 +545,9 @@ export default function StoreCategories() {
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Nome da Categoria *
                   </label>
                   <input
@@ -527,14 +567,20 @@ export default function StoreCategories() {
                         setFormData((prev) => ({ ...prev, slug }));
                       }
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    className={`w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                      theme === 'dark'
+                        ? 'border-gray-600 bg-gray-700 text-white'
+                        : 'border-gray-300 bg-white'
+                    }`}
                     placeholder="Ex: Cursos Online"
                   />
                 </div>
 
                 {selectedCategory && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium mb-2 ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
                       Slug
                     </label>
                     <input
@@ -546,14 +592,20 @@ export default function StoreCategories() {
                           slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                      className={`w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                        theme === 'dark'
+                          ? 'border-gray-600 bg-gray-700 text-white'
+                          : 'border-gray-300 bg-white'
+                      }`}
                       placeholder="cursos-online"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium mb-2 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Imagem da Categoria
                   </label>
                   {imagePreview && (
@@ -561,7 +613,9 @@ export default function StoreCategories() {
                       <img
                         src={imagePreview}
                         alt="Preview"
-                        className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                        className={`w-full h-48 object-cover rounded-lg border ${
+                          theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+                        }`}
                         onError={() => setImagePreview(null)}
                       />
                       <button
@@ -582,12 +636,18 @@ export default function StoreCategories() {
                   />
                   <label
                     htmlFor="category-image-upload"
-                    className="inline-flex items-center px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors w-full justify-center"
+                    className={`inline-flex items-center px-4 py-2 border-2 border-dashed rounded-md text-sm font-medium cursor-pointer transition-colors w-full justify-center ${
+                      theme === 'dark'
+                        ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600'
+                        : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                    }`}
                   >
                     <ImageIcon className="w-5 h-5 mr-2" />
                     {imagePreview ? 'Trocar Imagem' : 'Selecionar Imagem'}
                   </label>
-                  <p className="text-xs text-gray-500 mt-2 text-center">
+                  <p className={`text-xs mt-2 text-center ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
                     Formatos aceitos: PNG, JPG, WEBP. Tamanho recomendado: 800x600px
                   </p>
                 </div>
@@ -600,9 +660,13 @@ export default function StoreCategories() {
                     onChange={(e) =>
                       setFormData({ ...formData, is_active: e.target.checked })
                     }
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    className={`h-4 w-4 focus:ring-blue-500 border-gray-300 rounded ${
+                      theme === 'dark' ? 'text-blue-600' : 'text-blue-600'
+                    }`}
                   />
-                  <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
+                  <label htmlFor="is_active" className={`ml-2 block text-sm ${
+                    theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                  }`}>
                     Categoria ativa (visível no site)
                   </label>
                 </div>

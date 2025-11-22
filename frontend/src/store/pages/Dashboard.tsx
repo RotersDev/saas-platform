@@ -12,6 +12,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useThemeStore } from '../themeStore';
 import {
   LineChart,
   Line,
@@ -38,6 +39,7 @@ export default function StoreDashboard() {
     end: new Date().toISOString().split('T')[0]
   });
   const queryClient = useQueryClient();
+  const { theme } = useThemeStore();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -324,8 +326,12 @@ export default function StoreDashboard() {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">Visão geral das suas vendas e métricas</p>
+            <h1 className={`text-2xl sm:text-3xl font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Dashboard</h1>
+            <p className={`mt-1 text-sm sm:text-base ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`}>Visão geral das suas vendas e métricas</p>
           </div>
 
           {/* Botão único para ir ao site - bem posicionado */}
@@ -349,13 +355,21 @@ export default function StoreDashboard() {
           <div className="relative w-full sm:w-auto">
             <button
               onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
-              className="w-full sm:w-auto flex items-center gap-1.5 px-3 py-2.5 border border-gray-300 bg-white shadow-sm hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors justify-between sm:min-w-[200px]"
+              className={`w-full sm:w-auto flex items-center gap-1.5 px-3 py-2.5 border shadow-sm rounded-lg text-sm font-medium transition-colors justify-between sm:min-w-[200px] ${
+                theme === 'dark'
+                  ? 'border-gray-600 bg-gray-700 hover:bg-gray-600 text-gray-300'
+                  : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-700'
+              }`}
             >
               <div className="flex items-center gap-1.5">
                 <Plus className="w-4 h-4 text-gray-500" />
                 <span>Período</span>
                 <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
-                <span className="inline-flex items-center rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700">
+                <span className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${
+                  theme === 'dark'
+                    ? 'border-gray-600 bg-gray-700 text-gray-300'
+                    : 'border-gray-200 bg-gray-50 text-gray-700'
+                }`}>
                   {getPeriodLabel()}
                 </span>
               </div>
@@ -369,7 +383,11 @@ export default function StoreDashboard() {
                   className="fixed inset-0 z-40 bg-black/20"
                   onClick={() => setShowPeriodDropdown(false)}
                 />
-                <div className="absolute left-0 sm:right-0 mt-2 w-full sm:w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+                <div className={`absolute left-0 sm:right-0 mt-2 w-full sm:w-64 border rounded-lg shadow-xl z-50 ${
+                  theme === 'dark'
+                    ? 'bg-gray-800 border-gray-700'
+                    : 'bg-white border-gray-200'
+                }`}>
                   <div className="p-3">
                     {(['today', 'week', 'month', 'year'] as const).map((period) => (
                       <button
@@ -377,8 +395,12 @@ export default function StoreDashboard() {
                         onClick={() => handlePeriodSelect(period)}
                         className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${
                           selectedPeriod === period
-                            ? 'bg-indigo-50 text-indigo-700 font-medium'
-                            : 'text-gray-700 hover:bg-gray-50'
+                            ? theme === 'dark'
+                              ? 'bg-blue-900/50 text-blue-400 font-medium'
+                              : 'bg-blue-50 text-blue-700 font-medium'
+                            : theme === 'dark'
+                              ? 'text-gray-300 hover:bg-gray-700'
+                              : 'text-gray-700 hover:bg-gray-50'
                         }`}
                       >
                         {period === 'today' ? 'Hoje' :
@@ -386,11 +408,17 @@ export default function StoreDashboard() {
                          period === 'month' ? 'Mês' : 'Ano'}
                       </button>
                     ))}
-                    <div className="border-t border-gray-200 my-2"></div>
-                    <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">Personalizado</div>
+                    <div className={`border-t my-2 ${
+                      theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+                    }`}></div>
+                    <div className={`px-3 py-1.5 text-xs font-medium uppercase tracking-wide ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>Personalizado</div>
                     <div className="px-3 py-2 space-y-2">
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">De</label>
+                        <label className={`block text-xs mb-1 ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>De</label>
                         <input
                           type="date"
                           value={customRange.start || ''}
@@ -398,11 +426,17 @@ export default function StoreDashboard() {
                             setCustomRange({ ...customRange, start: e.target.value });
                             setSelectedPeriod('custom');
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white'
+                              : 'border-gray-300 bg-white'
+                          }`}
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">Até</label>
+                        <label className={`block text-xs mb-1 ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>Até</label>
                         <input
                           type="date"
                           value={customRange.end || ''}
@@ -410,7 +444,11 @@ export default function StoreDashboard() {
                             setCustomRange({ ...customRange, end: e.target.value });
                             setSelectedPeriod('custom');
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white'
+                              : 'border-gray-300 bg-white'
+                          }`}
                         />
                       </div>
                     </div>
@@ -424,10 +462,16 @@ export default function StoreDashboard() {
 
       {/* Métricas Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className={`rounded-xl border p-6 shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2 bg-gray-100 rounded-lg">
-              <DollarSign className="w-5 h-5 text-gray-600" />
+            <div className={`p-2 rounded-lg ${
+              theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+            }`}>
+              <DollarSign className={`w-5 h-5 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`} />
             </div>
             {stats?.salesChange !== undefined && (
               <div className={`flex items-center gap-1 text-xs font-semibold ${stats.salesChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -436,15 +480,27 @@ export default function StoreDashboard() {
               </div>
             )}
           </div>
-          <h3 className="text-xs font-medium text-gray-600 mb-1">Receita Total</h3>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats?.totalSales || 0)}</p>
-          <p className="text-xs text-gray-500 mt-1">Período selecionado</p>
+          <h3 className={`text-xs font-medium mb-1 ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          }`}>Receita Total</h3>
+          <p className={`text-2xl font-bold ${
+            theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+          }`}>{formatCurrency(stats?.totalSales || 0)}</p>
+          <p className={`text-xs mt-1 ${
+            theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
+          }`}>Período selecionado</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className={`rounded-xl border p-6 shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2 bg-gray-100 rounded-lg">
-              <ShoppingCart className="w-5 h-5 text-gray-600" />
+            <div className={`p-2 rounded-lg ${
+              theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+            }`}>
+              <ShoppingCart className={`w-5 h-5 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`} />
             </div>
             {stats?.ordersChange !== undefined && (
               <div className={`flex items-center gap-1 text-xs font-semibold ${stats.ordersChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -453,70 +509,111 @@ export default function StoreDashboard() {
               </div>
             )}
           </div>
-          <h3 className="text-xs font-medium text-gray-600 mb-1">Total de Pedidos</h3>
-          <p className="text-2xl font-bold text-gray-900">{stats?.totalOrders || 0}</p>
-          <p className="text-xs text-gray-500 mt-1">Vendas realizadas</p>
+          <h3 className={`text-xs font-medium mb-1 ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          }`}>Total de Pedidos</h3>
+          <p className={`text-2xl font-bold ${
+            theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+          }`}>{stats?.totalOrders || 0}</p>
+          <p className={`text-xs mt-1 ${
+            theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
+          }`}>Vendas realizadas</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className={`rounded-xl border p-6 shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2 bg-gray-100 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-gray-600" />
+            <div className={`p-2 rounded-lg ${
+              theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+            }`}>
+              <TrendingUp className={`w-5 h-5 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`} />
             </div>
           </div>
-          <h3 className="text-xs font-medium text-gray-600 mb-1">Ticket Médio</h3>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats?.averageOrderValue || 0)}</p>
-          <p className="text-xs text-gray-500 mt-1">Por pedido</p>
+          <h3 className={`text-xs font-medium mb-1 ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          }`}>Ticket Médio</h3>
+          <p className={`text-2xl font-bold ${
+            theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+          }`}>{formatCurrency(stats?.averageOrderValue || 0)}</p>
+          <p className={`text-xs mt-1 ${
+            theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
+          }`}>Por pedido</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className={`rounded-xl border p-6 shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2 bg-gray-100 rounded-lg">
-              <Eye className="w-5 h-5 text-gray-600" />
+            <div className={`p-2 rounded-lg ${
+              theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+            }`}>
+              <Eye className={`w-5 h-5 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`} />
             </div>
           </div>
-          <h3 className="text-xs font-medium text-gray-600 mb-1">Visitas</h3>
-          <p className="text-2xl font-bold text-gray-900">{visitStats?.totalVisits || 0}</p>
-          <p className="text-xs text-gray-500 mt-1">{visitStats?.uniqueVisits || 0} únicas</p>
+          <h3 className={`text-xs font-medium mb-1 ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          }`}>Visitas</h3>
+          <p className={`text-2xl font-bold ${
+            theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+          }`}>{visitStats?.totalVisits || 0}</p>
+          <p className={`text-xs mt-1 ${
+            theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
+          }`}>{visitStats?.uniqueVisits || 0} únicas</p>
         </div>
       </div>
 
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Gráfico de Vendas */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Evolução de Vendas</h2>
+        <div className={`lg:col-span-2 rounded-xl border p-6 shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
+          <h2 className={`text-lg font-semibold mb-6 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>Evolução de Vendas</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={stats?.chartData || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-              <YAxis stroke="#6b7280" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} />
+              <XAxis dataKey="date" stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} fontSize={12} />
+              <YAxis stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} fontSize={12} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: theme === 'dark' ? '#1f2937' : '#fff',
+                  border: theme === 'dark' ? '1px solid #374151' : '1px solid #e5e7eb',
                   borderRadius: '8px',
+                  color: theme === 'dark' ? '#fff' : '#000',
                 }}
                 formatter={(value: any) => formatCurrency(value)}
               />
-              <Legend />
+              <Legend wrapperStyle={{ color: theme === 'dark' ? '#fff' : '#000' }} />
               <Line
                 type="monotone"
                 dataKey="vendas"
-                stroke="#4f46e5"
+                stroke="#3b82f6"
                 strokeWidth={2}
                 name="Vendas (R$)"
-                dot={{ fill: '#4f46e5', r: 4 }}
+                dot={{ fill: '#3b82f6', r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
         {/* Gráfico de Status - Design Profissional */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className={`rounded-xl border p-6 shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">Status dos Pedidos</h2>
-            <p className="text-sm text-gray-500">Distribuição por status</p>
+            <h2 className={`text-lg font-semibold mb-1 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Status dos Pedidos</h2>
+            <p className={`text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+            }`}>Distribuição por status</p>
           </div>
 
           {/* Gráfico de Pizza - Melhorado */}
@@ -542,11 +639,12 @@ export default function StoreDashboard() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: theme === 'dark' ? '#1f2937' : '#fff',
+                    border: theme === 'dark' ? '1px solid #374151' : '1px solid #e5e7eb',
                     borderRadius: '8px',
                     padding: '8px 12px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    color: theme === 'dark' ? '#fff' : '#000',
                   }}
                   formatter={(value: any, name: any) => [
                     `${value} pedidos`,
@@ -558,7 +656,9 @@ export default function StoreDashboard() {
           </div>
 
           {/* Legenda - Design Elegante */}
-          <div className="space-y-3 pt-4 border-t border-gray-100">
+          <div className={`space-y-3 pt-4 border-t ${
+            theme === 'dark' ? 'border-gray-700' : 'border-gray-100'
+          }`}>
             {(stats?.statusData || []).map((entry: any, index: number) => {
               const total = stats?.statusData?.reduce((sum: number, e: any) => sum + e.value, 0) || 1;
               const percentage = ((entry.value / total) * 100).toFixed(1);
@@ -570,10 +670,14 @@ export default function StoreDashboard() {
                       className="w-3 h-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: entry.color }}
                     ></div>
-                    <span className="text-sm font-medium text-gray-700">{entry.name}</span>
+                    <span className={`text-sm font-medium ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                    }`}>{entry.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`w-24 h-2 rounded-full overflow-hidden ${
+                      theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+                    }`}>
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
@@ -583,8 +687,12 @@ export default function StoreDashboard() {
                       ></div>
                     </div>
                     <div className="text-right min-w-[80px]">
-                      <span className="text-sm font-semibold text-gray-900">{entry.value}</span>
-                      <span className="text-xs text-gray-500 ml-1">({percentage}%)</span>
+                      <span className={`text-sm font-semibold ${
+                        theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+                      }`}>{entry.value}</span>
+                      <span className={`text-xs ml-1 ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>({percentage}%)</span>
                     </div>
                   </div>
                 </div>
@@ -597,18 +705,23 @@ export default function StoreDashboard() {
       {/* Gráfico de Pedidos e Top Produtos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gráfico de Pedidos */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Pedidos por Dia</h2>
+        <div className={`rounded-xl border p-6 shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
+          <h2 className={`text-lg font-semibold mb-6 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>Pedidos por Dia</h2>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={stats?.chartData || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-              <YAxis stroke="#6b7280" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} />
+              <XAxis dataKey="date" stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} fontSize={12} />
+              <YAxis stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} fontSize={12} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: theme === 'dark' ? '#1f2937' : '#fff',
+                  border: theme === 'dark' ? '1px solid #374151' : '1px solid #e5e7eb',
                   borderRadius: '8px',
+                  color: theme === 'dark' ? '#fff' : '#000',
                 }}
               />
               <Bar dataKey="pedidos" fill="#10b981" radius={[8, 8, 0, 0]} />
@@ -617,57 +730,99 @@ export default function StoreDashboard() {
         </div>
 
         {/* Top Produtos */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Produtos Mais Vendidos</h2>
+        <div className={`rounded-xl border p-6 shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
+          <h2 className={`text-lg font-semibold mb-6 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>Produtos Mais Vendidos</h2>
           <div className="space-y-4">
             {stats?.topProducts && stats.topProducts.length > 0 ? (
               stats.topProducts.map((product: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${
+                  theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'
+                }`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold text-sm">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                      theme === 'dark' ? 'bg-blue-900 text-blue-400' : 'bg-blue-100 text-blue-600'
+                    }`}>
                       {index + 1}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{product.name}</p>
-                      <p className="text-xs text-gray-500">{product.sales} vendas</p>
+                      <p className={`text-sm font-medium ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>{product.name}</p>
+                      <p className={`text-xs ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>{product.sales} vendas</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(product.revenue)}</p>
-                    <p className="text-xs text-gray-500">Receita</p>
+                    <p className={`text-sm font-semibold ${
+                      theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+                    }`}>{formatCurrency(product.revenue)}</p>
+                    <p className={`text-xs ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>Receita</p>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-center py-8">Nenhum produto vendido no período</p>
+              <p className={`text-center py-8 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>Nenhum produto vendido no período</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Pedidos Recentes */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Pedidos Recentes</h2>
+      <div className={`rounded-xl border shadow-sm overflow-hidden ${
+        theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+      }`}>
+        <div className={`px-6 py-4 border-b ${
+          theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+        }`}>
+          <h2 className={`text-lg font-semibold ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>Pedidos Recentes</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className={theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pedido</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
+                <th className={`px-6 py-3 text-left text-xs font-medium uppercase ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
+                }`}>Pedido</th>
+                <th className={`px-6 py-3 text-left text-xs font-medium uppercase ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
+                }`}>Cliente</th>
+                <th className={`px-6 py-3 text-left text-xs font-medium uppercase ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
+                }`}>Valor</th>
+                <th className={`px-6 py-3 text-left text-xs font-medium uppercase ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
+                }`}>Status</th>
+                <th className={`px-6 py-3 text-left text-xs font-medium uppercase ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-500'
+                }`}>Data</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className={`divide-y ${
+              theme === 'dark' ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'
+            }`}>
               {recentOrders && recentOrders.length > 0 ? (
                 recentOrders.map((order: any) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.order_number}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.customer_name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                  <tr key={order.id} className={theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>{order.order_number}</td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>{order.customer_name}</td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${
+                      theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+                    }`}>
                       {formatCurrency(Number(order.total))}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -677,7 +832,7 @@ export default function StoreDashboard() {
                             ? 'bg-green-100 text-green-800'
                             : order.status === 'pending'
                             ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
+                            : theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
                         }`}
                       >
                         {order.status === 'paid' || order.payment_status === 'paid' || order.status === 'delivered'
@@ -687,7 +842,9 @@ export default function StoreDashboard() {
                           : order.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
                       {new Date(order.created_at).toLocaleDateString('pt-BR', {
                         day: '2-digit',
                         month: '2-digit',
@@ -700,7 +857,9 @@ export default function StoreDashboard() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={5} className={`px-6 py-8 text-center ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
                     Nenhum pedido ainda
                   </td>
                 </tr>

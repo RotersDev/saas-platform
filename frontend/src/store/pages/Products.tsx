@@ -4,8 +4,10 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { Plus, Edit, Trash2, Package, ChevronDown, ChevronRight } from 'lucide-react';
 import { useConfirm } from '../../hooks/useConfirm';
+import { useThemeStore } from '../themeStore';
 
 export default function StoreProducts() {
+  const { theme } = useThemeStore();
   const queryClient = useQueryClient();
   const { confirm, Dialog } = useConfirm();
 
@@ -161,7 +163,9 @@ export default function StoreProducts() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Produtos</h1>
+        <h1 className={`text-3xl font-bold ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>Produtos</h1>
         <button
           onClick={() => {
             window.location.href = '/store/products/new';
@@ -176,8 +180,12 @@ export default function StoreProducts() {
       {categoriesWithProducts.length === 0 ? (
         <div className="text-center py-12">
           <Package className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum produto</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <h3 className={`mt-2 text-sm font-medium ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>Nenhum produto</h3>
+          <p className={`mt-1 text-sm ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+          }`}>
             Comece criando seu primeiro produto.
           </p>
         </div>
@@ -190,23 +198,33 @@ export default function StoreProducts() {
             const isExpanded = expandedCategories.has(categoryId);
 
             return (
-              <div key={categoryId} className="bg-white shadow rounded-lg overflow-hidden">
+              <div key={categoryId} className={`shadow rounded-lg overflow-hidden ${
+                theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+              }`}>
                 <div
-                  className="px-6 py-4 bg-gray-50 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className={`px-6 py-4 border-b cursor-pointer transition-colors select-none ${
+                    theme === 'dark'
+                      ? 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                  }`}
                   onClick={() => toggleCategory(categoryId)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {isExpanded ? (
-                        <ChevronDown className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        <ChevronDown className="w-5 h-5 text-blue-400 flex-shrink-0" />
                       ) : (
-                        <ChevronRight className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        <ChevronRight className="w-5 h-5 text-blue-400 flex-shrink-0" />
                       )}
                       <div>
-                        <h2 className="text-xl font-bold text-gray-900">
+                        <h2 className={`text-xl font-bold ${
+                          theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>
                           {category?.name || 'Categoria'}
                         </h2>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className={`text-sm mt-1 ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
                           {categoryProducts.length} produto{categoryProducts.length !== 1 ? 's' : ''}
                         </p>
                       </div>
@@ -214,11 +232,17 @@ export default function StoreProducts() {
                   </div>
                 </div>
                 {isExpanded && (
-                  <ul className="divide-y divide-gray-200">
+                  <ul className={`divide-y ${
+                    theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'
+                  }`}>
                     {categoryProducts.length === 0 ? (
                       <li>
-                        <div className="px-6 py-8 text-center text-gray-500">
-                          <Package className="mx-auto h-12 w-12 text-gray-300 mb-2" />
+                        <div className={`px-6 py-8 text-center ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                          <Package className={`mx-auto h-12 w-12 mb-2 ${
+                            theme === 'dark' ? 'text-gray-600' : 'text-gray-300'
+                          }`} />
                           <p className="text-sm">Nenhum produto nesta categoria</p>
                         </div>
                       </li>
@@ -228,7 +252,9 @@ export default function StoreProducts() {
                       <div className="px-6 py-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center flex-1">
-                            <Package className="flex-shrink-0 h-10 w-10 text-gray-400" />
+                            <Package className={`flex-shrink-0 h-10 w-10 ${
+                              theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                            }`} />
                             <div className="ml-4 flex-1">
                               <div className="flex items-center">
                                 <button
@@ -236,19 +262,25 @@ export default function StoreProducts() {
                                     e.stopPropagation();
                                     window.location.href = `/store/products/edit/${product.id}`;
                                   }}
-                                  className="text-sm font-medium text-blue-600 truncate hover:text-blue-800 hover:underline cursor-pointer text-left"
+                                  className={`text-sm font-medium truncate hover:underline cursor-pointer text-left ${
+                                    theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+                                  }`}
                                 >
                                   {product.name}
                                 </button>
                                 {!product.is_active && (
-                                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
+                                  }`}>
                                     Inativo
                                   </span>
                                 )}
                               </div>
                               <div className="mt-2 sm:flex sm:justify-between items-center">
                                 <div className="sm:flex">
-                                  <p className="flex items-center text-sm text-gray-500">
+                                  <p className={`flex items-center text-sm ${
+                                    theme === 'dark' ? 'text-blue-400' : 'text-gray-500'
+                                  }`}>
                                     {new Intl.NumberFormat('pt-BR', {
                                       style: 'currency',
                                       currency: 'BRL',
@@ -266,7 +298,9 @@ export default function StoreProducts() {
                                       );
                                     }
                                     return (
-                                      <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-md">
+                                      <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md ${
+                                        theme === 'dark' ? 'text-gray-300 bg-gray-700' : 'text-gray-700 bg-gray-100'
+                                      }`}>
                                         {stockCount} em estoque
                                       </span>
                                     );
@@ -281,7 +315,7 @@ export default function StoreProducts() {
                                 e.stopPropagation();
                                 window.location.href = `/store/products/edit/${product.id}`;
                               }}
-                              className="text-blue-600 hover:text-blue-900"
+                              className={theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-900'}
                             >
                               <Edit className="w-5 h-5" />
                             </button>
@@ -298,7 +332,7 @@ export default function StoreProducts() {
                                   deleteMutation.mutate(product.id);
                                 }
                               }}
-                              className="text-red-600 hover:text-red-900"
+                              className={theme === 'dark' ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-900'}
                             >
                               <Trash2 className="w-5 h-5" />
                             </button>

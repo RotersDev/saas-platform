@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../themeStore';
 import { useQuery, useMutation } from 'react-query';
 import api from '../../config/axios';
 import {
@@ -18,6 +19,8 @@ import {
   ChevronDown,
   ChevronRight,
   Store,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
@@ -26,6 +29,7 @@ export default function StoreLayout() {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+  const { theme, toggleTheme } = useThemeStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [profileUsername, setProfileUsername] = useState('');
@@ -169,40 +173,67 @@ export default function StoreLayout() {
     });
   };
 
+  // Aplicar tema no elemento raiz
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
+
   return (
-    <div className="min-h-screen relative flex">
+    <div className={`min-h-screen relative flex ${theme === 'dark' ? 'dark' : ''}`}>
       {/* Background com degradê sutil e bolinhas azuis */}
       <div
-        className="fixed inset-0 -z-10"
-        style={{
-          background: `
-            radial-gradient(circle, rgba(59, 130, 246, 0.25) 1.5px, transparent 1.5px),
-            linear-gradient(to top, #e2e8f0 0%, #f1f5f9 25%, #f8fafc 75%, #ffffff 100%)
-          `,
-          backgroundSize: '30px 30px, 100% 100%',
-          backgroundPosition: '0 0, 0 0',
-        }}
+        className={`fixed inset-0 -z-10 ${
+          theme === 'dark'
+            ? 'bg-gray-900'
+            : ''
+        }`}
+        style={
+          theme === 'dark'
+            ? {}
+            : {
+                background: `
+                  radial-gradient(circle, rgba(59, 130, 246, 0.25) 1.5px, transparent 1.5px),
+                  linear-gradient(to top, #e2e8f0 0%, #f1f5f9 25%, #f8fafc 75%, #ffffff 100%)
+                `,
+                backgroundSize: '30px 30px, 100% 100%',
+                backgroundPosition: '0 0, 0 0',
+              }
+        }
       />
       {/* Sidebar */}
-      <aside className={`${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} fixed lg:static lg:translate-x-0 inset-y-0 left-0 z-50 w-64 bg-white/80 backdrop-blur-sm shadow-lg transform transition-transform duration-300 ease-in-out lg:transition-none`}>
-        <div className="flex flex-col h-full">
-          {/* Logo/Header */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">
-                {getGreeting()}{currentUser?.name ? `, ${currentUser.name.split(' ')[0]}` : currentUser?.username ? `, ${currentUser.username}` : ''}
-              </h1>
-            </div>
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
-            >
-              <X className="w-6 h-6" />
-            </button>
+      <aside className={`${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 w-64 h-screen lg:h-screen ${
+        theme === 'dark'
+          ? 'bg-gray-800/95 backdrop-blur-sm border-r border-gray-700'
+          : 'bg-white/80 backdrop-blur-sm'
+      } shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:transition-none flex flex-col`}>
+        {/* Logo/Header */}
+        <div className={`flex items-center justify-between h-16 px-6 border-b flex-shrink-0 ${
+          theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+        }`}>
+          <div>
+            <h1 className={`text-lg font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              {getGreeting()}{currentUser?.name ? `, ${currentUser.name.split(' ')[0]}` : currentUser?.username ? `, ${currentUser.username}` : ''}
+            </h1>
           </div>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className={`lg:hidden ${
+              theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        {/* Navigation - com scroll limitado */}
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto min-h-0">
             {navigation.map((item) => {
               const Icon = item.icon;
 
@@ -217,8 +248,12 @@ export default function StoreLayout() {
                       onClick={() => toggleMenu(item.name)}
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                         hasActiveChild
-                          ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
-                          : 'text-gray-700 hover:bg-gray-50'
+                          ? theme === 'dark'
+                            ? 'bg-blue-900/50 text-blue-300 border-l-4 border-blue-500'
+                            : 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
+                          : theme === 'dark'
+                            ? 'text-gray-300 hover:bg-gray-700/50'
+                            : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
                       <div className="flex items-center">
@@ -246,8 +281,12 @@ export default function StoreLayout() {
                               onClick={() => setMobileMenuOpen(false)}
                               className={`flex items-center px-4 py-2 rounded-lg text-sm transition-colors ${
                                 isActive
-                                  ? 'bg-blue-50 text-blue-700 font-medium'
-                                  : 'text-gray-600 hover:bg-gray-50'
+                                  ? theme === 'dark'
+                                    ? 'bg-blue-900/50 text-blue-300 font-medium'
+                                    : 'bg-blue-50 text-blue-700 font-medium'
+                                  : theme === 'dark'
+                                    ? 'text-gray-400 hover:bg-gray-700/50'
+                                    : 'text-gray-600 hover:bg-gray-50'
                               }`}
                             >
                               <ChildIcon className="w-4 h-4 mr-3" />
@@ -272,8 +311,12 @@ export default function StoreLayout() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? theme === 'dark'
+                        ? 'bg-blue-900/50 text-blue-300 border-l-4 border-blue-500'
+                        : 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
+                      : theme === 'dark'
+                        ? 'text-gray-300 hover:bg-gray-700/50'
+                        : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <Icon className="w-5 h-5 mr-3" />
@@ -283,6 +326,28 @@ export default function StoreLayout() {
             })}
           </nav>
 
+        {/* Botão de Tema - fixo na parte inferior */}
+        <div className={`px-4 py-4 border-t flex-shrink-0 ${
+          theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+        }`}>
+          <button
+            onClick={toggleTheme}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              theme === 'dark'
+                ? 'text-gray-300 hover:bg-gray-700/50'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+            title={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
+          >
+            <div className="flex items-center">
+              {theme === 'light' ? (
+                <Moon className="w-5 h-5 mr-3" />
+              ) : (
+                <Sun className="w-5 h-5 mr-3" />
+              )}
+              <span>{theme === 'light' ? 'Tema Escuro' : 'Tema Claro'}</span>
+            </div>
+          </button>
         </div>
       </aside>
 
@@ -297,12 +362,18 @@ export default function StoreLayout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header Profissional */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+        <header className={`shadow-sm border-b ${
+          theme === 'dark'
+            ? 'bg-gray-800 border-gray-700'
+            : 'bg-white border-gray-200'
+        }`}>
           <div className="flex items-center justify-between h-20 px-4 lg:px-6">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
+              className={`lg:hidden ${
+                theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+              }`}
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -314,7 +385,9 @@ export default function StoreLayout() {
               <div className="flex items-center gap-3 ml-auto">
                 <Link
                   to="/store/account"
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    theme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     {/* Avatar */}
@@ -331,10 +404,14 @@ export default function StoreLayout() {
                     )}
                     {/* User Info */}
                     <div className="hidden md:block text-left">
-                      <p className="text-sm font-semibold text-gray-900">
+                      <p className={`text-sm font-semibold ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>
                         @{currentUser.username || 'usuário'}
                       </p>
-                      <p className="text-xs text-gray-500">{currentUser.email}</p>
+                      <p className={`text-xs ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>{currentUser.email}</p>
                     </div>
                   </div>
                 </Link>
@@ -344,7 +421,9 @@ export default function StoreLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className={`flex-1 overflow-y-auto p-4 lg:p-6 ${
+          theme === 'dark' ? 'bg-gray-900' : ''
+        }`}>
           <Outlet />
         </main>
       </div>

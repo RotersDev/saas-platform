@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useConfirm } from '../../hooks/useConfirm';
+import { useThemeStore } from '../themeStore';
 
 interface PersonalData {
   full_name: string;
@@ -52,6 +53,7 @@ const WITHDRAWAL_DAYS = '1 a 3 dias úteis';
 export default function Wallet() {
   const queryClient = useQueryClient();
   const { confirm, Dialog } = useConfirm();
+  const { theme } = useThemeStore();
   const [activeTab, setActiveTab] = useState<'withdraws' | 'transactions'>('withdraws');
   const [showPersonalDataForm, setShowPersonalDataForm] = useState(false);
   const [showWithdrawalForm, setShowWithdrawalForm] = useState(false);
@@ -246,13 +248,21 @@ export default function Wallet() {
             <Shield className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Carteira</h1>
-            <p className="text-gray-600 mt-2">Cadastre seus dados pessoais para acessar sua carteira</p>
+            <h1 className={`text-3xl font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Carteira</h1>
+            <p className={`mt-2 ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`}>Cadastre seus dados pessoais para acessar sua carteira</p>
           </div>
         </div>
 
         {/* Card de Cadastro */}
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+        <div className={`rounded-2xl shadow-xl border overflow-hidden ${
+          theme === 'dark'
+            ? 'bg-gray-800 border-gray-700'
+            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        }`}>
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -266,12 +276,22 @@ export default function Wallet() {
           </div>
 
           <div className="p-8">
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <div className={`border rounded-xl p-4 mb-6 ${
+              theme === 'dark'
+                ? 'bg-blue-900/20 border-blue-800'
+                : 'bg-blue-50 border-blue-200'
+            }`}>
               <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <Info className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                  theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                }`} />
                 <div>
-                  <p className="text-sm font-medium text-blue-900 mb-1">Por que precisamos desses dados?</p>
-                  <p className="text-sm text-blue-800">
+                  <p className={`text-sm font-medium mb-1 ${
+                    theme === 'dark' ? 'text-blue-300' : 'text-blue-900'
+                  }`}>Por que precisamos desses dados?</p>
+                  <p className={`text-sm ${
+                    theme === 'dark' ? 'text-blue-200' : 'text-blue-800'
+                  }`}>
                     Para garantir a segurança e conformidade, precisamos verificar sua identidade antes de permitir saques.
                   </p>
                 </div>
@@ -280,7 +300,9 @@ export default function Wallet() {
 
             <form onSubmit={handleSavePersonalData} className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className={`block text-sm font-semibold mb-2 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   Nome Completo *
                 </label>
                 <input
@@ -288,14 +310,20 @@ export default function Wallet() {
                   required
                   value={personalData.full_name}
                   onChange={(e) => setPersonalData({ ...personalData, full_name: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    theme === 'dark'
+                      ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                      : 'border-gray-200 bg-white'
+                  }`}
                   placeholder="Seu nome completo"
                 />
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     CPF *
                   </label>
                   <input
@@ -308,13 +336,19 @@ export default function Wallet() {
                       setPersonalData({ ...personalData, cpf: formatted });
                     }}
                     maxLength={14}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                      theme === 'dark'
+                        ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                        : 'border-gray-200 bg-white'
+                    }`}
                     placeholder="000.000.000-00"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Data de Nascimento *
                   </label>
                   <input
@@ -322,13 +356,19 @@ export default function Wallet() {
                     required
                     value={personalData.birth_date}
                     onChange={(e) => setPersonalData({ ...personalData, birth_date: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                      theme === 'dark'
+                        ? 'border-gray-600 bg-gray-700 text-white'
+                        : 'border-gray-200 bg-white'
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className={`block text-sm font-semibold mb-2 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   E-mail *
                 </label>
                 <input
@@ -336,7 +376,11 @@ export default function Wallet() {
                   required
                   value={personalData.email}
                   onChange={(e) => setPersonalData({ ...personalData, email: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                    theme === 'dark'
+                      ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                      : 'border-gray-200 bg-white'
+                  }`}
                   placeholder="seu@email.com"
                 />
               </div>
@@ -364,21 +408,33 @@ export default function Wallet() {
       <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
         <div className="space-y-2">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Carteira</h1>
-            <p className="text-gray-600 text-sm">Gerencie seus saques e transações</p>
+            <h1 className={`text-3xl font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Carteira</h1>
+            <p className={`text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`}>Gerencie seus saques e transações</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => setShowHowItWorks(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all text-sm font-medium"
+            className={`inline-flex items-center gap-2 px-4 py-2.5 border-2 rounded-xl hover:border-blue-300 transition-all text-sm font-medium ${
+              theme === 'dark'
+                ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-300'
+                : 'bg-white border-gray-200 hover:bg-blue-50'
+            }`}
           >
             <HelpCircle className="w-4 h-4" />
             Como funciona?
           </button>
           <button
             onClick={() => setShowPersonalDataForm(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all text-sm font-medium"
+            className={`inline-flex items-center gap-2 px-4 py-2.5 border-2 rounded-xl hover:border-blue-300 transition-all text-sm font-medium ${
+              theme === 'dark'
+                ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-300'
+                : 'bg-white border-gray-200 hover:bg-blue-50'
+            }`}
           >
             <User className="w-4 h-4" />
             Dados Pessoais
@@ -395,19 +451,27 @@ export default function Wallet() {
       </div>
 
       {/* Aviso sobre taxas - Design Moderno */}
-      <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-6 shadow-sm">
+      <div className={`border-2 rounded-2xl p-6 shadow-sm ${
+        theme === 'dark'
+          ? 'bg-blue-900/20 border-blue-800'
+          : 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200'
+      }`}>
         <div className="flex items-start gap-4">
           <div className="p-2 bg-blue-500 rounded-lg flex-shrink-0">
             <Info className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1">
-            <h3 className="text-base font-bold text-gray-900 mb-2">Informações sobre taxas</h3>
-            <div className="space-y-1 text-sm text-gray-700">
+            <h3 className={`text-base font-bold mb-2 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Informações sobre taxas</h3>
+            <div className={`space-y-1 text-sm ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               <p>
-                <strong className="text-gray-900">Taxa da Gateway:</strong> R$ 0,70 + 3% sobre o valor da venda
+                <strong className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Taxa da Gateway:</strong> R$ 0,70 + 3% sobre o valor da venda
               </p>
               <p>
-                <strong className="text-gray-900">Taxa da Plataforma:</strong> 3% sobre o valor da venda
+                <strong className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Taxa da Plataforma:</strong> 3% sobre o valor da venda
               </p>
             </div>
           </div>
@@ -416,41 +480,65 @@ export default function Wallet() {
 
       {/* Cards de Saldo - Design Profissional */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className={`rounded-lg border shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
           <div className="p-6">
             <div className="mb-2">
-              <h3 className="text-sm font-medium text-gray-600">Saldo disponível</h3>
+              <h3 className={`text-sm font-medium ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`}>Saldo disponível</h3>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">
+            <div className={`text-3xl font-bold mb-1 ${
+              theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+            }`}>
               {formatCurrency(walletData?.available_balance || 0)}
             </div>
-            <p className="text-sm text-gray-500">Valor disponível para saque</p>
+            <p className={`text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+            }`}>Valor disponível para saque</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className={`rounded-lg border shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
           <div className="p-6">
             <div className="mb-2">
-              <h3 className="text-sm font-medium text-gray-600">Saldo retido</h3>
+              <h3 className={`text-sm font-medium ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`}>Saldo retido</h3>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">
+            <div className={`text-3xl font-bold mb-1 ${
+              theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+            }`}>
               {formatCurrency(walletData?.retained_balance || 0)}
             </div>
-            <p className="text-sm text-gray-500">Aguardando processamento</p>
+            <p className={`text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+            }`}>Aguardando processamento</p>
           </div>
         </div>
       </div>
 
       {/* Tabs Modernas */}
-      <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg overflow-hidden">
-        <div className="border-b border-gray-200 bg-gray-50 px-6">
+      <div className={`rounded-2xl border-2 shadow-lg overflow-hidden ${
+        theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+      }`}>
+        <div className={`border-b px-6 ${
+          theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'
+        }`}>
           <div className="flex gap-1">
             <button
               onClick={() => setActiveTab('withdraws')}
               className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all relative ${
                 activeTab === 'withdraws'
-                  ? 'border-blue-600 text-blue-600 bg-white'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? theme === 'dark'
+                    ? 'border-blue-500 text-blue-400 bg-gray-800'
+                    : 'border-blue-600 text-blue-600 bg-white'
+                  : theme === 'dark'
+                    ? 'border-transparent text-gray-400 hover:text-gray-200'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
               Saques
@@ -459,8 +547,12 @@ export default function Wallet() {
               onClick={() => setActiveTab('transactions')}
               className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all relative ${
                 activeTab === 'transactions'
-                  ? 'border-blue-600 text-blue-600 bg-white'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ? theme === 'dark'
+                    ? 'border-blue-500 text-blue-400 bg-gray-800'
+                    : 'border-blue-600 text-blue-600 bg-white'
+                  : theme === 'dark'
+                    ? 'border-transparent text-gray-400 hover:text-gray-200'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
               Transações
@@ -477,20 +569,34 @@ export default function Wallet() {
                   {withdrawals.map((withdrawal) => (
                     <div
                       key={withdrawal.id}
-                      className="bg-gradient-to-r from-gray-50 to-white border-2 border-gray-200 rounded-xl p-5 hover:border-blue-300 hover:shadow-md transition-all"
+                      className={`border-2 rounded-xl p-5 hover:border-blue-300 hover:shadow-md transition-all ${
+                        theme === 'dark'
+                          ? 'bg-gray-800 border-gray-700'
+                          : 'bg-gradient-to-r from-gray-50 to-white border-gray-200'
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 flex-1">
-                          <div className="p-3 bg-blue-100 rounded-xl">
-                            <CreditCard className="w-5 h-5 text-blue-600" />
+                          <div className={`p-3 rounded-xl ${
+                            theme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+                          }`}>
+                            <CreditCard className={`w-5 h-5 ${
+                              theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                            }`} />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
-                              <span className="text-sm font-mono font-semibold text-gray-900">#{withdrawal.id}</span>
+                              <span className={`text-sm font-mono font-semibold ${
+                                theme === 'dark' ? 'text-white' : 'text-gray-900'
+                              }`}>#{withdrawal.id}</span>
                               {getStatusBadge(withdrawal.status)}
                             </div>
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <span className="font-semibold text-gray-900">{formatCurrency(withdrawal.amount)}</span>
+                            <div className={`flex items-center gap-4 text-sm ${
+                              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                            }`}>
+                              <span className={`font-semibold ${
+                                theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+                              }`}>{formatCurrency(withdrawal.amount)}</span>
                               <span>•</span>
                               <span>{formatDate(withdrawal.created_at)}</span>
                             </div>
@@ -501,7 +607,9 @@ export default function Wallet() {
                             setSelectedWithdrawal(withdrawal);
                             setShowWithdrawalDetails(true);
                           }}
-                          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
+                          }`}
                         >
                           Ver detalhes
                         </button>
@@ -511,11 +619,19 @@ export default function Wallet() {
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-2xl mb-4">
-                    <WalletIcon className="w-8 h-8 text-gray-400" />
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
+                    theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+                  }`}>
+                    <WalletIcon className={`w-8 h-8 ${
+                      theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                    }`} />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum saque realizado</h3>
-                  <p className="text-gray-600 mb-6">Seus saques aparecerão aqui</p>
+                  <h3 className={`text-lg font-semibold mb-2 ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Nenhum saque realizado</h3>
+                  <p className={`mb-6 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Seus saques aparecerão aqui</p>
                   <button
                     onClick={() => setShowWithdrawalForm(true)}
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 font-semibold shadow-lg hover:shadow-xl transition-all"
@@ -533,7 +649,9 @@ export default function Wallet() {
               {transactions && transactions.length > 0 ? (
                 <div className="space-y-3">
                   {transactions.map((transaction: any) => (
-                    <div key={transaction.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                    <div key={transaction.id} className={`rounded-lg border p-4 hover:shadow-md transition-shadow ${
+                      theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                    }`}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -541,8 +659,12 @@ export default function Wallet() {
                               <TrendingUp className="w-5 h-5 text-green-600" />
                             </div>
                             <div>
-                              <h4 className="font-semibold text-gray-900 text-sm">{transaction.description || 'Crédito na carteira'}</h4>
-                              <p className="text-xs text-gray-500">
+                              <h4 className={`font-semibold text-sm ${
+                                theme === 'dark' ? 'text-white' : 'text-gray-900'
+                              }`}>{transaction.description || 'Crédito na carteira'}</h4>
+                              <p className={`text-xs ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
                                 {new Date(transaction.created_at).toLocaleString('pt-BR', {
                                   day: '2-digit',
                                   month: 'short',
@@ -555,7 +677,7 @@ export default function Wallet() {
                           </div>
                           <div className="ml-12 space-y-1">
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-gray-600">Valor creditado:</span>
+                              <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Valor creditado:</span>
                               <span className="font-semibold text-green-600">
                                 + {new Intl.NumberFormat('pt-BR', {
                                   style: 'currency',
@@ -564,17 +686,23 @@ export default function Wallet() {
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-gray-600">Saldo anterior:</span>
-                              <span className="text-gray-700">
+                              <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Saldo anterior:</span>
+                              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
                                 {new Intl.NumberFormat('pt-BR', {
                                   style: 'currency',
                                   currency: 'BRL',
                                 }).format(transaction.previous_balance)}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100">
-                              <span className="text-gray-700 font-medium">Saldo atual:</span>
-                              <span className="font-bold text-gray-900">
+                            <div className={`flex items-center justify-between text-xs pt-1 border-t ${
+                              theme === 'dark' ? 'border-gray-700' : 'border-gray-100'
+                            }`}>
+                              <span className={`font-medium ${
+                                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                              }`}>Saldo atual:</span>
+                              <span className={`font-bold ${
+                                theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+                              }`}>
                                 {new Intl.NumberFormat('pt-BR', {
                                   style: 'currency',
                                   currency: 'BRL',
@@ -589,11 +717,17 @@ export default function Wallet() {
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-2xl mb-4">
-                    <TrendingUp className="w-8 h-8 text-gray-400" />
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${
+                    theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+                  }`}>
+                    <TrendingUp className={`w-8 h-8 ${
+                      theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                    }`} />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma transação encontrada</h3>
-                  <p className="text-gray-600">Suas transações aparecerão aqui quando houver vendas aprovadas</p>
+                  <h3 className={`text-lg font-semibold mb-2 ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Nenhuma transação encontrada</h3>
+                  <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Suas transações aparecerão aqui quando houver vendas aprovadas</p>
                 </div>
               )}
             </div>
@@ -606,7 +740,9 @@ export default function Wallet() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowHowItWorks(false)}></div>
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className={`relative rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${
+              theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+            }`}>
               <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-6 h-6 text-white" />
@@ -621,7 +757,9 @@ export default function Wallet() {
               </div>
 
               <div className="p-8 space-y-6">
-              <p className="text-gray-700 leading-relaxed">
+              <p className={`leading-relaxed ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
                 Utilizando esta ferramenta de Carteira, quando você realizar uma venda, o dinheiro será enviado diretamente para sua carteira. Em seguida, você poderá resgatar este dinheiro facilmente através de uma transferência Pix.
               </p>
 

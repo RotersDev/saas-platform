@@ -3,8 +3,10 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { Palette, Save, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { useThemeStore } from '../themeStore';
 
 export default function StoreTheme() {
+  const { theme } = useThemeStore();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     primary_color: '#000000',
@@ -288,7 +290,9 @@ export default function StoreTheme() {
   if (isLoading && !data) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${
+          theme === 'dark' ? 'border-blue-600' : 'border-indigo-600'
+        }`}></div>
       </div>
     );
   }
@@ -296,28 +300,46 @@ export default function StoreTheme() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Personalizar Tema</h1>
-        <p className="text-gray-600 mt-2">Customize as cores e imagens da sua loja</p>
+        <h1 className={`text-3xl font-bold ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>Personalizar Tema</h1>
+        <p className={`mt-2 ${
+          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+        }`}>Customize as cores e imagens da sua loja</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Cores */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="p-6 border-b border-gray-200">
+        <div className={`rounded-xl border shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
+          <div className={`p-6 border-b ${
+            theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+          }`}>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <Palette className="w-5 h-5 text-indigo-600" />
+              <div className={`p-2 rounded-lg ${
+                theme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+              }`}>
+                <Palette className={`w-5 h-5 ${
+                  theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                }`} />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Cores do Tema</h2>
-                <p className="text-sm text-gray-600">Defina as cores principais da sua loja</p>
+                <h2 className={`text-lg font-semibold ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>Cores do Tema</h2>
+                <p className={`text-sm ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>Defina as cores principais da sua loja</p>
               </div>
             </div>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className={`block text-sm font-medium mb-3 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   Cor Primária
                 </label>
                 <div className="space-y-2">
@@ -328,7 +350,9 @@ export default function StoreTheme() {
                       onChange={(e) =>
                         setFormData({ ...formData, primary_color: e.target.value })
                       }
-                      className="h-12 w-20 border-2 border-gray-300 rounded-lg cursor-pointer"
+                      className={`h-12 w-20 border-2 rounded-lg cursor-pointer ${
+                        theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+                      }`}
                     />
                     <input
                       type="text"
@@ -336,18 +360,26 @@ export default function StoreTheme() {
                       onChange={(e) =>
                         setFormData({ ...formData, primary_color: e.target.value })
                       }
-                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                      className={`flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm ${
+                        theme === 'dark'
+                          ? 'border-gray-600 bg-gray-700 text-white'
+                          : 'border-gray-300 bg-white'
+                      }`}
                       placeholder="#000000"
                     />
                   </div>
                   <div
-                    className="h-12 rounded-lg border border-gray-200"
+                    className={`h-12 rounded-lg border ${
+                      theme === 'dark' ? 'border-gray-600' : 'border-gray-200'
+                    }`}
                     style={{ backgroundColor: formData.primary_color }}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className={`block text-sm font-medium mb-3 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   Cor Secundária
                 </label>
                 <div className="space-y-2">
@@ -358,7 +390,9 @@ export default function StoreTheme() {
                       onChange={(e) =>
                         setFormData({ ...formData, secondary_color: e.target.value })
                       }
-                      className="h-12 w-20 border-2 border-gray-300 rounded-lg cursor-pointer"
+                      className={`h-12 w-20 border-2 rounded-lg cursor-pointer ${
+                        theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+                      }`}
                     />
                     <input
                       type="text"
@@ -366,18 +400,26 @@ export default function StoreTheme() {
                       onChange={(e) =>
                         setFormData({ ...formData, secondary_color: e.target.value })
                       }
-                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                      className={`flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm ${
+                        theme === 'dark'
+                          ? 'border-gray-600 bg-gray-700 text-white'
+                          : 'border-gray-300 bg-white'
+                      }`}
                       placeholder="#ffffff"
                     />
                   </div>
                   <div
-                    className="h-12 rounded-lg border border-gray-200"
+                    className={`h-12 rounded-lg border ${
+                      theme === 'dark' ? 'border-gray-600' : 'border-gray-200'
+                    }`}
                     style={{ backgroundColor: formData.secondary_color }}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className={`block text-sm font-medium mb-3 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   Cor de Destaque
                 </label>
                 <div className="space-y-2">
@@ -388,7 +430,9 @@ export default function StoreTheme() {
                       onChange={(e) =>
                         setFormData({ ...formData, accent_color: e.target.value })
                       }
-                      className="h-12 w-20 border-2 border-gray-300 rounded-lg cursor-pointer"
+                      className={`h-12 w-20 border-2 rounded-lg cursor-pointer ${
+                        theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+                      }`}
                     />
                     <input
                       type="text"
@@ -396,12 +440,18 @@ export default function StoreTheme() {
                       onChange={(e) =>
                         setFormData({ ...formData, accent_color: e.target.value })
                       }
-                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                      className={`flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm ${
+                        theme === 'dark'
+                          ? 'border-gray-600 bg-gray-700 text-white'
+                          : 'border-gray-300 bg-white'
+                      }`}
                       placeholder="#007bff"
                     />
                   </div>
                   <div
-                    className="h-12 rounded-lg border border-gray-200"
+                    className={`h-12 rounded-lg border ${
+                      theme === 'dark' ? 'border-gray-600' : 'border-gray-200'
+                    }`}
                     style={{ backgroundColor: formData.accent_color }}
                   />
                 </div>
@@ -411,28 +461,44 @@ export default function StoreTheme() {
         </div>
 
         {/* Imagens */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="p-6 border-b border-gray-200">
+        <div className={`rounded-xl border shadow-sm ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
+          <div className={`p-6 border-b ${
+            theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+          }`}>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <ImageIcon className="w-5 h-5 text-indigo-600" />
+              <div className={`p-2 rounded-lg ${
+                theme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+              }`}>
+                <ImageIcon className={`w-5 h-5 ${
+                  theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                }`} />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Imagens da Loja</h2>
-                <p className="text-sm text-gray-600">Logo e favicon da sua loja</p>
+                <h2 className={`text-lg font-semibold ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>Imagens da Loja</h2>
+                <p className={`text-sm ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>Logo e favicon da sua loja</p>
               </div>
             </div>
           </div>
           <div className="p-6 space-y-8">
             {/* Logo */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className={`block text-sm font-medium mb-3 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
                 Logo da Loja
               </label>
               <div className="flex flex-col md:flex-row gap-6">
                 {logoPreview && (
                   <div className="relative flex-shrink-0">
-                    <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6">
+                    <div className={`border-2 border-dashed rounded-xl p-6 ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-300'
+                    }`}>
                       <img
                         src={logoPreview}
                         alt="Logo preview"
@@ -462,12 +528,18 @@ export default function StoreTheme() {
                   />
                   <label
                     htmlFor="logo-upload"
-                    className="inline-flex items-center px-6 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors w-full justify-center"
+                    className={`inline-flex items-center px-6 py-3 border-2 border-dashed rounded-xl text-sm font-medium cursor-pointer transition-colors w-full justify-center ${
+                      theme === 'dark'
+                        ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600'
+                        : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                    }`}
                   >
                     <Upload className="w-5 h-5 mr-2" />
                     {logoPreview ? 'Trocar Logo' : 'Enviar Logo'}
                   </label>
-                  <p className="text-xs text-gray-500 mt-3 text-center">
+                  <p className={`text-xs mt-3 text-center ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
                     Formatos aceitos: PNG, JPG, SVG. Tamanho recomendado: 200x60px
                   </p>
                 </div>
@@ -476,13 +548,17 @@ export default function StoreTheme() {
 
             {/* Favicon */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className={`block text-sm font-medium mb-3 ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
                 Favicon (Ícone do Site)
               </label>
               <div className="flex flex-col md:flex-row gap-6">
                 {faviconPreview && (
                   <div className="relative flex-shrink-0">
-                    <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6">
+                    <div className={`border-2 border-dashed rounded-xl p-6 ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-300'
+                    }`}>
                       <img
                         src={faviconPreview}
                         alt="Favicon preview"
@@ -512,12 +588,18 @@ export default function StoreTheme() {
                   />
                   <label
                     htmlFor="favicon-upload"
-                    className="inline-flex items-center px-6 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors w-full justify-center"
+                    className={`inline-flex items-center px-6 py-3 border-2 border-dashed rounded-xl text-sm font-medium cursor-pointer transition-colors w-full justify-center ${
+                      theme === 'dark'
+                        ? 'border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600'
+                        : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                    }`}
                   >
                     <Upload className="w-5 h-5 mr-2" />
                     {faviconPreview ? 'Trocar Favicon' : 'Enviar Favicon'}
                   </label>
-                  <p className="text-xs text-gray-500 mt-3 text-center">
+                  <p className={`text-xs mt-3 text-center ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
                     Formatos aceitos: PNG, ICO. Tamanho recomendado: 32x32 ou 64x64px
                   </p>
                 </div>
@@ -531,7 +613,7 @@ export default function StoreTheme() {
           <button
             type="submit"
             disabled={updateMutation.isLoading}
-            className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors font-medium shadow-md hover:shadow-lg"
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium shadow-md hover:shadow-lg"
           >
             <Save className="w-5 h-5 mr-2" />
             {updateMutation.isLoading ? 'Salvando...' : 'Salvar Alterações'}

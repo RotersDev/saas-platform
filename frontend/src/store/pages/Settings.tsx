@@ -7,6 +7,7 @@ import { Code, FileCode, Save, Bell, Mail, MessageSquare, Smartphone, AlertCircl
 import { Link } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { useThemeStore } from '../themeStore';
 
 // Estilos customizados para o editor
 const quillStyles = `
@@ -28,6 +29,7 @@ type TabType = 'general' | 'advanced' | 'notifications' | 'domains' | 'terms';
 export default function StoreSettings() {
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { theme: currentTheme } = useThemeStore();
   const [customCss, setCustomCss] = useState('');
   const [customJs, setCustomJs] = useState('');
 
@@ -53,7 +55,7 @@ export default function StoreSettings() {
     if (location.pathname.includes('/domains')) {
       return; // Não atualizar tabs quando está em /domains
     }
-    
+
     if (hash === 'notifications') {
       setActiveTab('notifications');
     } else if (hash === 'domains') {
@@ -355,13 +357,19 @@ export default function StoreSettings() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Configurações</h1>
-        <p className="text-gray-600 mt-2">Gerencie as configurações avançadas e notificações da sua loja</p>
+        <h1 className={`text-3xl font-bold ${
+          currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>Configurações</h1>
+        <p className={`mt-2 ${
+          currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+        }`}>Gerencie as configurações avançadas e notificações da sua loja</p>
       </div>
 
       {/* Tabs - só mostrar se não estiver na página de domínios */}
       {showTabs && (
-        <div className="flex flex-wrap gap-2 mb-6 p-1 border rounded-xl w-fit bg-gray-50">
+        <div className={`flex flex-wrap gap-2 mb-6 p-1 border rounded-xl w-fit ${
+          currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+        }`}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -376,8 +384,12 @@ export default function StoreSettings() {
                 }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   (isActive || (tab.id === 'domains' && location.pathname.includes('/domains')))
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    ? currentTheme === 'dark'
+                      ? 'bg-gray-700 text-blue-400 shadow-sm'
+                      : 'bg-white text-blue-600 shadow-sm'
+                    : currentTheme === 'dark'
+                      ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -392,22 +404,36 @@ export default function StoreSettings() {
       {activeTab === 'general' && (
         <div className="space-y-6">
           {/* Informações da Loja */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-6 border-b border-gray-200">
+          <div className={`rounded-xl border shadow-sm ${
+            currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className={`p-6 border-b ${
+              currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <SettingsIcon className="w-5 h-5 text-indigo-600" />
+                <div className={`p-2 rounded-lg ${
+                  currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+                }`}>
+                  <SettingsIcon className={`w-5 h-5 ${
+                    currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Informações da Loja</h3>
-                  <p className="text-sm text-gray-600">Configure o nome e descrição da sua loja</p>
+                  <h3 className={`text-lg font-semibold ${
+                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Informações da Loja</h3>
+                  <p className={`text-sm ${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Configure o nome e descrição da sua loja</p>
                 </div>
               </div>
             </div>
             <div className="p-6 space-y-6">
               {/* Nome da Loja */}
               <div>
-                <label htmlFor="storeName" className="block text-sm font-medium text-gray-900 mb-2">
+                <label htmlFor="storeName" className={`block text-sm font-medium mb-2 ${
+                  currentTheme === 'dark' ? 'text-gray-300' : 'text-gray-900'
+                }`}>
                   Nome da Loja *
                 </label>
                 <input
@@ -416,17 +442,25 @@ export default function StoreSettings() {
                   value={storeName}
                   onChange={(e) => setStoreName(e.target.value)}
                   placeholder="Ex: Minha Loja Digital"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                    currentTheme === 'dark'
+                      ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                      : 'border-gray-300 bg-white'
+                  }`}
                   maxLength={255}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className={`text-xs mt-1 ${
+                  currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                }`}>
                   Este nome aparecerá no cabeçalho e em outras partes do seu site
                 </p>
               </div>
 
               {/* Descrição da Loja */}
               <div>
-                <label htmlFor="storeDescription" className="block text-sm font-medium text-gray-900 mb-2">
+                <label htmlFor="storeDescription" className={`block text-sm font-medium mb-2 ${
+                  currentTheme === 'dark' ? 'text-gray-300' : 'text-gray-900'
+                }`}>
                   Descrição do Site
                 </label>
                 <textarea
@@ -435,26 +469,36 @@ export default function StoreSettings() {
                   onChange={(e) => setStoreDescription(e.target.value)}
                   placeholder="Descreva sua loja, produtos ou serviços..."
                   rows={4}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none ${
+                    currentTheme === 'dark'
+                      ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                      : 'border-gray-300 bg-white'
+                  }`}
                   maxLength={500}
                 />
                 <div className="flex items-center justify-between mt-1">
-                  <p className="text-xs text-gray-500">
+                  <p className={`text-xs ${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
                     Esta descrição pode aparecer em páginas públicas e resultados de busca
                   </p>
-                  <span className="text-xs text-gray-400">
+                  <span className={`text-xs ${
+                    currentTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`}>
                     {storeDescription.length}/500
                   </span>
                 </div>
               </div>
 
               {/* Botão Salvar */}
-              <div className="flex justify-end pt-4 border-t border-gray-200">
+              <div className={`flex justify-end pt-4 border-t ${
+                currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+              }`}>
                 <button
                   type="button"
                   onClick={handleSaveStoreInfo}
                   disabled={updateStoreMutation.isLoading || !storeName.trim()}
-                  className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-md hover:shadow-lg"
+                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-md hover:shadow-lg"
                 >
                   <Save className="w-5 h-5 mr-2" />
                   {updateStoreMutation.isLoading ? 'Salvando...' : 'Salvar Informações'}
@@ -464,25 +508,41 @@ export default function StoreSettings() {
           </div>
 
           {/* Configurações de Vendas */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-6 border-b border-gray-200">
+          <div className={`rounded-xl border shadow-sm ${
+            currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className={`p-6 border-b ${
+              currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <SettingsIcon className="w-5 h-5 text-indigo-600" />
+                <div className={`p-2 rounded-lg ${
+                  currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+                }`}>
+                  <SettingsIcon className={`w-5 h-5 ${
+                    currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Configurações de Vendas</h3>
-                  <p className="text-sm text-gray-600">Configure como os clientes podem fazer compras</p>
+                  <h3 className={`text-lg font-semibold ${
+                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Configurações de Vendas</h3>
+                  <p className={`text-sm ${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Configure como os clientes podem fazer compras</p>
                 </div>
               </div>
             </div>
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <label className="text-base font-medium text-gray-900">
+                  <label className={`text-base font-medium ${
+                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>
                     Login obrigatório para comprar
                   </label>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className={`text-sm mt-1 ${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
                     Quando ativado, os clientes precisam criar uma conta e fazer login antes de poder realizar uma compra.
                     Quando desativado, os clientes podem comprar apenas informando o e-mail.
                   </p>
@@ -494,8 +554,8 @@ export default function StoreSettings() {
                     setRequireLogin(newValue);
                     updateStoreMutation.mutate({ require_login_to_purchase: newValue });
                   }}
-                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                    requireLogin ? 'bg-indigo-600' : 'bg-gray-200'
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    requireLogin ? 'bg-blue-600' : currentTheme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
                   }`}
                 >
                   <span
@@ -513,15 +573,27 @@ export default function StoreSettings() {
       {activeTab === 'advanced' && (
         <div className="space-y-6">
           {/* CSS Personalizado */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-6 border-b border-gray-200">
+          <div className={`rounded-xl border shadow-sm ${
+            currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className={`p-6 border-b ${
+              currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <FileCode className="w-5 h-5 text-indigo-600" />
+                <div className={`p-2 rounded-lg ${
+                  currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+                }`}>
+                  <FileCode className={`w-5 h-5 ${
+                    currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">CSS Personalizado</h2>
-                  <p className="text-sm text-gray-600">Adicione estilos customizados para sua loja</p>
+                  <h2 className={`text-lg font-semibold ${
+                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>CSS Personalizado</h2>
+                  <p className={`text-sm ${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Adicione estilos customizados para sua loja</p>
                 </div>
               </div>
             </div>
@@ -531,27 +603,45 @@ export default function StoreSettings() {
                   value={customCss}
                   onChange={(e) => setCustomCss(e.target.value)}
                   rows={20}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                  className={`w-full px-4 py-3 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
+                    currentTheme === 'dark'
+                      ? 'border-gray-600 bg-gray-900 text-white placeholder-gray-500'
+                      : 'border-gray-300 bg-white'
+                  }`}
                   placeholder="/* Seu CSS personalizado aqui */"
                   spellCheck={false}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-3">
+              <p className={`text-xs mt-3 ${
+                currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 O CSS será aplicado diretamente na sua loja. Use seletores específicos para evitar conflitos.
               </p>
             </div>
           </div>
 
           {/* JavaScript Personalizado */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-6 border-b border-gray-200">
+          <div className={`rounded-xl border shadow-sm ${
+            currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className={`p-6 border-b ${
+              currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Code className="w-5 h-5 text-indigo-600" />
+                <div className={`p-2 rounded-lg ${
+                  currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+                }`}>
+                  <Code className={`w-5 h-5 ${
+                    currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">JavaScript Personalizado</h2>
-                  <p className="text-sm text-gray-600">Adicione scripts customizados para sua loja</p>
+                  <h2 className={`text-lg font-semibold ${
+                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>JavaScript Personalizado</h2>
+                  <p className={`text-sm ${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Adicione scripts customizados para sua loja</p>
                 </div>
               </div>
             </div>
@@ -561,7 +651,11 @@ export default function StoreSettings() {
                   value={customJs}
                   onChange={(e) => setCustomJs(e.target.value)}
                   rows={20}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                  className={`w-full px-4 py-3 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
+                    currentTheme === 'dark'
+                      ? 'border-gray-600 bg-gray-900 text-white placeholder-gray-500'
+                      : 'border-gray-300 bg-white'
+                  }`}
                   placeholder="// Seu JavaScript personalizado aqui"
                   spellCheck={false}
                 />
@@ -574,7 +668,7 @@ export default function StoreSettings() {
             <button
               onClick={handleSaveTheme}
               disabled={updateThemeMutation.isLoading}
-              className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors font-medium shadow-md hover:shadow-lg"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium shadow-md hover:shadow-lg"
             >
               <Save className="w-5 h-5 mr-2" />
               {updateThemeMutation.isLoading ? 'Salvando...' : 'Salvar Configurações'}
@@ -586,15 +680,27 @@ export default function StoreSettings() {
       {activeTab === 'notifications' && (
         <div className="space-y-6">
           {/* Discord Notifications */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-6 border-b border-gray-200">
+          <div className={`rounded-xl border shadow-sm ${
+            currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className={`p-6 border-b ${
+              currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <MessageSquare className="w-5 h-5 text-indigo-600" />
+                <div className={`p-2 rounded-lg ${
+                  currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+                }`}>
+                  <MessageSquare className={`w-5 h-5 ${
+                    currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Discord</h3>
-                  <p className="text-sm text-gray-600">Configure notificações via Discord Webhook</p>
+                  <h3 className={`text-lg font-semibold ${
+                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Discord</h3>
+                  <p className={`text-sm ${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Configure notificações via Discord Webhook</p>
                 </div>
               </div>
             </div>
@@ -611,17 +717,23 @@ export default function StoreSettings() {
                 const isTesting = testingWebhook === key;
 
                 return (
-                  <div key={event} className="border rounded-lg p-4 space-y-4">
+                  <div key={event} className={`border rounded-lg p-4 space-y-4 ${
+                    currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+                  }`}>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <label className="text-base font-medium text-gray-900">{label}</label>
-                        <p className="text-sm text-gray-600 mt-1">{description}</p>
+                        <label className={`text-base font-medium ${
+                          currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>{label}</label>
+                        <p className={`text-sm mt-1 ${
+                          currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>{description}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => toggleNotification('discord', event)}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                          isEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                          isEnabled ? 'bg-blue-600' : currentTheme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
                         }`}
                       >
                         <span
@@ -633,11 +745,15 @@ export default function StoreSettings() {
                     </div>
 
                     {isEnabled && (
-                      <div className="pt-3 border-t border-gray-200">
+                      <div className={`pt-3 border-t ${
+                        currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+                      }`}>
                         <button
                           type="button"
                           onClick={() => toggleWebhookExpansion(key)}
-                          className="flex items-center justify-between w-full text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                          className={`flex items-center justify-between w-full text-sm font-medium transition-colors ${
+                            currentTheme === 'dark' ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+                          }`}
                         >
                           <span>Configurar Webhook</span>
                           {expandedWebhooks[key] ? (
@@ -649,7 +765,9 @@ export default function StoreSettings() {
                         {expandedWebhooks[key] && (
                           <div className="mt-3 space-y-3">
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                              <label className={`block text-sm font-medium mb-2 ${
+                                currentTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                              }`}>
                                 URL do Webhook do Discord
                               </label>
                               <div className="flex gap-2">
@@ -658,13 +776,17 @@ export default function StoreSettings() {
                                   value={webhookUrl}
                                   onChange={(e) => handleWebhookUrlChange('discord', event, e.target.value)}
                                   placeholder="https://discord.com/api/webhooks/..."
-                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                  className={`flex-1 px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                    currentTheme === 'dark'
+                                      ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                                      : 'border-gray-300 bg-white'
+                                  }`}
                                 />
                                 <button
                                   type="button"
                                   onClick={() => handleTestWebhook('discord', event)}
                                   disabled={isTesting || !webhookUrl.trim()}
-                                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2"
+                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2"
                                 >
                                   {isTesting ? (
                                     <>
@@ -703,15 +825,27 @@ export default function StoreSettings() {
           </div>
 
           {/* Email Notifications */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-6 border-b border-gray-200">
+          <div className={`rounded-xl border shadow-sm ${
+            currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className={`p-6 border-b ${
+              currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Mail className="w-5 h-5 text-indigo-600" />
+                <div className={`p-2 rounded-lg ${
+                  currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+                }`}>
+                  <Mail className={`w-5 h-5 ${
+                    currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">E-mail</h3>
-                  <p className="text-sm text-gray-600">Configure notificações por e-mail</p>
+                  <h3 className={`text-lg font-semibold ${
+                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>E-mail</h3>
+                  <p className={`text-sm ${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Configure notificações por e-mail</p>
                 </div>
               </div>
             </div>
@@ -719,17 +853,23 @@ export default function StoreSettings() {
               {[
                 { event: 'order_approved', label: 'Pedido aprovado', description: 'Para utilizar esta função, mantenha-a habilitada.' },
               ].map(({ event, label, description }) => (
-                <div key={event} className="border rounded-lg p-4">
+                <div key={event} className={`border rounded-lg p-4 ${
+                  currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+                }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <label className="text-base font-medium text-gray-900">{label}</label>
-                      <p className="text-sm text-gray-600 mt-1">{description}</p>
+                      <label className={`text-base font-medium ${
+                        currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>{label}</label>
+                      <p className={`text-sm mt-1 ${
+                        currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                      }`}>{description}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => toggleNotification('email', event)}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                        notifications[`email_${event}`] ? 'bg-indigo-600' : 'bg-gray-200'
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        notifications[`email_${event}`] ? 'bg-blue-600' : currentTheme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
                       }`}
                     >
                       <span
@@ -745,15 +885,27 @@ export default function StoreSettings() {
           </div>
 
           {/* App/Internal Notifications */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-6 border-b border-gray-200">
+          <div className={`rounded-xl border shadow-sm ${
+            currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className={`p-6 border-b ${
+              currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Smartphone className="w-5 h-5 text-indigo-600" />
+                <div className={`p-2 rounded-lg ${
+                  currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+                }`}>
+                  <Smartphone className={`w-5 h-5 ${
+                    currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">App</h3>
-                  <p className="text-sm text-gray-600">Configure notificações no aplicativo</p>
+                  <h3 className={`text-lg font-semibold ${
+                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>App</h3>
+                  <p className={`text-sm ${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Configure notificações no aplicativo</p>
                 </div>
               </div>
             </div>
@@ -761,17 +913,23 @@ export default function StoreSettings() {
               {[
                 { event: 'order_approved', label: 'Pedido aprovado', description: 'Para utilizar esta função, mantenha-a habilitada.' },
               ].map(({ event, label, description }) => (
-                <div key={event} className="border rounded-lg p-4">
+                <div key={event} className={`border rounded-lg p-4 ${
+                  currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+                }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <label className="text-base font-medium text-gray-900">{label}</label>
-                      <p className="text-sm text-gray-600 mt-1">{description}</p>
+                      <label className={`text-base font-medium ${
+                        currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>{label}</label>
+                      <p className={`text-sm mt-1 ${
+                        currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                      }`}>{description}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => toggleNotification('internal', event)}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                        notifications[`internal_${event}`] ? 'bg-indigo-600' : 'bg-gray-200'
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        notifications[`internal_${event}`] ? 'bg-blue-600' : currentTheme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
                       }`}
                     >
                       <span
@@ -791,7 +949,7 @@ export default function StoreSettings() {
             <button
               onClick={handleSaveNotifications}
               disabled={updateNotificationsMutation.isLoading}
-              className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors font-medium shadow-md hover:shadow-lg"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium shadow-md hover:shadow-lg"
             >
               <Save className="w-5 h-5 mr-2" />
               {updateNotificationsMutation.isLoading ? 'Salvando...' : 'Salvar alterações'}
@@ -802,14 +960,20 @@ export default function StoreSettings() {
 
       {activeTab === 'domains' && (
         <div className="text-center py-12">
-          <Globe className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Configuração de Domínios</h3>
-          <p className="text-gray-600 mb-6">
+          <Globe className={`w-12 h-12 mx-auto mb-4 ${
+            currentTheme === 'dark' ? 'text-gray-600' : 'text-gray-400'
+          }`} />
+          <h3 className={`text-lg font-semibold mb-2 ${
+            currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>Configuração de Domínios</h3>
+          <p className={`mb-6 ${
+            currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          }`}>
             Gerencie seus domínios e subdomínios em uma página dedicada.
           </p>
           <Link
             to="/store/settings/domains"
-            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             Ir para Configuração de Domínios
           </Link>
@@ -818,15 +982,27 @@ export default function StoreSettings() {
 
       {activeTab === 'terms' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-6 border-b border-gray-200">
+          <div className={`rounded-xl border shadow-sm ${
+            currentTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className={`p-6 border-b ${
+              currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <FileText className="w-5 h-5 text-indigo-600" />
+                <div className={`p-2 rounded-lg ${
+                  currentTheme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+                }`}>
+                  <FileText className={`w-5 h-5 ${
+                    currentTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Termos de Uso</h2>
-                  <p className="text-sm text-gray-600">Configure os termos de uso da sua loja. Estes termos serão exibidos em /terms do seu site.</p>
+                  <h2 className={`text-lg font-semibold ${
+                    currentTheme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Termos de Uso</h2>
+                  <p className={`text-sm ${
+                    currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Configure os termos de uso da sua loja. Estes termos serão exibidos em /terms do seu site.</p>
                 </div>
               </div>
             </div>
