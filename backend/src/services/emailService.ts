@@ -251,7 +251,7 @@ class EmailService {
    */
   async sendPasswordResetStoreAdmin(email: string, resetToken: string): Promise<boolean> {
     // Sempre usar o domínio de produção para emails (não usar localhost)
-    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const saasDomain = process.env.SAAS_DOMAIN || 'nerix.com.br';
     // Se APP_URL contém localhost, usar o domínio de produção
     const appUrl = process.env.APP_URL || '';
     const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
@@ -286,7 +286,7 @@ class EmailService {
    */
   async sendPasswordResetCustomer(email: string, resetToken: string, storeName: string, subdomain?: string | null, customDomain?: string | null): Promise<boolean> {
     // Sempre usar o domínio de produção para emails (não usar localhost)
-    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const saasDomain = process.env.SAAS_DOMAIN || 'nerix.com.br';
     const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
     const appUrl = process.env.APP_URL || '';
     const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
@@ -332,7 +332,7 @@ class EmailService {
    */
   async sendOrderCreated(order: any, storeName: string, customerEmail: string): Promise<boolean> {
     // Gerar URL correta baseada no domínio primário da loja
-    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const saasDomain = process.env.SAAS_DOMAIN || 'nerix.com.br';
     const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
     const appUrl = process.env.APP_URL || '';
     const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
@@ -410,7 +410,7 @@ class EmailService {
    */
   async sendOrderApproved(order: any, storeName: string, customerEmail: string, productKeys?: string[]): Promise<boolean> {
     // Gerar URL correta baseada no domínio primário da loja
-    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const saasDomain = process.env.SAAS_DOMAIN || 'nerix.com.br';
     const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
     const appUrl = process.env.APP_URL || '';
     const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
@@ -471,7 +471,7 @@ class EmailService {
    * Envia email de boas-vindas quando loja é criada
    */
   async sendStoreWelcome(storeName: string, ownerEmail: string, subdomain: string): Promise<boolean> {
-    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const saasDomain = process.env.SAAS_DOMAIN || 'nerix.com.br';
     const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
     const appUrl = process.env.APP_URL || '';
     const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');

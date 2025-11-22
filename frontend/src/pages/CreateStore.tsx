@@ -161,7 +161,7 @@ export default function CreateStore() {
       toast.success('Loja criada com sucesso! 🎉');
 
       // Redirecionar para o domínio principal do SaaS se estiver em domínio customizado
-      const saasDomain = import.meta.env.VITE_SAAS_DOMAIN || 'xenaparcerias.online';
+      const saasDomain = import.meta.env.VITE_SAAS_DOMAIN || 'nerix.com.br';
       if (window.location.hostname !== saasDomain && !window.location.hostname.includes('localhost')) {
         setTimeout(() => {
           window.location.href = `https://${saasDomain}/store`;

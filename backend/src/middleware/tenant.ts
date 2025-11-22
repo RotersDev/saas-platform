@@ -182,7 +182,7 @@ export const resolveTenantPublic = async (
     // Remover porta se houver (ex: marcos.nerix.online:443 -> marcos.nerix.online)
     const hostWithoutPort = host.split(':')[0];
     const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
-    const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const saasDomain = process.env.SAAS_DOMAIN || 'nerix.com.br';
 
     // Primeiro, verificar se é um domínio customizado (não é subdomínio do BASE_DOMAIN nem SAAS_DOMAIN)
     const isBaseDomain = hostWithoutPort === baseDomain || hostWithoutPort === `www.${baseDomain}`;
