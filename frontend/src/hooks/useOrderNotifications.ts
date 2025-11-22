@@ -15,9 +15,16 @@ export function useOrderNotifications(enabled: boolean = false) {
     'lastApprovedOrder',
     async () => {
       try {
-        const response = await api.get('/api/orders?status=paid&limit=1&sort=created_at:desc');
-        const orders = response.data?.orders || response.data || [];
-        return orders.length > 0 ? orders[0] : null;
+        // Buscar pedidos pagos - filtrar por payment_status no frontend pois a API pode não suportar esse filtro
+        const response = await api.get('/api/orders?limit=10');
+        // A API retorna { rows: [], count: 0 } quando usa findAndCountAll
+        const allOrders = response.data?.rows || response.data?.orders || (Array.isArray(response.data) ? response.data : []);
+        // Filtrar apenas pedidos pagos
+        const paidOrders = allOrders.filter((order: any) =>
+          order.payment_status === 'paid' || order.status === 'paid' || order.status === 'delivered'
+        );
+        // Retornar o mais recente
+        return paidOrders.length > 0 ? paidOrders[0] : null;
       } catch (error) {
         console.error('Erro ao buscar última venda:', error);
         return null;
@@ -32,19 +39,38 @@ export function useOrderNotifications(enabled: boolean = false) {
   );
 
   useEffect(() => {
-    if (!enabled || !notificationService.isPermissionGranted()) {
+    if (!enabled) {
+      console.log('[useOrderNotifications] Desabilitado');
+      return;
+    }
+
+    if (!notificationService.isPermissionGranted()) {
+      console.log('[useOrderNotifications] Permissão não concedida');
+      return;
+    }
+
+    if (!lastOrder) {
+      console.log('[useOrderNotifications] Nenhuma venda encontrada');
       return;
     }
 
     // Na primeira vez, apenas armazenar o ID da última venda
-    if (!isInitializedRef.current && lastOrder) {
+    if (!isInitializedRef.current) {
+      console.log('[useOrderNotifications] Inicializando com venda:', lastOrder.id, lastOrder.order_number);
       lastOrderIdRef.current = lastOrder.id;
       isInitializedRef.current = true;
       return;
     }
 
     // Se já foi inicializado e há uma nova venda
-    if (isInitializedRef.current && lastOrder && lastOrder.id !== lastOrderIdRef.current) {
+    if (lastOrder.id !== lastOrderIdRef.current) {
+      console.log('[useOrderNotifications] Nova venda detectada!', {
+        oldId: lastOrderIdRef.current,
+        newId: lastOrder.id,
+        orderNumber: lastOrder.order_number,
+        total: lastOrder.total
+      });
+
       const orderAmount = parseFloat(lastOrder.total || 0);
       const orderNumber = lastOrder.order_number || lastOrder.id;
 

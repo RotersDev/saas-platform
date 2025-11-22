@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import AddToHomeScreen from '../../components/AddToHomeScreen';
 import { useOrderNotifications } from '../../hooks/useOrderNotifications';
 
 export default function StoreLayout() {
@@ -205,8 +206,10 @@ export default function StoreLayout() {
   }, [theme]);
 
   return (
-    <div className={`min-h-screen relative flex ${theme === 'dark' ? 'dark' : ''}`}>
-      {/* Background com degradê sutil e bolinhas azuis */}
+    <>
+      <AddToHomeScreen />
+      <div className={`min-h-screen relative flex ${theme === 'dark' ? 'dark' : ''}`}>
+        {/* Background com degradê sutil e bolinhas azuis */}
       <div
         className={`fixed inset-0 -z-10 ${
           theme === 'dark'
@@ -514,6 +517,8 @@ export default function StoreLayout() {
       )}
 
     </div>
+    <AddToHomeScreen />
+    </>
   );
 }
 

@@ -36,7 +36,6 @@ class NotificationService {
       console.error('Erro ao solicitar permissão de notificações:', error);
       throw error;
     }
-
   }
 
   /**
@@ -62,15 +61,19 @@ class NotificationService {
    * Envia uma notificação de venda aprovada
    */
   async notifySaleApproved(amount: number, orderNumber?: string): Promise<void> {
+    console.log('[NotificationService] Tentando enviar notificação:', { amount, orderNumber });
+
     if (!this.isSupported) {
-      console.warn('Notificações não são suportadas');
+      console.warn('[NotificationService] Notificações não são suportadas');
       return;
     }
 
     // Verificar permissão atual
     this.permission = Notification.permission;
+    console.log('[NotificationService] Status da permissão:', this.permission);
+
     if (this.permission !== 'granted') {
-      console.warn('Permissão de notificações não concedida');
+      console.warn('[NotificationService] Permissão de notificações não concedida');
       return;
     }
 
@@ -80,6 +83,12 @@ class NotificationService {
         currency: 'BRL',
       }).format(amount);
 
+      console.log('[NotificationService] Criando notificação:', {
+        title: 'Venda Aprovada',
+        body: `Valor: ${formattedAmount}${orderNumber ? ` - Pedido #${orderNumber}` : ''}`,
+        icon: NOTIFICATION_ICON
+      });
+
       const notification = new Notification('Venda Aprovada', {
         body: `Valor: ${formattedAmount}${orderNumber ? ` - Pedido #${orderNumber}` : ''}`,
         icon: NOTIFICATION_ICON,
@@ -88,6 +97,8 @@ class NotificationService {
         requireInteraction: false,
         silent: false,
       });
+
+      console.log('[NotificationService] Notificação criada com sucesso');
 
       // Fechar automaticamente após 5 segundos
       setTimeout(() => {
@@ -100,7 +111,7 @@ class NotificationService {
         notification.close();
       };
     } catch (error) {
-      console.error('Erro ao enviar notificação:', error);
+      console.error('[NotificationService] Erro ao enviar notificação:', error);
     }
   }
 
