@@ -14,7 +14,7 @@ export default function StoreTemplateEditor() {
   const [customCss, setCustomCss] = useState('');
   const [customJs, setCustomJs] = useState('');
   const [templateName, setTemplateName] = useState('');
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<number | null>(null);
 
   // Buscar template
   const { data: template, isLoading } = useQuery(
