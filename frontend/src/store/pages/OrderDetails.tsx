@@ -5,8 +5,10 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Ban, RefreshCw, DollarSign, User, Mail, Phone, Globe, Monitor, Smartphone, Shield, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 import { useConfirm } from '../../hooks/useConfirm';
+import { useThemeStore } from '../themeStore';
 
 export default function OrderDetails() {
+  const { theme } = useThemeStore();
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -159,17 +161,23 @@ export default function OrderDetails() {
       <div className="mb-6">
         <button
           onClick={() => navigate('/store/orders')}
-          className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4 text-sm"
+          className={`inline-flex items-center mb-4 text-sm ${
+            theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'
+          }`}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar para pedidos
         </button>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h1 className={`text-2xl md:text-3xl font-bold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
               Pedido #{order.order_number || order.id}
             </h1>
-            <p className="text-gray-600 mt-1 text-sm">
+            <p className={`mt-1 text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`}>
               Criado em {new Date(order.created_at).toLocaleString('pt-BR')}
             </p>
           </div>
@@ -212,11 +220,17 @@ export default function OrderDetails() {
         {/* Coluna Principal */}
         <div className="lg:col-span-2 space-y-6">
           {/* Status */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Status do Pedido</h2>
+          <div className={`rounded-lg border shadow-sm p-6 ${
+            theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <h2 className={`text-lg font-semibold mb-4 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Status do Pedido</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-gray-500 mb-2">Status do Pedido</p>
+                <p className={`text-xs mb-2 ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                }`}>Status do Pedido</p>
                 <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold ${getStatusBadge(order.status)}`}>
                   {order.status === 'pending' && 'Pendente'}
                   {order.status === 'paid' && 'Pago'}
@@ -226,7 +240,9 @@ export default function OrderDetails() {
                 </span>
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-2">Status do Pagamento</p>
+                <p className={`text-xs mb-2 ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                }`}>Status do Pagamento</p>
                 <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold ${getStatusBadge(order.payment_status)}`}>
                   {order.payment_status === 'pending' && 'Pendente'}
                   {order.payment_status === 'paid' && 'Pago'}
@@ -238,16 +254,26 @@ export default function OrderDetails() {
           </div>
 
           {/* Itens do Pedido */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Itens do Pedido</h2>
+          <div className={`rounded-lg border shadow-sm p-6 ${
+            theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <h2 className={`text-lg font-semibold mb-6 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Itens do Pedido</h2>
             <div className="space-y-3">
               {order.items && order.items.length > 0 ? (
                 order.items.map((item: any, index: number) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div key={index} className={`rounded-lg p-4 border ${
+                    theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+                  }`}>
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 mb-2 text-base">{item.product_name}</h3>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                        <h3 className={`font-semibold mb-2 text-base ${
+                          theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>{item.product_name}</h3>
+                        <div className={`flex flex-wrap items-center gap-4 text-sm ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
                           <span className="flex items-center gap-1">
                             <span className="font-medium">Qtd:</span>
                             <span>{item.quantity}</span>
@@ -264,7 +290,9 @@ export default function OrderDetails() {
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-lg font-bold text-gray-900">
+                        <p className={`text-lg font-bold ${
+                          theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+                        }`}>
                           {new Intl.NumberFormat('pt-BR', {
                             style: 'currency',
                             currency: 'BRL',
@@ -279,9 +307,13 @@ export default function OrderDetails() {
                       const itemKeyId = `item-${index}`;
 
                       return (
-                        <div className="mt-4 pt-4 border-t border-gray-300">
+                        <div className={`mt-4 pt-4 border-t ${
+                          theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+                        }`}>
                           <div className="flex items-center justify-between mb-3">
-                            <p className="text-sm font-medium text-gray-700">
+                            <p className={`text-sm font-medium ${
+                              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                            }`}>
                               {hasMultipleKeys ? `Chaves do Produto (${keys.length})` : 'Chave do Produto'}
                             </p>
                             {hasMultipleKeys && (
@@ -307,8 +339,12 @@ export default function OrderDetails() {
                             {keys.map((key: string, keyIndex: number) => {
                               const keyId = `${itemKeyId}-key-${keyIndex}`;
                               return (
-                                <div key={keyIndex} className="flex items-center gap-2 bg-white rounded-lg p-3 border border-gray-300">
-                                  <code className="flex-1 text-sm font-mono text-gray-900 break-all">
+                                <div key={keyIndex} className={`flex items-center gap-2 rounded-lg p-3 border ${
+                                  theme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
+                                }`}>
+                                  <code className={`flex-1 text-sm font-mono break-all ${
+                                    theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                                  }`}>
                                     {key.trim()}
                                   </code>
                                   <button
@@ -338,27 +374,37 @@ export default function OrderDetails() {
           </div>
 
           {/* Informações de Pagamento */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Informações de Pagamento</h2>
+          <div className={`rounded-lg border shadow-sm p-6 ${
+            theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <h2 className={`text-lg font-semibold mb-4 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Informações de Pagamento</h2>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600">Gateway:</span>
-                <span className="font-medium text-gray-900">{getGatewayName()}</span>
+                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Gateway:</span>
+                <span className={`font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>{getGatewayName()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Método:</span>
-                <span className="font-medium text-gray-900">PIX</span>
+                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Método:</span>
+                <span className={`font-medium ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>PIX</span>
               </div>
               {payment.metadata?.sandbox && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Ambiente:</span>
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Ambiente:</span>
                   <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">Sandbox</span>
                 </div>
               )}
               {payment.mercado_pago_id && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">ID da Transação:</span>
-                  <span className="font-mono text-sm text-gray-900">{payment.mercado_pago_id}</span>
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>ID da Transação:</span>
+                  <span className={`font-mono text-sm ${
+                    theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                  }`}>{payment.mercado_pago_id}</span>
                 </div>
               )}
             </div>
@@ -368,12 +414,16 @@ export default function OrderDetails() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Resumo Financeiro */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumo Financeiro</h2>
+          <div className={`rounded-lg border shadow-sm p-6 ${
+            theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <h2 className={`text-lg font-semibold mb-4 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Resumo Financeiro</h2>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal:</span>
-                <span className="text-gray-900">
+                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Subtotal:</span>
+                <span className={theme === 'dark' ? 'text-blue-400' : 'text-gray-900'}>
                   {new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
@@ -382,7 +432,7 @@ export default function OrderDetails() {
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Desconto:</span>
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Desconto:</span>
                   <span className="text-green-600">
                     - {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
@@ -392,18 +442,22 @@ export default function OrderDetails() {
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Bruto:</span>
-                <span className="font-medium text-gray-900">
+                <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Total Bruto:</span>
+                <span className={`font-medium ${
+                  theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+                }`}>
                   {new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
                   }).format(Number(order.total))}
                 </span>
               </div>
-              <div className="border-t border-gray-200 pt-3 space-y-2">
+              <div className={`border-t pt-3 space-y-2 ${
+                theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+              }`}>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Taxa do Gateway:</span>
-                  <span className="text-gray-900">
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Taxa do Gateway:</span>
+                  <span className={theme === 'dark' ? 'text-blue-400' : 'text-gray-900'}>
                     {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
@@ -411,25 +465,35 @@ export default function OrderDetails() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Taxa da Plataforma (3%):</span>
-                  <span className="text-gray-900">
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Taxa da Plataforma (3%):</span>
+                  <span className={theme === 'dark' ? 'text-blue-400' : 'text-gray-900'}>
                     {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     }).format(platformFee)}
                   </span>
                 </div>
-                <div className="flex justify-between pt-2 border-t border-gray-200">
-                  <span className="text-gray-600 font-medium">Total de Taxas:</span>
-                  <span className="text-gray-900 font-medium">
+                <div className={`flex justify-between pt-2 border-t ${
+                  theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+                }`}>
+                  <span className={`font-medium ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Total de Taxas:</span>
+                  <span className={`font-medium ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-gray-900'
+                  }`}>
                     {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     }).format(totalFees)}
                   </span>
                 </div>
-                <div className="flex justify-between pt-2 border-t border-gray-200">
-                  <span className="font-semibold text-gray-900">Total Líquido:</span>
+                <div className={`flex justify-between pt-2 border-t ${
+                  theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+                }`}>
+                  <span className={`font-semibold ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>Total Líquido:</span>
                   <span className="font-bold text-blue-600">
                     {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
@@ -442,41 +506,69 @@ export default function OrderDetails() {
           </div>
 
           {/* Informações do Cliente */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Cliente</h2>
+          <div className={`rounded-lg border shadow-sm p-6 ${
+            theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <h2 className={`text-lg font-semibold mb-4 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>Cliente</h2>
             <div className="space-y-3">
               <div className="flex items-start gap-2">
-                <User className="w-5 h-5 text-gray-400 mt-0.5" />
+                <User className={`w-5 h-5 mt-0.5 ${
+                  theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                }`} />
                 <div>
-                  <p className="text-sm text-gray-600">Nome</p>
-                  <p className="font-medium text-gray-900">{order.customer_name}</p>
+                  <p className={`text-sm ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Nome</p>
+                  <p className={`font-medium ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>{order.customer_name}</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
+                <Mail className={`w-5 h-5 mt-0.5 ${
+                  theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                }`} />
                 <div>
-                  <p className="text-sm text-gray-600">E-mail</p>
-                  <p className="font-medium text-gray-900">{order.customer_email}</p>
+                  <p className={`text-sm ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>E-mail</p>
+                  <p className={`font-medium ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                  }`}>{order.customer_email}</p>
                 </div>
               </div>
               {order.customer_phone && (
                 <div className="flex items-start gap-2">
-                  <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <Phone className={`w-5 h-5 mt-0.5 ${
+                    theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
                   <div>
-                    <p className="text-sm text-gray-600">Telefone</p>
-                    <p className="font-medium text-gray-900">{order.customer_phone}</p>
+                    <p className={`text-sm ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>Telefone</p>
+                    <p className={`font-medium ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>{order.customer_phone}</p>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Ações */}
-            <div className="mt-6 pt-6 border-t border-gray-200 space-y-2">
+            <div className={`mt-6 pt-6 border-t space-y-2 ${
+              theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               {!blockingBy ? (
                 <>
                   <button
                     onClick={() => setBlockingBy('email')}
-                    className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm font-medium transition-colors border border-gray-300"
+                    className={`w-full px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-colors border ${
+                      theme === 'dark'
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
+                    }`}
                   >
                     <Ban className="w-4 h-4" />
                     Bloquear por E-mail
@@ -484,7 +576,11 @@ export default function OrderDetails() {
                   {metadata.ip_address && (
                     <button
                       onClick={() => setBlockingBy('ip')}
-                      className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm font-medium transition-colors border border-gray-300"
+                      className={`w-full px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-colors border ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
+                      }`}
                     >
                       <Shield className="w-4 h-4" />
                       Bloquear por IP
@@ -493,7 +589,9 @@ export default function OrderDetails() {
                 </>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className={`text-sm mb-3 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
                     Confirmar bloqueio por {blockingBy === 'email' ? 'e-mail' : 'IP'}?
                   </p>
                   <div className="flex gap-2">
@@ -512,7 +610,11 @@ export default function OrderDetails() {
                     </button>
                     <button
                       onClick={() => setBlockingBy(null)}
-                      className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors border border-gray-300"
+                      className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
+                      }`}
                     >
                       Cancelar
                     </button>
@@ -524,34 +626,56 @@ export default function OrderDetails() {
 
           {/* Dados do Dispositivo */}
           {metadata.ip_address && (
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <div className={`rounded-lg border shadow-sm p-6 ${
+              theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
                 <Monitor className="w-5 h-5" />
                 Dados do Dispositivo
               </h2>
               <div className="space-y-3">
                 <div className="flex items-start gap-2">
-                  <Globe className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <Globe className={`w-5 h-5 mt-0.5 ${
+                    theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`} />
                   <div>
-                    <p className="text-sm text-gray-600">Endereço IP</p>
-                    <p className="font-mono text-sm text-gray-900">{metadata.ip_address}</p>
+                    <p className={`text-sm ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>Endereço IP</p>
+                    <p className={`font-mono text-sm ${
+                      theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                    }`}>{metadata.ip_address}</p>
                   </div>
                 </div>
                 {metadata.browser && (
                   <div className="flex items-start gap-2">
-                    <Monitor className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <Monitor className={`w-5 h-5 mt-0.5 ${
+                      theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                    }`} />
                     <div>
-                      <p className="text-sm text-gray-600">Navegador</p>
-                      <p className="text-sm text-gray-900">{metadata.browser}</p>
+                      <p className={`text-sm ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                      }`}>Navegador</p>
+                      <p className={`text-sm ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>{metadata.browser}</p>
                     </div>
                   </div>
                 )}
                 {metadata.os && (
                   <div className="flex items-start gap-2">
-                    <Smartphone className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <Smartphone className={`w-5 h-5 mt-0.5 ${
+                      theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                    }`} />
                     <div>
-                      <p className="text-sm text-gray-600">Sistema Operacional</p>
-                      <p className="text-sm text-gray-900">{metadata.os}</p>
+                      <p className={`text-sm ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                      }`}>Sistema Operacional</p>
+                      <p className={`text-sm ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>{metadata.os}</p>
                     </div>
                   </div>
                 )}

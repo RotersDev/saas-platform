@@ -15,7 +15,6 @@ import {
   Clock,
   CreditCard,
   User,
-  Shield,
   Sparkles,
 } from 'lucide-react';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -238,165 +237,220 @@ export default function Wallet() {
     );
   }
 
-  // Se não tem dados pessoais, mostrar formulário
+  // Se não tem dados pessoais, mostrar layout profissional com botão
   if (!walletData?.has_personal_data) {
     return (
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg">
-            <Shield className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 className={`text-3xl font-bold ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}>Carteira</h1>
-            <p className={`mt-2 ${
-              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-            }`}>Cadastre seus dados pessoais para acessar sua carteira</p>
-          </div>
+        <div className="mb-8">
+          <h1 className={`text-3xl font-bold mb-2 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>Carteira</h1>
+          <p className={`${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          }`}>Gerencie seus saques e transações</p>
         </div>
 
-        {/* Card de Cadastro */}
-        <div className={`rounded-2xl shadow-xl border overflow-hidden ${
-          theme === 'dark'
-            ? 'bg-gray-800 border-gray-700'
-            : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
+        {/* Card Principal */}
+        <div className={`rounded-2xl border shadow-lg overflow-hidden ${
+          theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
         }`}>
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <User className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Cadastro de Dados Pessoais</h2>
-                <p className="text-blue-100 text-sm mt-1">Preencha seus dados para começar</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-8">
-            <div className={`border rounded-xl p-4 mb-6 ${
-              theme === 'dark'
-                ? 'bg-blue-900/20 border-blue-800'
-                : 'bg-blue-50 border-blue-200'
-            }`}>
-              <div className="flex items-start gap-3">
-                <Info className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+          <div className="p-8 sm:p-12">
+            <div className="text-center max-w-2xl mx-auto space-y-6">
+              <div className={`inline-flex items-center justify-center w-14 h-14 rounded-xl ${
+                theme === 'dark' ? 'bg-blue-900/50' : 'bg-blue-100'
+              }`}>
+                <WalletIcon className={`w-7 h-7 ${
                   theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
                 }`} />
-                <div>
-                  <p className={`text-sm font-medium mb-1 ${
-                    theme === 'dark' ? 'text-blue-300' : 'text-blue-900'
-                  }`}>Por que precisamos desses dados?</p>
-                  <p className={`text-sm ${
-                    theme === 'dark' ? 'text-blue-200' : 'text-blue-800'
+              </div>
+
+              <div>
+                <h2 className={`text-2xl font-bold mb-2 ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>Cadastre seus dados pessoais</h2>
+                <p className={`${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Para realizar saques, precisamos verificar sua identidade.
+                  Seus dados são protegidos e usados apenas para processar transações.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowPersonalDataForm(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+              >
+                <User className="w-5 h-5" />
+                Se registrar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal de Cadastro */}
+        {showPersonalDataForm && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowPersonalDataForm(false)}
+            ></div>
+            <div className="flex min-h-full items-center justify-center p-4">
+              <div className={`relative rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${
+                theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+              }`}>
+                {/* Header do Modal */}
+                <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 flex items-center justify-between z-10">
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Cadastro de Dados Pessoais</h2>
+                    <p className="text-blue-100 text-sm mt-1">Preencha seus dados para começar</p>
+                  </div>
+                  <button
+                    onClick={() => setShowPersonalDataForm(false)}
+                    className="text-white/80 hover:text-white transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Conteúdo do Modal */}
+                <div className="p-6 sm:p-8">
+                  <div className={`border rounded-xl p-4 mb-6 ${
+                    theme === 'dark'
+                      ? 'bg-blue-900/20 border-blue-800'
+                      : 'bg-blue-50 border-blue-200'
                   }`}>
-                    Para garantir a segurança e conformidade, precisamos verificar sua identidade antes de permitir saques.
-                  </p>
+                    <div className="flex items-start gap-3">
+                      <Info className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                        theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                      }`} />
+                      <div>
+                        <p className={`text-sm font-medium mb-1 ${
+                          theme === 'dark' ? 'text-blue-300' : 'text-blue-900'
+                        }`}>Por que precisamos desses dados?</p>
+                        <p className={`text-sm ${
+                          theme === 'dark' ? 'text-blue-200' : 'text-blue-800'
+                        }`}>
+                          Para garantir a segurança e conformidade, precisamos verificar sua identidade antes de permitir saques.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSavePersonalData} className="space-y-6">
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        Nome Completo *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={personalData.full_name}
+                        onChange={(e) => setPersonalData({ ...personalData, full_name: e.target.value })}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          theme === 'dark'
+                            ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                            : 'border-gray-200 bg-white'
+                        }`}
+                        placeholder="Seu nome completo"
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <label className={`block text-sm font-semibold mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          CPF *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={personalData.cpf}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            const formatted = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                            setPersonalData({ ...personalData, cpf: formatted });
+                          }}
+                          maxLength={14}
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                              : 'border-gray-200 bg-white'
+                          }`}
+                          placeholder="000.000.000-00"
+                        />
+                      </div>
+
+                      <div>
+                        <label className={`block text-sm font-semibold mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          Data de Nascimento *
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={personalData.birth_date}
+                          onChange={(e) => setPersonalData({ ...personalData, birth_date: e.target.value })}
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white'
+                              : 'border-gray-200 bg-white'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        E-mail *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={personalData.email}
+                        onChange={(e) => setPersonalData({ ...personalData, email: e.target.value })}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                          theme === 'dark'
+                            ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                            : 'border-gray-200 bg-white'
+                        }`}
+                        placeholder="seu@email.com"
+                      />
+                    </div>
+
+                    <div className="flex gap-4 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowPersonalDataForm(false)}
+                        className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all ${
+                          theme === 'dark'
+                            ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={savePersonalDataMutation.isLoading}
+                        className="flex-1 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 font-semibold shadow-lg hover:shadow-xl transition-all"
+                      >
+                        {savePersonalDataMutation.isLoading ? 'Salvando...' : 'Salvar Dados'}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>
-
-            <form onSubmit={handleSavePersonalData} className="space-y-6">
-              <div>
-                <label className={`block text-sm font-semibold mb-2 ${
-                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  Nome Completo *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={personalData.full_name}
-                  onChange={(e) => setPersonalData({ ...personalData, full_name: e.target.value })}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                    theme === 'dark'
-                      ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
-                      : 'border-gray-200 bg-white'
-                  }`}
-                  placeholder="Seu nome completo"
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className={`block text-sm font-semibold mb-2 ${
-                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    CPF *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={personalData.cpf}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      const formatted = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-                      setPersonalData({ ...personalData, cpf: formatted });
-                    }}
-                    maxLength={14}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                      theme === 'dark'
-                        ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
-                        : 'border-gray-200 bg-white'
-                    }`}
-                    placeholder="000.000.000-00"
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-semibold mb-2 ${
-                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    Data de Nascimento *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={personalData.birth_date}
-                    onChange={(e) => setPersonalData({ ...personalData, birth_date: e.target.value })}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                      theme === 'dark'
-                        ? 'border-gray-600 bg-gray-700 text-white'
-                        : 'border-gray-200 bg-white'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-semibold mb-2 ${
-                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  E-mail *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={personalData.email}
-                  onChange={(e) => setPersonalData({ ...personalData, email: e.target.value })}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                    theme === 'dark'
-                      ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
-                      : 'border-gray-200 bg-white'
-                  }`}
-                  placeholder="seu@email.com"
-                />
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="submit"
-                  disabled={savePersonalDataMutation.isLoading}
-                  className="flex-1 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02]"
-                >
-                  {savePersonalDataMutation.isLoading ? 'Salvando...' : 'Salvar Dados'}
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
+        )}
+
         {Dialog}
       </div>
     );

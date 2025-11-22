@@ -681,7 +681,7 @@ export default function StoreCategories() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
                     {selectedCategory ? 'Atualizar' : 'Criar'} Categoria
                   </button>

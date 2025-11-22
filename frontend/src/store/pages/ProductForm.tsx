@@ -5,10 +5,12 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Trash2, Info, Box, FileText, Layers } from 'lucide-react';
 import { useConfirm } from '../../hooks/useConfirm';
+import { useThemeStore } from '../themeStore';
 
 type TabType = 'BASIC_INFO' | 'INVENTORY' | 'ADVANCED';
 
 export default function StoreProductForm() {
+  const { theme } = useThemeStore();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -290,11 +292,17 @@ export default function StoreProductForm() {
 
   if (!categories || categories.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+      <div className={`rounded-xl shadow-lg p-8 text-center ${
+        theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+      }`}>
+        <h2 className={`text-2xl font-bold mb-4 ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>
           Crie uma categoria primeiro
         </h2>
-        <p className="text-gray-600 mb-6">
+        <p className={`mb-6 ${
+          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+        }`}>
           Você precisa criar pelo menos uma categoria antes de criar um produto.
         </p>
         <button
@@ -319,12 +327,16 @@ export default function StoreProductForm() {
       <div className="mb-8">
         <button
           onClick={() => navigate('/store/products')}
-          className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+          className={`inline-flex items-center mb-4 transition-colors ${
+            theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'
+          }`}
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
           Voltar para Produtos
         </button>
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className={`text-3xl font-bold ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>
           {isEditing ? 'Editar Produto' : 'Novo Produto'}
         </h1>
       </div>
@@ -334,8 +346,12 @@ export default function StoreProductForm() {
           {/* Tabs e Conteúdo Principal */}
           <div className="xl:col-span-2 space-y-6">
             {/* Tabs */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="border-b border-gray-200">
+            <div className={`rounded-xl border shadow-sm ${
+              theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <div className={`border-b ${
+                theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+              }`}>
                 <div className="flex overflow-x-auto">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
@@ -346,8 +362,12 @@ export default function StoreProductForm() {
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex-1 px-6 py-4 flex items-center justify-center gap-2 text-sm font-medium transition-colors border-b-2 ${
                           activeTab === tab.id
-                            ? 'border-blue-600 text-blue-600 bg-blue-50'
-                            : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            ? theme === 'dark'
+                              ? 'border-blue-500 text-blue-400 bg-blue-900/30'
+                              : 'border-blue-600 text-blue-600 bg-blue-50'
+                            : theme === 'dark'
+                              ? 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                              : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                         }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -365,7 +385,9 @@ export default function StoreProductForm() {
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className={`block text-sm font-medium mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
                           Nome do Produto *
                         </label>
                         <input
@@ -384,13 +406,19 @@ export default function StoreProductForm() {
                               setFormData((prev) => ({ ...prev, slug }));
                             }
                           }}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                              : 'border-gray-300'
+                          }`}
                           placeholder="Ex: Curso Completo de Marketing"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className={`block text-sm font-medium mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
                           Slug *
                         </label>
                         <input
@@ -403,20 +431,30 @@ export default function StoreProductForm() {
                               slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
                             })
                           }
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                              : 'border-gray-300'
+                          }`}
                           placeholder="curso-completo-marketing"
                         />
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className={`block text-sm font-medium mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
                           Categoria *
                         </label>
                         <select
                           required
                           value={formData.category_id}
                           onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white'
+                              : 'border-gray-300'
+                          }`}
                         >
                           <option value="">Selecione uma categoria</option>
                           {categories.map((cat: any) => (
@@ -428,7 +466,9 @@ export default function StoreProductForm() {
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className={`block text-sm font-medium mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
                           Descrição Completa *
                         </label>
                         <textarea
@@ -436,16 +476,24 @@ export default function StoreProductForm() {
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                           rows={6}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                              : 'border-gray-300'
+                          }`}
                           placeholder="Descrição detalhada do produto"
                         />
                       </div>
                     </div>
 
                     {/* Preços */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-200">
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t ${
+                      theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+                    }`}>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className={`block text-sm font-medium mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
                           Preço Normal (R$) *
                         </label>
                         <input
@@ -454,13 +502,19 @@ export default function StoreProductForm() {
                           required
                           value={formData.price}
                           onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                              : 'border-gray-300'
+                          }`}
                           placeholder="99.90"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className={`block text-sm font-medium mb-2 ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
                           Preço Comparativo (R$)
                         </label>
                         <input
@@ -468,10 +522,16 @@ export default function StoreProductForm() {
                           step="0.01"
                           value={formData.promotional_price}
                           onChange={(e) => setFormData({ ...formData, promotional_price: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            theme === 'dark'
+                              ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                              : 'border-gray-300'
+                          }`}
                           placeholder="79.90"
                         />
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className={`mt-1 text-xs ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
                           Preço usado para comparação e cálculo de desconto. Deve ser maior que o preço normal.
                         </p>
                       </div>
@@ -484,8 +544,12 @@ export default function StoreProductForm() {
                   <div className="space-y-6">
                     {/* Tipo de estoque */}
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Tipo de estoque</h3>
-                      <p className="text-sm text-gray-600 mb-4">Defina como o estoque será gerenciado.</p>
+                      <h3 className={`text-lg font-semibold mb-2 ${
+                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>Tipo de estoque</h3>
+                      <p className={`text-sm mb-4 ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                      }`}>Defina como o estoque será gerenciado.</p>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <button
                           type="button"
@@ -507,13 +571,23 @@ export default function StoreProductForm() {
                           }}
                           className={`p-4 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-colors ${
                             inventoryType === 'lines'
-                              ? 'border-blue-600 bg-blue-50'
-                              : 'border-gray-200 hover:bg-gray-50'
+                              ? theme === 'dark'
+                                ? 'border-blue-500 bg-blue-900/30'
+                                : 'border-blue-600 bg-blue-50'
+                              : theme === 'dark'
+                                ? 'border-gray-600 hover:bg-gray-700'
+                                : 'border-gray-200 hover:bg-gray-50'
                           }`}
                         >
-                          <Layers className="w-6 h-6 mb-2 text-gray-700" />
-                          <span className="text-sm font-medium">Linhas</span>
-                          <span className="text-xs text-gray-500 mt-1">Cada linha = 1 estoque</span>
+                          <Layers className={`w-6 h-6 mb-2 ${
+                            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                          }`} />
+                          <span className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-white' : ''
+                          }`}>Linhas</span>
+                          <span className={`text-xs mt-1 ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                          }`}>Cada linha = 1 estoque</span>
                         </button>
                         <button
                           type="button"
@@ -535,13 +609,23 @@ export default function StoreProductForm() {
                           }}
                           className={`p-4 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-colors ${
                             inventoryType === 'text'
-                              ? 'border-blue-600 bg-blue-50'
-                              : 'border-gray-200 hover:bg-gray-50'
+                              ? theme === 'dark'
+                                ? 'border-blue-500 bg-blue-900/30'
+                                : 'border-blue-600 bg-blue-50'
+                              : theme === 'dark'
+                                ? 'border-gray-600 hover:bg-gray-700'
+                                : 'border-gray-200 hover:bg-gray-50'
                           }`}
                         >
-                          <FileText className="w-6 h-6 mb-2 text-gray-700" />
-                          <span className="text-sm font-medium">Texto/Serviço</span>
-                          <span className="text-xs text-gray-500 mt-1">Mesmo texto para todos</span>
+                          <FileText className={`w-6 h-6 mb-2 ${
+                            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                          }`} />
+                          <span className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-white' : ''
+                          }`}>Texto/Serviço</span>
+                          <span className={`text-xs mt-1 ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                          }`}>Mesmo texto para todos</span>
                         </button>
                         <button
                           type="button"
@@ -563,11 +647,17 @@ export default function StoreProductForm() {
                           }}
                           className={`p-4 rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-colors ${
                             inventoryType === 'file'
-                              ? 'border-blue-600 bg-blue-50'
-                              : 'border-gray-200 hover:bg-gray-50'
+                              ? theme === 'dark'
+                                ? 'border-blue-500 bg-blue-900/30'
+                                : 'border-blue-600 bg-blue-50'
+                              : theme === 'dark'
+                                ? 'border-gray-600 hover:bg-gray-700'
+                                : 'border-gray-200 hover:bg-gray-50'
                           }`}
                         >
-                          <FileText className="w-6 h-6 mb-2 text-gray-700" />
+                          <FileText className={`w-6 h-6 mb-2 ${
+                            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                          }`} />
                           <span className="text-sm font-medium">Arquivo</span>
                           <span className="text-xs text-gray-500 mt-1">RAR, TXT, etc</span>
                         </button>
@@ -576,10 +666,14 @@ export default function StoreProductForm() {
 
                     {/* Conteúdo baseado no tipo */}
                     {inventoryType === 'lines' && (
-                      <div className="border bg-white rounded-md shadow-sm">
+                      <div className={`border rounded-md shadow-sm ${
+                        theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white'
+                      }`}>
                         <div className="flex flex-col space-y-1.5 p-6">
                           <div className="relative flex justify-between items-center">
-                            <div className="font-semibold leading-none tracking-tight">
+                            <div className={`font-semibold leading-none tracking-tight ${
+                              theme === 'dark' ? 'text-white' : ''
+                            }`}>
                               Estoque ({isEditing && id && productKeys ? productKeys.length : inventoryLines.filter(l => l.trim()).length})
                             </div>
                             {((isEditing && id && productKeys && productKeys.length > 0) || (!isEditing && inventoryLines.filter(l => l.trim()).length > 0)) && (
@@ -592,7 +686,9 @@ export default function StoreProductForm() {
                               </button>
                             )}
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className={`text-sm ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
                             Cole múltiplas linhas de uma vez. Cada linha representa um estoque diferente. Se tiver 300 linhas, será 300 em estoque.
                           </div>
                         </div>
@@ -660,12 +756,18 @@ export default function StoreProductForm() {
                     )}
 
                     {inventoryType === 'text' && (
-                      <div className="border bg-white rounded-md shadow-sm">
+                      <div className={`border rounded-md shadow-sm ${
+                        theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white'
+                      }`}>
                         <div className="flex flex-col space-y-1.5 p-6">
-                          <div className="font-semibold leading-none tracking-tight">
+                          <div className={`font-semibold leading-none tracking-tight ${
+                            theme === 'dark' ? 'text-white' : ''
+                          }`}>
                             Texto/Serviço
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className={`text-sm ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
                             O mesmo texto será enviado para todos os compradores.
                           </div>
                         </div>
@@ -674,7 +776,11 @@ export default function StoreProductForm() {
                             value={inventoryText}
                             onChange={(e) => setInventoryText(e.target.value)}
                             rows={6}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
+                              theme === 'dark'
+                                ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                                : 'border-gray-300'
+                            }`}
                             placeholder="Digite o texto/serviço que será enviado para todos os compradores..."
                           />
                         </div>
@@ -682,17 +788,25 @@ export default function StoreProductForm() {
                     )}
 
                     {inventoryType === 'file' && (
-                      <div className="border bg-white rounded-md shadow-sm">
+                      <div className={`border rounded-md shadow-sm ${
+                        theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white'
+                      }`}>
                         <div className="flex flex-col space-y-1.5 p-6">
-                          <div className="font-semibold leading-none tracking-tight">
+                          <div className={`font-semibold leading-none tracking-tight ${
+                            theme === 'dark' ? 'text-white' : ''
+                          }`}>
                             Arquivo
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className={`text-sm ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
                             Faça upload de um arquivo (RAR, ZIP, TXT, etc) que será enviado aos compradores.
                           </div>
                         </div>
                         <div className="p-6 pt-0">
-                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          <div className={`border-2 border-dashed rounded-lg p-6 text-center ${
+                            theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+                          }`}>
                             <input
                               type="file"
                               onChange={(e) => {
@@ -708,8 +822,12 @@ export default function StoreProductForm() {
                               {inventoryFile ? (
                                 <div className="space-y-2">
                                   <FileText className="w-8 h-8 text-blue-600 mx-auto" />
-                                  <p className="font-medium text-gray-900">{inventoryFile.name}</p>
-                                  <p className="text-sm text-gray-500">
+                                  <p className={`font-medium ${
+                                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                                  }`}>{inventoryFile.name}</p>
+                                  <p className={`text-sm ${
+                                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                                  }`}>
                                     {(inventoryFile.size / 1024 / 1024).toFixed(2)} MB
                                   </p>
                                   <button
@@ -726,8 +844,12 @@ export default function StoreProductForm() {
                                 </div>
                               ) : (
                                 <div className="space-y-2">
-                                  <FileText className="w-8 h-8 text-gray-400 mx-auto" />
-                                  <p className="font-medium text-gray-900">Clique para fazer upload</p>
+                                  <FileText className={`w-8 h-8 mx-auto ${
+                                    theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                                  }`} />
+                                  <p className={`font-medium ${
+                                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                                  }`}>Clique para fazer upload</p>
                                   <p className="text-sm text-gray-500">ou arraste e solte o arquivo aqui</p>
                                 </div>
                               )}
