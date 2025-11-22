@@ -63,7 +63,7 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
     localStorage.removeItem(`customer_${storeSubdomain}`);
     setCustomer(null);
     setProfileMenuOpen(false);
-    navigate(`/${storeSubdomain}`);
+    navigate(getShopUrl(storeSubdomain, ''));
   };
 
   const getInitials = (name: string) => {
@@ -85,7 +85,7 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
         <div className="flex items-center justify-between h-16">
           {/* Logo e Nome */}
           <Link
-            to={getShopUrl(storeSubdomain)}
+            to={getShopUrl(storeSubdomain, '')}
             className="flex items-center space-x-3 hover:opacity-80 transition-opacity flex-shrink-0"
           >
             {(theme?.logo_url || storeInfo?.logo_url) && (
@@ -168,7 +168,7 @@ export default function ShopHeader({ storeInfo, theme, cartCount = 0 }: ShopHead
                     {/* Itens do Menu */}
                     <div className="py-2">
                       <Link
-                        to={`/${storeSubdomain}/my-orders`}
+                        to={getShopUrl(storeSubdomain, 'my-orders')}
                         onClick={() => setProfileMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors group"
                       >

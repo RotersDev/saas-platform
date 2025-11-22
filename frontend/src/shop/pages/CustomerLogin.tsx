@@ -1,10 +1,11 @@
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { Mail, Lock, User } from 'lucide-react';
 import Footer from '../components/Footer';
 import { useQuery } from 'react-query';
+import { getShopUrl, getForgotPasswordUrl } from '../../utils/urlUtils';
 
 export default function CustomerLogin() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();
@@ -61,7 +62,7 @@ export default function CustomerLogin() {
           localStorage.setItem(`customer_token_${storeSubdomain}`, response.data.token);
           localStorage.setItem(`customer_${storeSubdomain}`, JSON.stringify(response.data.customer));
           toast.success('Login realizado com sucesso!');
-          navigate(`/${storeSubdomain}/my-orders`);
+          navigate(getShopUrl(storeSubdomain, 'my-orders'));
         }
       } else {
         const response = await api.post('/api/public/customers/register', {
@@ -79,7 +80,7 @@ export default function CustomerLogin() {
           localStorage.setItem(`customer_token_${storeSubdomain}`, response.data.token);
           localStorage.setItem(`customer_${storeSubdomain}`, JSON.stringify(response.data.customer));
           toast.success('Cadastro realizado com sucesso!');
-          navigate(`/${storeSubdomain}/my-orders`);
+          navigate(getShopUrl(storeSubdomain, 'my-orders'));
         } else {
           toast.success('Cadastro realizado! Faça login para continuar.');
           setIsLogin(true);
@@ -112,7 +113,7 @@ export default function CustomerLogin() {
         localStorage.setItem(`customer_token_${storeSubdomain}`, response.data.token);
         localStorage.setItem(`customer_${storeSubdomain}`, JSON.stringify(response.data.customer));
         toast.success('Senha criada com sucesso!');
-        navigate(`/${storeSubdomain}/my-orders`);
+        navigate(getShopUrl(storeSubdomain, 'my-orders'));
       }
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Erro ao criar senha');
@@ -223,6 +224,16 @@ export default function CustomerLogin() {
                   </div>
                   {!isLogin && (
                     <p className="text-xs text-gray-500 mt-2">Mínimo de 6 caracteres</p>
+                  )}
+                  {isLogin && (
+                    <div className="mt-2 text-right">
+                      <Link
+                        to={getForgotPasswordUrl(storeSubdomain)}
+                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                      >
+                        Esqueceu sua senha?
+                      </Link>
+                    </div>
                   )}
                 </div>
 

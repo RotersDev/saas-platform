@@ -101,3 +101,10 @@ export function getLoginUrl(subdomain: string | null | undefined): string {
   return getShopUrl(subdomain, 'login');
 }
 
+/**
+ * Gera URL para recuperação de senha do cliente
+ */
+export function getForgotPasswordUrl(subdomain: string | null | undefined): string {
+  return getShopUrl(subdomain, 'forgot-password');
+}
+

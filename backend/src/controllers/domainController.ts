@@ -191,11 +191,18 @@ export class DomainController {
       }
 
       const domainName = domain.domain;
+      const wasPrimary = domain.is_primary;
 
       // Deletar o domínio do banco
       await domain.destroy();
 
       logger.info(`✅ Domínio removido: ${domainName} (ID: ${id}) da loja ${req.store.id}`);
+
+      // Se era o domínio primário, limpar o campo domain na tabela Store
+      if (wasPrimary || req.store.domain === domainName) {
+        await req.store.update({ domain: null as any });
+        logger.info(`✅ Campo domain limpo na loja ${req.store.id}${wasPrimary ? ' (era primário)' : ' (estava definido)'}`);
+      }
 
       // Verificar se foi realmente deletado
       const verifyDeleted = await Domain.findByPk(id);

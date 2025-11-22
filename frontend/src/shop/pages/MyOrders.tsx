@@ -199,7 +199,7 @@ export default function MyOrders() {
             {orders.map((order: any) => (
               <Link
                 key={order.id}
-                to={`/${storeSubdomain}/my-orders/${order.order_number || order.id}`}
+                to={getShopUrl(storeSubdomain, `my-orders/${order.order_number || order.id}`)}
                 className="block bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all"
               >
                 <div className="p-4">

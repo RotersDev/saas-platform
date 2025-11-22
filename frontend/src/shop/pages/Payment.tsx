@@ -71,7 +71,7 @@ export default function ShopPayment() {
       // Redirecionar após 2 segundos se pago, usando order_number
       setTimeout(() => {
         const orderNumber = orderData.order_number || orderId;
-        navigate(`/${storeSubdomain}/order/${encodeURIComponent(orderNumber)}`);
+        navigate(getShopUrl(storeSubdomain, `order/${encodeURIComponent(orderNumber)}`));
       }, 2000);
     } else if (orderData && orderData.payment_status === 'pending' && orderData.payment?.pushin_pay_id) {
       // Se ainda está pendente e tem pushin_pay_id, tentar verificar manualmente a cada 10 segundos
@@ -229,7 +229,7 @@ export default function ShopPayment() {
                 {showGoToOrder && (
                   <div className={`mt-6 transition-opacity duration-300 ${showGoToOrder ? 'opacity-100' : 'opacity-0'}`}>
                     <Link
-                      to={`/${storeSubdomain}/order/${encodeURIComponent(orderData?.order_number || orderId)}`}
+                      to={getShopUrl(storeSubdomain, `order/${encodeURIComponent(orderData?.order_number || orderId)}`)}
                       className="w-full h-10 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center justify-center"
                     >
                       Ir para o pedido

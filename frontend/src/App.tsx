@@ -40,6 +40,7 @@ import ShopPayment from './shop/pages/Payment';
 import ShopOrderStatus from './shop/pages/OrderStatus';
 import ShopCategories from './shop/pages/Categories';
 import CustomerLogin from './shop/pages/CustomerLogin';
+import CustomerForgotPassword from './shop/pages/CustomerForgotPassword';
 import MyOrders from './shop/pages/MyOrders';
 import MyOrderDetails from './shop/pages/MyOrderDetails';
 import ShopTerms from './shop/pages/Terms';

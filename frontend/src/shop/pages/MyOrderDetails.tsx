@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
-import { getLoginUrl } from '../../utils/urlUtils';
+import { getLoginUrl, getShopUrl } from '../../utils/urlUtils';
 
 export default function MyOrderDetails() {
   const { storeSubdomain: storeSubdomainParam, orderId } = useParams<{ storeSubdomain?: string; orderId?: string }>();
@@ -137,7 +137,7 @@ export default function MyOrderDetails() {
           <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Pedido não encontrado</h1>
           <Link
-            to={`/${storeSubdomain}/my-orders`}
+            to={getShopUrl(storeSubdomain, 'my-orders')}
             className="text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -154,7 +154,7 @@ export default function MyOrderDetails() {
         {/* Header */}
         <div className="mb-6">
           <Link
-            to={`/${storeSubdomain}/my-orders`}
+            to={getShopUrl(storeSubdomain, 'my-orders')}
             className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

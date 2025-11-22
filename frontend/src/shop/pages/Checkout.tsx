@@ -210,9 +210,9 @@ export default function ShopCheckout() {
       setCart([]);
 
       if (response.data?.order?.order_number) {
-        navigate(`/${storeSubdomain}/payment/${encodeURIComponent(response.data.order.order_number)}`);
+        navigate(getShopUrl(storeSubdomain, `payment/${encodeURIComponent(response.data.order.order_number)}`));
       } else if (response.data?.order?.id) {
-        navigate(`/${storeSubdomain}/payment/${response.data.order.id}`);
+        navigate(getShopUrl(storeSubdomain, `payment/${response.data.order.id}`));
       } else {
         toast.error('Erro ao obter informações do pedido');
       }
@@ -511,7 +511,7 @@ export default function ShopCheckout() {
                 <p className="text-xs text-center text-gray-500 mt-2 px-2">
                   Ao finalizar, você concorda com nossos{' '}
                   <Link
-                    to={`/${storeSubdomain}/terms`}
+                    to={getShopUrl(storeSubdomain, 'terms')}
                     className="text-indigo-600 hover:underline"
                   >
                     Termos
