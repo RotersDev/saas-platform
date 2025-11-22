@@ -3,7 +3,7 @@ import { useQuery } from 'react-query';
 import api from '../../config/axios';
 import StoreBlocked from './StoreBlocked';
 import { useState, useEffect, useMemo } from 'react';
-import { ShoppingCart, Plus, Minus, AlertTriangle, ArrowDown, XCircle, Package, Zap, Shield, CreditCard } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, ArrowDown, XCircle, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { normalizeImageUrl, normalizeImageUrls } from '../../utils/imageUtils';
@@ -202,7 +202,6 @@ export default function ShopProduct() {
   const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
   const discount = comparisonPrice ? Math.round(((comparisonPrice - price) / comparisonPrice) * 100) : 0;
   const isOutOfStock = stockQuantity === 0;
-  const isLowStock = stockQuantity > 0 && stockQuantity <= 5;
 
   const addToCart = () => {
     if (!product) {
@@ -350,12 +349,6 @@ export default function ShopProduct() {
                   </span>
                 )}
 
-                {isLowStock && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-orange-100 border border-orange-300 rounded-md text-orange-700">
-                    <AlertTriangle className="w-3 h-3" />
-                    Apenas {stockQuantity} restante{stockQuantity > 1 ? 's' : ''}
-                  </span>
-                )}
 
                 {product.is_digital && (
                   <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-gray-100 border border-gray-200 rounded-md text-gray-700">
@@ -463,34 +456,6 @@ export default function ShopProduct() {
           </div>
         )}
 
-        {/* Cards de Informação */}
-        <div className="mt-6 lg:mt-8">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg shadow-sm p-4 text-center">
-              <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 mb-2">
-                <Zap className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">Entrega Imediata</h3>
-              <p className="text-xs text-gray-600">Receba após o pagamento</p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm p-4 text-center">
-              <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 mb-2">
-                <Shield className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">100% Seguro</h3>
-              <p className="text-xs text-gray-600">Dados protegidos</p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm p-4 text-center">
-              <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 mb-2">
-                <CreditCard className="w-5 h-5 text-gray-600" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">Pagamento</h3>
-              <p className="text-xs text-gray-600">PIX e cartão</p>
-            </div>
-          </div>
-        </div>
 
         {/* Produtos Relacionados */}
         {relatedProducts && relatedProducts.length > 0 && (
