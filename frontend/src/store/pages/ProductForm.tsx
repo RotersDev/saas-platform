@@ -990,7 +990,9 @@ export default function StoreProductForm() {
                 }`}>Imagem principal</h3>
               </div>
               <div className="p-6 space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                <div className={`border-2 border-dashed rounded-xl p-6 text-center hover:border-blue-400 transition-colors cursor-pointer ${
+                  theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
+                }`}>
                   <input
                     type="file"
                     accept="image/*"
@@ -1000,26 +1002,40 @@ export default function StoreProductForm() {
                     id="image-upload"
                   />
                   <label htmlFor="image-upload" className="cursor-pointer">
-                    <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                      <FileText className="w-6 h-6 text-gray-400" />
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 ${
+                      theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
+                    }`}>
+                      <FileText className={`w-6 h-6 ${
+                        theme === 'dark' ? 'text-gray-400' : 'text-gray-400'
+                      }`} />
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Escolha sua imagem</h3>
-                    <p className="text-sm text-gray-600">Clique aqui ou arraste e solte um arquivo aqui.</p>
+                    <h3 className={`font-semibold mb-1 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>Escolha sua imagem</h3>
+                    <p className={`text-sm ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>Clique aqui ou arraste e solte um arquivo aqui.</p>
                   </label>
                 </div>
 
                 {imageFiles.length > 0 && (
                   <div className="space-y-3">
                     {imageFiles.map((file, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div key={index} className={`flex items-center gap-3 p-3 rounded-lg ${
+                        theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'
+                      }`}>
                         <img
                           src={URL.createObjectURL(file)}
                           alt={`Preview ${index + 1}`}
                           className="w-10 h-10 rounded object-cover"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{file.name}</div>
-                          <span className="text-xs text-gray-500">
+                          <div className={`font-medium text-sm truncate ${
+                            theme === 'dark' ? 'text-white' : ''
+                          }`}>{file.name}</div>
+                          <span className={`text-xs ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
                             {(file.size / 1024 / 1024).toFixed(2)}mb
                           </span>
                         </div>
@@ -1042,10 +1058,14 @@ export default function StoreProductForm() {
                 {formData.images.length > 0 && (
                   <div className="space-y-3">
                     {formData.images.map((image, index) => (
-                      <div key={`${image}-${index}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div key={`${image}-${index}`} className={`flex items-center gap-3 p-3 rounded-lg ${
+                        theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'
+                      }`}>
                         <img src={image} alt={`Imagem ${index + 1}`} className="w-10 h-10 rounded object-cover" />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">Imagem {index + 1}</div>
+                          <div className={`font-medium text-sm truncate ${
+                            theme === 'dark' ? 'text-white' : ''
+                          }`}>Imagem {index + 1}</div>
                         </div>
                         <button
                           type="button"
@@ -1063,7 +1083,9 @@ export default function StoreProductForm() {
                   </div>
                 )}
 
-                <p className="text-xs text-gray-600 mt-4">
+                <p className={`text-xs mt-4 ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>
                   Resolução recomendada: 1280x720. Também recomendamos que mantenha a proporção 16:9, pois caso contrário, sua imagem pode ficar achatada em seu site.
                 </p>
               </div>
@@ -1072,11 +1094,17 @@ export default function StoreProductForm() {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+        <div className={`flex justify-end gap-4 pt-6 border-t ${
+          theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+        }`}>
           <button
             type="button"
             onClick={() => navigate('/store/products')}
-            className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+            className={`px-6 py-3 border rounded-lg transition-colors font-medium ${
+              theme === 'dark'
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
           >
             Cancelar
           </button>
