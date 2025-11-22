@@ -413,7 +413,13 @@ export class DomainController {
           cname_verified: false,
           verify_token: domain.verify_token,
           expectedTarget,
-          message: 'TXT record não encontrado ou incorreto. Configure o registro TXT primeiro.',
+          message: 'TXT record não encontrado ou incorreto. Verifique se o registro TXT está configurado corretamente. Se você acabou de atualizar, aguarde alguns minutos para a propagação DNS.',
+          dns_instructions: {
+            type: 'TXT',
+            name: `_cf-custom-hostname.${domain.domain}`,
+            value: domain.verify_token,
+            note: 'O DNS pode levar alguns minutos para propagar. Se você atualizou recentemente, aguarde e tente verificar novamente.',
+          },
         });
         return;
       }

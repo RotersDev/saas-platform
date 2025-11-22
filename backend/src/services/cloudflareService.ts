@@ -248,13 +248,18 @@ export class CloudflareService {
         }
         cleanRecord = cleanRecord.trim();
 
-        const matches = cleanRecord === expectedToken;
+        // Comparação case-insensitive e removendo espaços extras
+        const cleanExpected = expectedToken.trim();
+        const matches = cleanRecord.toLowerCase() === cleanExpected.toLowerCase();
 
         if (matches) {
-          logger.info(`✅ TXT record encontrado e correto: "${cleanRecord}" === "${expectedToken}"`);
+          logger.info(`✅ TXT record encontrado e correto: "${cleanRecord}" === "${cleanExpected}"`);
         } else {
-          logger.warn(`❌ TXT record não corresponde: "${cleanRecord}" !== "${expectedToken}"`);
-          logger.warn(`   Record original: "${record}"`);
+          logger.warn(`❌ TXT record não corresponde: "${cleanRecord}" !== "${cleanExpected}"`);
+          logger.warn(`   Record original (antes de limpar): "${record}"`);
+          logger.warn(`   Record limpo: "${cleanRecord}"`);
+          logger.warn(`   Token esperado: "${cleanExpected}"`);
+          logger.warn(`   ⚠️ Se você acabou de atualizar o DNS, pode levar alguns minutos para propagar. Aguarde e tente novamente.`);
         }
 
         return matches;
