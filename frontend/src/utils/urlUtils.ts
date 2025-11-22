@@ -47,7 +47,8 @@ export function getSubdomainFromHostname(): string | null {
 
 /**
  * Gera URLs limpas para a loja pública
- * Formato: /{subdomain}/... para subdomínios, ou /... para domínios customizados
+ * Quando já estamos em um subdomain (ex: musuca02.nerix.online), não inclui o subdomain no path
+ * Formato: /product/slug (quando em subdomain) ou /... (domínio customizado)
  * @param subdomain - Subdomain da loja (null para domínio customizado)
  * @param path - Caminho dentro da loja (vazio para raiz)
  * @param forceRoot - Se true, sempre retorna raiz sem subdomain no path (útil para logo/header)
@@ -62,17 +63,20 @@ export function getShopUrl(subdomain: string | null | undefined, path: string = 
     return '/';
   }
 
-  // Se não há subdomain (domínio customizado), retornar path direto
-  if (!subdomain) {
+  // Verificar se já estamos em um subdomain no hostname
+  // Se sim, não incluir subdomain no path (URLs limpas como /product/slug)
+  const currentSubdomain = getSubdomainFromHostname();
+  const isInSubdomain = currentSubdomain && currentSubdomain === subdomain;
+
+  // Se não há subdomain (domínio customizado) ou já estamos em subdomain, retornar path direto
+  // Isso gera URLs limpas como /product/maria-1 em vez de /musuca02/product/maria-1
+  if (!subdomain || isInSubdomain) {
     return cleanPath ? `/${cleanPath}` : '/';
   }
 
-  // Se há subdomain, incluir no path
-  if (!cleanPath) {
-    return `/${subdomain}`;
-  }
-
-  return `/${subdomain}/${cleanPath}`;
+  // Se há subdomain mas não estamos nele (ex: link de outra página), incluir no path
+  // Mas isso não deve acontecer normalmente, então retornar path direto
+  return cleanPath ? `/${cleanPath}` : '/';
 }
 
 /**
