@@ -190,7 +190,7 @@ export default function StoreLayout() {
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
             <div>
               <h1 className="text-lg font-bold text-gray-900">
-                {getGreeting()}{currentUser?.name ? `, ${currentUser.name.split(' ')[0]}` : currentUser?.username ? `, @${currentUser.username}` : ''}
+                {getGreeting()}{currentUser?.name ? `, ${currentUser.name.split(' ')[0]}` : currentUser?.username ? `, ${currentUser.username}` : ''}
               </h1>
             </div>
             <button
