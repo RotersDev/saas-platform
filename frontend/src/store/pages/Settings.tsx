@@ -263,6 +263,7 @@ export default function StoreSettings() {
         { event: 'order_approved', label: 'Pedido aprovado' },
       ],
       internal: [
+        { event: 'order_created', label: 'Pedido criado' },
         { event: 'order_approved', label: 'Pedido aprovado' },
       ],
     };
@@ -288,7 +289,7 @@ export default function StoreSettings() {
     const newValue = !notifications[key];
 
     // Se está ativando notificações internas (App), solicitar permissão
-    if (type === 'internal' && newValue && event === 'order_approved') {
+    if (type === 'internal' && newValue && (event === 'order_approved' || event === 'order_created')) {
       if (!notificationService.isNotificationSupported()) {
         toast.error('Notificações não são suportadas neste navegador');
         return;
@@ -320,7 +321,10 @@ export default function StoreSettings() {
             duration: 6000,
           });
         } else {
-          toast.success('Notificações ativadas! Você receberá notificações quando houver vendas aprovadas.');
+          const message = event === 'order_created'
+            ? 'Notificações ativadas! Você receberá notificações quando houver novos pedidos criados.'
+            : 'Notificações ativadas! Você receberá notificações quando houver vendas aprovadas.';
+          toast.success(message);
         }
       } catch (error) {
         console.error('Erro ao solicitar permissão:', error);
@@ -956,7 +960,8 @@ export default function StoreSettings() {
             </div>
             <div className="p-6 space-y-4">
               {[
-                { event: 'order_approved', label: 'Pedido aprovado', description: 'Para utilizar esta função, mantenha-a habilitada.' },
+                { event: 'order_created', label: 'Pedido criado', description: 'Receba notificações quando um cliente criar um pedido (abrir carrinho).' },
+                { event: 'order_approved', label: 'Pedido aprovado', description: 'Receba notificações quando um pedido for aprovado (pagamento confirmado).' },
               ].map(({ event, label, description }) => (
                 <div key={event} className={`border rounded-lg p-4 ${
                   currentTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'

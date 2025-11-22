@@ -73,8 +73,13 @@ export default function StoreLayout() {
     (notif: any) => notif.type === 'internal' && notif.event === 'order_approved' && notif.enabled
   ) || false;
 
-  // Monitorar vendas aprovadas e enviar notificações
-  useOrderNotifications(isOrderNotificationEnabled);
+  // Verificar se notificações internas de pedido criado estão ativadas
+  const isOrderCreatedNotificationEnabled = notificationsData?.some(
+    (notif: any) => notif.type === 'internal' && notif.event === 'order_created' && notif.enabled
+  ) || false;
+
+  // Monitorar vendas aprovadas e pedidos criados, enviando notificações
+  useOrderNotifications(isOrderNotificationEnabled, isOrderCreatedNotificationEnabled);
 
   const { data: userData } = useQuery(
     'userProfile',
