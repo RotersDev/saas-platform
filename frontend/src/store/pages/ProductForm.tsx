@@ -726,10 +726,16 @@ export default function StoreProductForm() {
                                   }
                                 }}
                                 rows={12}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
+                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono ${
+                                  theme === 'dark'
+                                    ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                                    : 'border-gray-300'
+                                }`}
                                 placeholder="Cole aqui as chaves/licenças, uma por linha..."
                               />
-                              <p className="text-xs text-gray-500 mt-2">
+                              <p className={`text-xs mt-2 ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
                                 {productKeys.length} {productKeys.length === 1 ? 'chave' : 'chaves'} configurada{productKeys.length === 1 ? '' : 's'}
                               </p>
                             </>
@@ -743,10 +749,16 @@ export default function StoreProductForm() {
                                   setInventoryLines(lines);
                                 }}
                                 rows={12}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
+                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono ${
+                                  theme === 'dark'
+                                    ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                                    : 'border-gray-300'
+                                }`}
                                 placeholder="Cole aqui as chaves/licenças, uma por linha..."
                               />
-                              <p className="text-xs text-gray-500 mt-2">
+                              <p className={`text-xs mt-2 ${
+                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
                                 {inventoryLines.filter(l => l.trim()).length} {inventoryLines.filter(l => l.trim()).length === 1 ? 'chave' : 'chaves'} configurada{inventoryLines.filter(l => l.trim()).length === 1 ? '' : 's'}
                               </p>
                             </>
