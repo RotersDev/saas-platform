@@ -1,7 +1,7 @@
 import { useQuery } from 'react-query';
 import api from '../../config/axios';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { Package, ShoppingCart, ArrowDown, XCircle, Zap } from 'lucide-react';
+import { Package, ShoppingCart, XCircle, Zap } from 'lucide-react';
 import StoreBlocked from './StoreBlocked';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
@@ -194,10 +194,6 @@ export default function ShopHome() {
                     const realPrice = Number(product.price);
                     // Preço comparativo (marketing) = promotional_price quando existe
                     const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
-                    // Calcular porcentagem de desconto: ((comparisonPrice - realPrice) / comparisonPrice) * 100
-                    const discountPercentage = comparisonPrice
-                      ? Math.round(((comparisonPrice - realPrice) / comparisonPrice) * 100)
-                      : null;
 
                     // Verifica estoque: se stock_limit é null/undefined, estoque ilimitado (tem estoque)
                     // Se stock_limit existe, verifica se é maior que 0
@@ -210,17 +206,9 @@ export default function ShopHome() {
                       <Link
                         key={product.id}
                         to={getProductUrl(storeSubdomain, product.slug)}
-                        className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
+                        className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
                       >
-                        {/* Tag de desconto */}
-                        {discountPercentage && discountPercentage > 0 && (
-                          <div className="absolute top-3 left-3 z-10 bg-blue-600 text-white font-bold text-sm px-3 py-1 rounded-full shadow-md flex items-center">
-                            <ArrowDown className="w-4 h-4 mr-1" />
-                            {discountPercentage}% OFF
-                          </div>
-                        )}
-
-                        {/* Imagem do produto com overlay */}
+                        {/* Imagem do produto */}
                         <div className="relative overflow-hidden aspect-video">
                           {!hasStock && (
                             <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 p-4 text-center">
@@ -245,7 +233,6 @@ export default function ShopHome() {
                               <Package className="w-12 h-12 text-gray-500" />
                             </div>
                           )}
-
                         </div>
 
                         {/* Conteúdo do card */}

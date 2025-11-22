@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Package, ShoppingCart, ArrowDown, XCircle, Zap } from 'lucide-react';
+import { Package, ShoppingCart, XCircle, Zap } from 'lucide-react';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import { getProductUrl, getCategoryUrl } from '../../utils/urlUtils';
 import { useLazyCategoryProducts } from '../hooks/useLazyCategoryProducts';
@@ -59,9 +59,6 @@ export default function CategorySection({
           {products.map((product: any) => {
             const realPrice = Number(product.price);
             const comparisonPrice = product.promotional_price ? Number(product.promotional_price) : null;
-            const discountPercentage = comparisonPrice
-              ? Math.round(((comparisonPrice - realPrice) / comparisonPrice) * 100)
-              : null;
             const stockLimit = product.stock_limit ?? product.available_stock ?? product.stock_quantity;
             const hasStock = stockLimit === null || stockLimit === undefined || stockLimit > 0;
             const isAutoDelivery = product.auto_delivery || false;
@@ -70,16 +67,8 @@ export default function CategorySection({
               <Link
                 key={product.id}
                 to={getProductUrl(storeSubdomain, product.slug)}
-                className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
+                className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col h-full border border-gray-200 hover:border-blue-500 max-w-sm"
               >
-                {/* Tag de desconto */}
-                {discountPercentage && discountPercentage > 0 && (
-                  <div className="absolute top-3 left-3 z-10 bg-blue-600 text-white font-bold text-sm px-3 py-1 rounded-full shadow-md flex items-center">
-                    <ArrowDown className="w-4 h-4 mr-1" />
-                    {discountPercentage}% OFF
-                  </div>
-                )}
-
                 {/* Imagem do produto com lazy loading */}
                 <div className="relative overflow-hidden aspect-video">
                   {!hasStock && (
@@ -95,19 +84,16 @@ export default function CategorySection({
                       alt={product.name}
                       width="400"
                       height="200"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover"
                       src={normalizeImageUrl(product.images[0])}
-                      loading="lazy" // Lazy loading nativo do navegador
-                      decoding="async" // Decodificar assincronamente
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
                       <Package className="w-12 h-12 text-gray-500" />
                     </div>
                   )}
-
-                  {/* Overlay de hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4"></div>
                 </div>
 
                 {/* Conteúdo do card */}
