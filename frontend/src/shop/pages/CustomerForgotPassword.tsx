@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Mail } from 'lucide-react';
 import Footer from '../components/Footer';
 import { useQuery } from 'react-query';
-import { getShopUrl, getLoginUrl } from '../../utils/urlUtils';
+import { getLoginUrl } from '../../utils/urlUtils';
 
 export default function CustomerForgotPassword() {
   const { storeSubdomain: storeSubdomainParam } = useParams<{ storeSubdomain?: string }>();
