@@ -3,7 +3,7 @@ import api from '../../config/axios';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Package, ShoppingCart, ArrowDown, XCircle, Zap } from 'lucide-react';
 import StoreBlocked from './StoreBlocked';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { normalizeImageUrl } from '../../utils/imageUtils';
 import Footer from '../components/Footer';
@@ -46,10 +46,28 @@ export default function ShopHome() {
 
   // Usar storeInfo.id como identificador do carrinho quando não há subdomain (domínio customizado)
   const cartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : 'default');
-  const [cart, setCart] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`cart_${cartKey}`);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [cart, setCart] = useState<any[]>([]);
+
+  // Sincronizar carrinho com cartKey quando mudar
+  useEffect(() => {
+    if (!cartKey) {
+      setCart([]);
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(`cart_${cartKey}`);
+      if (saved) {
+        const parsedCart = JSON.parse(saved);
+        setCart(parsedCart);
+        console.log('[Home] Carrinho carregado do localStorage:', { cartKey, items: parsedCart.length });
+      } else {
+        setCart([]);
+      }
+    } catch (error) {
+      console.error('[Home] Erro ao carregar carrinho:', error);
+      setCart([]);
+    }
+  }, [cartKey]);
 
   // Buscar produtos apenas quando há filtro de categoria (para página de categoria específica)
   // Para a página principal, usaremos lazy loading por categoria
@@ -90,21 +108,34 @@ export default function ShopHome() {
       return;
     }
 
-    if (!cartKey) {
-      toast.error('Loja não identificada');
+    // Recalcular cartKey para garantir que está atualizado
+    const currentCartKey = storeSubdomain || (storeInfo ? `store-${storeInfo.id}` : null);
+    if (!currentCartKey) {
+      console.error('[addToCart] cartKey não definido - aguardando carregamento da loja');
+      toast.error('Aguarde, carregando informações da loja...');
       return;
     }
 
-    const existingItem = cart.find((item: any) => item.id === product.id);
-    if (existingItem) {
-      toast.error('Produto já está no carrinho');
-      return;
-    }
+    try {
+      // Carregar carrinho atual do localStorage para garantir sincronização
+      const saved = localStorage.getItem(`cart_${currentCartKey}`);
+      const currentCart = saved ? JSON.parse(saved) : [];
 
-    const newCart = [...cart, { ...product, quantity: 1 }];
-    setCart(newCart);
-    localStorage.setItem(`cart_${cartKey}`, JSON.stringify(newCart));
-    toast.success('Produto adicionado ao carrinho!');
+      const existingItem = currentCart.find((item: any) => item.id === product.id);
+      if (existingItem) {
+        toast.error('Produto já está no carrinho');
+        return;
+      }
+
+      const newCart = [...currentCart, { ...product, quantity: 1 }];
+      setCart(newCart);
+      localStorage.setItem(`cart_${currentCartKey}`, JSON.stringify(newCart));
+      console.log('[Home.addToCart] Produto adicionado:', { productId: product.id, cartKey: currentCartKey, cartSize: newCart.length });
+      toast.success('Produto adicionado ao carrinho!');
+    } catch (error) {
+      console.error('[Home.addToCart] Erro ao adicionar ao carrinho:', error);
+      toast.error('Erro ao adicionar produto ao carrinho');
+    }
   };
 
   const buyNow = (product: any) => {

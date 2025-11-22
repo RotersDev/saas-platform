@@ -386,7 +386,9 @@ export class CustomerAuthController {
       await emailService.sendPasswordResetCustomer(
         customer.email,
         resetToken,
-        req.store.name
+        req.store.name,
+        req.store.subdomain,
+        req.store.domain
       );
 
       res.json({ message: 'Se o email existir, você receberá um link de recuperação' });

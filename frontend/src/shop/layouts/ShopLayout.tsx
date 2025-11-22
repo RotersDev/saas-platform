@@ -223,7 +223,7 @@ export default function ShopLayout() {
       if (storeSubdomain) {
         headers['X-Store-Subdomain'] = storeSubdomain;
       }
-      api.post('/api/public/visits/track', null, {
+      api.post('/api/public/visits/track', {}, {
         params: { path: location.pathname },
         headers,
       }).catch(() => {

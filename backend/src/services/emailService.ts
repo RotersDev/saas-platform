@@ -284,13 +284,27 @@ class EmailService {
   /**
    * Envia email de recuperação de senha para cliente
    */
-  async sendPasswordResetCustomer(email: string, resetToken: string, storeName: string): Promise<boolean> {
+  async sendPasswordResetCustomer(email: string, resetToken: string, storeName: string, subdomain?: string | null, customDomain?: string | null): Promise<boolean> {
     // Sempre usar o domínio de produção para emails (não usar localhost)
     const saasDomain = process.env.SAAS_DOMAIN || 'xenaparcerias.online';
+    const baseDomain = process.env.BASE_DOMAIN || 'nerix.online';
     const appUrl = process.env.APP_URL || '';
     const isLocalhost = appUrl.includes('localhost') || appUrl.includes('127.0.0.1');
-    const baseUrl = isLocalhost ? `https://${saasDomain}` : (appUrl || `https://${saasDomain}`);
-    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+    // Se tem domínio customizado, usar ele
+    let resetUrl: string;
+    if (customDomain) {
+      const baseUrl = isLocalhost ? `https://${customDomain}` : (appUrl || `https://${customDomain}`);
+      resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+    } else if (subdomain) {
+      // Se tem subdomain, usar subdomain.baseDomain
+      const baseUrl = isLocalhost ? `https://${subdomain}.${baseDomain}` : (appUrl || `https://${subdomain}.${baseDomain}`);
+      resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+    } else {
+      // Fallback para domínio principal (não deveria acontecer, mas por segurança)
+      const baseUrl = isLocalhost ? `https://${saasDomain}` : (appUrl || `https://${saasDomain}`);
+      resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+    }
 
     const content = `
       <p>Olá,</p>

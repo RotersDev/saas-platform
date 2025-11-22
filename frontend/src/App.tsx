@@ -41,6 +41,7 @@ import ShopOrderStatus from './shop/pages/OrderStatus';
 import ShopCategories from './shop/pages/Categories';
 import CustomerLogin from './shop/pages/CustomerLogin';
 import CustomerForgotPassword from './shop/pages/CustomerForgotPassword';
+import CustomerResetPassword from './shop/pages/CustomerResetPassword';
 import MyOrders from './shop/pages/MyOrders';
 import MyOrderDetails from './shop/pages/MyOrderDetails';
 import ShopTerms from './shop/pages/Terms';
@@ -193,6 +194,7 @@ function ShopLayoutWithLandingFallback() {
           <Route path="terms" element={<ShopTerms />} />
           <Route path="login" element={<CustomerLogin />} />
           <Route path="forgot-password" element={<CustomerForgotPassword />} />
+          <Route path="reset-password" element={<CustomerResetPassword />} />
           <Route path="my-orders" element={<MyOrders />} />
           <Route path="my-orders/:orderId" element={<MyOrderDetails />} />
           <Route path="*" element={<PageNotFound />} />
